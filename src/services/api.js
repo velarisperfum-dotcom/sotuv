@@ -1,5 +1,5 @@
 // Railway Backend API Client
-export const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:5050';
+export const API_BASE_URL = import.meta.env.VITE_API_URL || 'https://sotuv-production-8794.up.railway.app';
 
 export async function checkBackendHealth() {
   try {
