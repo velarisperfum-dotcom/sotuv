@@ -22,9 +22,19 @@ if (databaseUrl) {
   console.log('ℹ️ DATABASE_URL topilmadi. Mahalliy data.json fayl rejimi ishga tushmoqda.');
 }
 
+const REAL_PRODUCTS_PATH = path.join(__dirname, 'real_products.json');
+let initialProductsList = [];
+if (fs.existsSync(REAL_PRODUCTS_PATH)) {
+  try {
+    initialProductsList = JSON.parse(fs.readFileSync(REAL_PRODUCTS_PATH, 'utf-8'));
+  } catch (e) {
+    console.error('Error reading real_products.json:', e);
+  }
+}
+
 // Default initial data for Velaris Perfum
 const defaultData = {
-  products: [
+  products: initialProductsList.length > 0 ? initialProductsList : [
     {
       id: 'prd-1',
       name: 'Aventus',
@@ -217,6 +227,17 @@ export async function initDatabase() {
           );
         }
       }
+
+      // Ensure full 210 perfumes from Google Sheets are in PostgreSQL
+      const prodCheck = await client.query("SELECT value FROM store_data WHERE key = 'products'");
+      if (!prodCheck.rows[0] || (Array.isArray(prodCheck.rows[0].value) && prodCheck.rows[0].value.length < 50)) {
+        console.log('🔄 210 ta Google Sheet atirlari PostgreSQL bazasiga yuklanmoqda...');
+        await client.query(
+          "INSERT INTO store_data (key, value, updated_at) VALUES ('products', $1, CURRENT_TIMESTAMP) ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = CURRENT_TIMESTAMP",
+          [JSON.stringify(defaultData.products)]
+        );
+      }
+
       client.release();
       console.log('✅ PostgreSQL jadvallari muvaffaqiyatli tayyorlandi!');
     } catch (err) {

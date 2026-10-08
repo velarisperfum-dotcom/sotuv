@@ -210,9 +210,8 @@ export default function WarehouseView({
               <tr>
                 <th>Atir / Mahsulot</th>
                 <th>Brend & Kategoriya</th>
-                <th>Hajmi & Turi</th>
+                <th>Hajmlar & Narxlar (10, 20, 30, 50 ml)</th>
                 <th>Tan Narxi</th>
-                <th>Sotish Narxi</th>
                 <th>Ombor Qoldig'i</th>
                 <th>Shtrix-kod</th>
                 <th style={{ textAlign: 'right' }}>Amallar</th>
@@ -241,14 +240,33 @@ export default function WarehouseView({
                       <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{product.category}</div>
                     </td>
                     <td>
-                      <div>{product.volume}</div>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)' }}>{product.concentration}</div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: '170px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                          <span style={{ color: 'var(--text-sub)' }}>10 ml:</span>
+                          <strong style={{ color: '#fff' }}>{formatMoney(product.prices?.['10 ml'] || product.price)}</strong>
+                        </div>
+                        {product.prices?.['20 ml'] && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                            <span style={{ color: 'var(--text-sub)' }}>20 ml:</span>
+                            <span style={{ color: 'var(--text-muted)' }}>{formatMoney(product.prices['20 ml'])}</span>
+                          </div>
+                        )}
+                        {product.prices?.['30 ml'] && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                            <span style={{ color: 'var(--text-sub)' }}>30 ml:</span>
+                            <span style={{ color: 'var(--text-muted)' }}>{formatMoney(product.prices['30 ml'])}</span>
+                          </div>
+                        )}
+                        {product.prices?.['50 ml'] && (
+                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
+                            <span style={{ color: 'var(--text-sub)' }}>50 ml:</span>
+                            <span style={{ color: 'var(--gold)' }}>{formatMoney(product.prices['50 ml'])}</span>
+                          </div>
+                        )}
+                      </div>
                     </td>
-                    <td style={{ color: 'var(--text-muted)' }}>
+                    <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
                       {formatMoney(product.costPrice)}
-                    </td>
-                    <td style={{ fontWeight: 700, color: '#fff' }}>
-                      {formatMoney(product.price)}
                     </td>
                     <td>
                       <span className={`badge ${isLow ? 'badge-danger' : 'badge-cash'}`}>

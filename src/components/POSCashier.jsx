@@ -31,6 +31,9 @@ export default function POSCashier({
   const [splitBank, setSplitBank] = useState('');
   const [splitDebt, setSplitDebt] = useState('');
 
+  // Selected volume per product: { [productId]: '10 ml' | '20 ml' | '30 ml' | '50 ml' }
+  const [selectedVolumes, setSelectedVolumes] = useState({});
+
   const categories = ['Hammasi', 'Erkaklar', 'Ayollar', 'Unisex'];
 
   // Filter products
@@ -42,31 +45,44 @@ export default function POSCashier({
     return matchesCat && matchesSearch;
   });
 
-  // Cart operations
-  const addToCart = (product) => {
+  // Cart operations with Volume selection (10ml, 20ml, 30ml, 50ml)
+  const addToCart = (product, customVol = null) => {
     if (product.stock <= 0) {
       alert("Kechirasiz, ushbu atir skladida qolmagan!");
       return;
     }
+    const chosenVol = customVol || selectedVolumes[product.id] || '10 ml';
+    const chosenPrice = (product.prices && product.prices[chosenVol]) || product.price;
+    const cartKey = `${product.id}-${chosenVol}`;
+
     setCart(prev => {
-      const existing = prev.find(item => item.id === product.id);
+      const existing = prev.find(item => item.cartKey === cartKey);
       if (existing) {
         if (existing.quantity >= product.stock) {
           alert(`Omborda faqat ${product.stock} dona mavjud!`);
           return prev;
         }
-        return prev.map(item => item.id === product.id ? { ...item, quantity: item.quantity + 1 } : item);
+        return prev.map(item => item.cartKey === cartKey ? { ...item, quantity: item.quantity + 1 } : item);
       }
-      return [...prev, { ...product, quantity: 1 }];
+      return [...prev, { 
+        ...product, 
+        cartKey,
+        name: `${product.name} (${chosenVol})`,
+        baseName: product.name,
+        volume: chosenVol,
+        price: chosenPrice,
+        costPrice: Math.round(chosenPrice * 0.72),
+        quantity: 1 
+      }];
     });
   };
 
-  const updateQuantity = (id, delta) => {
+  const updateQuantity = (cartKey, delta) => {
     setCart(prev => prev.map(item => {
-      if (item.id === id) {
-        const product = products.find(p => p.id === id);
+      if (item.cartKey === cartKey) {
+        const product = products.find(p => p.id === item.id);
         const newQty = item.quantity + delta;
-        if (newQty > product.stock) {
+        if (product && newQty > product.stock) {
           alert(`Omborda faqat ${product.stock} dona bor!`);
           return item;
         }
@@ -76,8 +92,8 @@ export default function POSCashier({
     }).filter(Boolean));
   };
 
-  const removeFromCart = (id) => {
-    setCart(prev => prev.filter(item => item.id !== id));
+  const removeFromCart = (cartKey) => {
+    setCart(prev => prev.filter(item => item.cartKey !== cartKey));
   };
 
   const clearCart = () => setCart([]);
@@ -181,25 +197,29 @@ export default function POSCashier({
         <div className="products-catalog-grid">
           {filteredProducts.map(product => {
             const inCartItem = cart.find(i => i.id === product.id);
-            const isLowStock = product.stock <= (product.minStock || 3);
+            const currentVol = selectedVolumes[product.id] || '10 ml';
+            const currentPrice = (product.prices && product.prices[currentVol]) || product.price;
+            const inCartItems = cart.filter(i => i.id === product.id);
+            const totalInCart = inCartItems.reduce((acc, i) => acc + i.quantity, 0);
+
             return (
               <div 
                 key={product.id}
                 className="perfume-card"
-                onClick={() => addToCart(product)}
+                onClick={() => addToCart(product, currentVol)}
               >
                 <div className="perfume-img-wrap">
                   <img src={product.image} alt={product.name} className="perfume-img" />
                   <span className={`stock-tag ${isLowStock ? 'low' : ''}`}>
                     {product.stock > 0 ? `${product.stock} dona` : 'Tugagan'}
                   </span>
-                  {inCartItem && (
+                  {totalInCart > 0 && (
                     <div style={{
                       position: 'absolute', bottom: '8px', right: '8px',
                       background: 'var(--primary)', color: '#fff',
                       borderRadius: '999px', padding: '2px 8px', fontSize: '0.75rem', fontWeight: 800
                     }}>
-                      Savatda: {inCartItem.quantity}
+                      Savatda: {totalInCart}
                     </div>
                   )}
                 </div>
@@ -207,13 +227,49 @@ export default function POSCashier({
                 <div className="perfume-brand">{product.brand}</div>
                 <div className="perfume-name">{product.name}</div>
                 <div className="perfume-meta">
-                  <span>{product.volume}</span>
-                  <span>•</span>
-                  <span>{product.concentration}</span>
-                  <span>•</span>
                   <span style={{ color: 'var(--gold)' }}>{product.category}</span>
+                  <span>•</span>
+                  <span>{product.concentration || 'Parfum'}</span>
                 </div>
-                <div className="perfume-price">{formatMoney(product.price)}</div>
+
+                {/* 10ml, 20ml, 30ml, 50ml hajmlar tanlash tugmalari */}
+                <div 
+                  style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '4px', margin: '6px 0 8px' }} 
+                  onClick={(e) => e.stopPropagation()}
+                >
+                  {['10 ml', '20 ml', '30 ml', '50 ml'].map(vol => {
+                    const isVolActive = currentVol === vol;
+                    return (
+                      <button
+                        key={vol}
+                        type="button"
+                        style={{
+                          padding: '4px 2px',
+                          borderRadius: '6px',
+                          fontSize: '0.68rem',
+                          fontWeight: 800,
+                          textAlign: 'center',
+                          border: isVolActive ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.1)',
+                          background: isVolActive ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
+                          color: isVolActive ? '#fff' : 'var(--text-muted)',
+                          cursor: 'pointer',
+                          transition: 'all 0.15s ease'
+                        }}
+                        onClick={() => setSelectedVolumes(prev => ({ ...prev, [product.id]: vol }))}
+                        title={`${vol} narxi: ${formatMoney(product.prices?.[vol] || product.price)}`}
+                      >
+                        {vol}
+                      </button>
+                    );
+                  })}
+                </div>
+
+                <div className="perfume-price">
+                  {formatMoney(currentPrice)}
+                  <span style={{ fontSize: '0.72rem', color: 'var(--text-sub)', fontWeight: 500, marginLeft: '4px' }}>
+                    ({currentVol})
+                  </span>
+                </div>
               </div>
             );
           })}
@@ -243,30 +299,32 @@ export default function POSCashier({
             <div style={{ textAlign: 'center', padding: '60px 20px', color: 'var(--text-sub)' }}>
               <ShoppingCart size={44} style={{ margin: '0 auto 12px', opacity: 0.3 }} />
               <p style={{ fontWeight: 600 }}>Savatcha bo'sh</p>
-              <p style={{ fontSize: '0.8rem', marginTop: '4px' }}>Mahsulot ustiga bosib savatga qo'shing</p>
+              <p style={{ fontSize: '0.8rem', marginTop: '4px' }}>Hajmni tanlab mahsulot ustiga bosing</p>
             </div>
           ) : (
             cart.map(item => (
-              <div key={item.id} className="cart-item">
+              <div key={item.cartKey} className="cart-item">
                 <div className="cart-item-info">
                   <div className="cart-item-name">{item.name}</div>
-                  <div className="cart-item-price">{item.volume} • {formatMoney(item.price)}</div>
+                  <div className="cart-item-price">
+                    <span style={{ color: 'var(--primary)', fontWeight: 700 }}>{item.volume}</span> • {formatMoney(item.price)}
+                  </div>
                 </div>
 
                 <div className="cart-qty-ctrl">
-                  <button className="cart-qty-btn" onClick={() => updateQuantity(item.id, -1)}>
+                  <button className="cart-qty-btn" onClick={() => updateQuantity(item.cartKey, -1)}>
                     <Minus size={12} />
                   </button>
                   <span style={{ fontWeight: 700, minWidth: '20px', textAlign: 'center', fontSize: '0.9rem' }}>
                     {item.quantity}
                   </span>
-                  <button className="cart-qty-btn" onClick={() => updateQuantity(item.id, 1)}>
+                  <button className="cart-qty-btn" onClick={() => updateQuantity(item.cartKey, 1)}>
                     <Plus size={12} />
                   </button>
                 </div>
 
                 <button 
-                  onClick={() => removeFromCart(item.id)}
+                  onClick={() => removeFromCart(item.cartKey)}
                   style={{ background: 'none', border: 'none', color: 'var(--text-sub)', cursor: 'pointer', padding: '4px' }}
                 >
                   <Trash2 size={16} />

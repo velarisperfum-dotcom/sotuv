@@ -59,6 +59,20 @@ app.post('/api/products', async (req, res) => {
   }
 });
 
+app.put('/api/products-bulk', async (req, res) => {
+  try {
+    const products = req.body;
+    if (Array.isArray(products)) {
+      await setStoreData('products', products);
+      res.json({ success: true, count: products.length });
+    } else {
+      res.status(400).json({ success: false, error: 'Array kutilmoqda' });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 app.put('/api/products/:id', async (req, res) => {
   try {
     const { id } = req.params;
