@@ -16,8 +16,19 @@ import {
   INITIAL_BALANCES 
 } from './data/initialData';
 
+import { 
+  fetchAllServerData, 
+  postSaleToServer, 
+  postProductToServer, 
+  updateProductOnServer, 
+  deleteProductOnServer, 
+  updateDebtOnServer, 
+  postExpenseToServer, 
+  updateBalancesOnServer 
+} from './services/api';
+
 export default function App() {
-  // Persistence with LocalStorage
+  // Persistence with LocalStorage + Server sync
   const [products, setProducts] = useState(() => {
     const saved = localStorage.getItem('blizz_products');
     return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
@@ -48,10 +59,27 @@ export default function App() {
     return saved ? JSON.parse(saved) : INITIAL_EXPENSES;
   });
 
+  const [isServerConnected, setIsServerConnected] = useState(false);
+
   // UI Navigation & Roles
   const [currentRole, setCurrentRole] = useState('director'); // director, accountant, warehouse, cashier
   const [currentView, setCurrentView] = useState('director'); // pos, director, warehouse, accounting
   const [activeReceiptSale, setActiveReceiptSale] = useState(null);
+
+  // Initial fetch from Railway PostgreSQL backend
+  useEffect(() => {
+    fetchAllServerData().then(serverData => {
+      if (serverData) {
+        setIsServerConnected(true);
+        if (serverData.products && serverData.products.length > 0) setProducts(serverData.products);
+        if (serverData.sales && serverData.sales.length > 0) setSales(serverData.sales);
+        if (serverData.balances) setBalances(serverData.balances);
+        if (serverData.debts) setDebts(serverData.debts);
+        if (serverData.staff) setStaff(serverData.staff);
+        if (serverData.expenses) setExpenses(serverData.expenses);
+      }
+    });
+  }, []);
 
   // Sync to localStorage
   useEffect(() => {
@@ -129,32 +157,43 @@ export default function App() {
     // 4. Prepend to sales
     setSales(prev => [newSale, ...prev]);
 
+    // Asynchronously sync with Railway backend
+    postSaleToServer(newSale);
+
     // 5. Open receipt modal
     setActiveReceiptSale(newSale);
   };
 
   // Pay Debt handler
   const handlePayDebt = (debtId, amount, payMethod) => {
+    let updatedDebtObj = null;
     setDebts(prev => prev.map(d => {
       if (d.id === debtId) {
         const updatedPaid = d.paidAmount + amount;
         const updatedRemaining = Math.max(0, d.totalAmount - updatedPaid);
-        return {
+        updatedDebtObj = {
           ...d,
           paidAmount: updatedPaid,
           remainingAmount: updatedRemaining,
           status: updatedRemaining === 0 ? 'To\'langan' : d.status
         };
+        return updatedDebtObj;
       }
       return d;
     }));
 
+    if (updatedDebtObj) {
+      updateDebtOnServer(updatedDebtObj);
+    }
+
     // Update balances
     setBalances(prev => {
-      if (payMethod === 'Naqd') return { ...prev, cash: prev.cash + amount };
-      if (payMethod === 'Karta') return { ...prev, card: prev.card + amount };
-      if (payMethod === 'Bank perech') return { ...prev, bank: prev.bank + amount };
-      return prev;
+      const nextBalances = { ...prev };
+      if (payMethod === 'Naqd') nextBalances.cash += amount;
+      if (payMethod === 'Karta') nextBalances.card += amount;
+      if (payMethod === 'Bank perech') nextBalances.bank += amount;
+      updateBalancesOnServer(nextBalances);
+      return nextBalances;
     });
   };
 
@@ -175,35 +214,48 @@ export default function App() {
 
     // Deduct from balance
     setBalances(prev => {
+      const next = { ...prev };
       if (source === 'Naqd') {
-        return { ...prev, cash: Math.max(0, prev.cash - amount) };
+        next.cash = Math.max(0, next.cash - amount);
+      } else {
+        next.bank = Math.max(0, next.bank - amount);
       }
-      return { ...prev, bank: Math.max(0, prev.bank - amount) };
+      updateBalancesOnServer(next);
+      return next;
     });
   };
 
   // Add Expense handler
   const handleAddExpense = (expense) => {
     setExpenses(prev => [expense, ...prev]);
+    postExpenseToServer(expense);
+
     setBalances(prev => {
+      const next = { ...prev };
       if (expense.source === 'Naqd') {
-        return { ...prev, cash: Math.max(0, prev.cash - expense.amount) };
+        next.cash = Math.max(0, next.cash - expense.amount);
+      } else {
+        next.bank = Math.max(0, next.bank - expense.amount);
       }
-      return { ...prev, bank: Math.max(0, prev.bank - expense.amount) };
+      updateBalancesOnServer(next);
+      return next;
     });
   };
 
   // Warehouse product actions
   const handleAddProduct = (newProd) => {
     setProducts(prev => [newProd, ...prev]);
+    postProductToServer(newProd);
   };
 
   const handleUpdateProduct = (updatedProd) => {
     setProducts(prev => prev.map(p => p.id === updatedProd.id ? updatedProd : p));
+    updateProductOnServer(updatedProd);
   };
 
   const handleDeleteProduct = (prodId) => {
     setProducts(prev => prev.filter(p => p.id !== prodId));
+    deleteProductOnServer(prodId);
   };
 
   const lowStockCount = products.filter(p => p.stock <= (p.minStock || 3)).length;
@@ -231,6 +283,7 @@ export default function App() {
           balances={balances}
           lowStockCount={lowStockCount}
           pendingDebtsCount={pendingDebtsCount}
+          isServerConnected={isServerConnected}
         />
 
         <main style={{ flex: 1, minHeight: 'calc(100vh - 70px)' }}>

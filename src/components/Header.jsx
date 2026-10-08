@@ -11,7 +11,8 @@ export default function Header({
   onChangeView, 
   balances,
   lowStockCount,
-  pendingDebtsCount 
+  pendingDebtsCount,
+  isServerConnected 
 }) {
   const roleNames = {
     director: { label: 'Direktor', color: 'var(--gold)', icon: Crown },
@@ -51,6 +52,28 @@ export default function Header({
             <ShoppingCart size={15} /> Kassa ochish (POS)
           </button>
         )}
+
+        {/* Server / DB Status */}
+        <div 
+          className="header-badge" 
+          style={{
+            background: isServerConnected ? 'rgba(16, 185, 129, 0.12)' : 'rgba(245, 158, 11, 0.12)',
+            borderColor: isServerConnected ? 'rgba(16, 185, 129, 0.3)' : 'rgba(245, 158, 11, 0.3)',
+            color: isServerConnected ? 'var(--success)' : 'var(--gold)'
+          }}
+          title={isServerConnected ? 'Railway PostgreSQL bazasiga muvaffaqiyatli ulangan' : 'Mahalliy xotira rejimida (Offline)'}
+        >
+          <div 
+            className="pulse-dot" 
+            style={{ 
+              background: isServerConnected ? 'var(--success)' : 'var(--gold)',
+              boxShadow: isServerConnected ? '0 0 8px var(--success)' : '0 0 8px var(--gold)'
+            }} 
+          />
+          <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>
+            {isServerConnected ? 'PostgreSQL Ulangan' : 'Lokal Rejim'}
+          </span>
+        </div>
 
         {/* Low Stock Alert */}
         {lowStockCount > 0 && (
