@@ -1,14 +1,12 @@
 import React from 'react';
 import { 
-  Bell, ShoppingCart, Users, Crown, Calculator, 
-  Package, Store, DollarSign, CreditCard
+  Bell, ShoppingCart, Crown, Calculator, 
+  Package, Store
 } from 'lucide-react';
 
 export default function Header({ 
   currentRole, 
   currentUser, 
-  currentView, 
-  onChangeView, 
   balances,
   lowStockCount,
   pendingDebtsCount,
@@ -32,68 +30,18 @@ export default function Header({
       <div className="header-brand-wrap">
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
           <Store size={20} color="var(--primary)" />
-          <span style={{ fontWeight: 800, fontSize: '0.98rem', color: '#fff', letterSpacing: '-0.3px' }}>
+          <span style={{ fontWeight: 800, fontSize: '1rem', color: '#fff', letterSpacing: '-0.3px' }}>
             BLIZZ PARFUM
           </span>
         </div>
         <span style={{ color: 'var(--border-light)' }}>|</span>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-          <span>Kassa:</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+          <span>Kassa Naqd:</span>
           <strong style={{ color: 'var(--success)' }}>{formatMoney(balances.cash)}</strong>
         </div>
       </div>
 
-      {/* Main Navigation Tabs - Visible Everywhere */}
-      <nav className="header-nav-tabs">
-        <button 
-          className={`header-tab-btn ${currentView === 'pos' ? 'active' : ''}`}
-          onClick={() => onChangeView('pos')}
-          title="Atirlar sotish va kassa (POS)"
-        >
-          <ShoppingCart size={15} />
-          <span>Sotuvchi (POS Kassa)</span>
-        </button>
-
-        <button 
-          className={`header-tab-btn ${currentView === 'sellers' ? 'active' : ''}`}
-          onClick={() => onChangeView('sellers')}
-          title="Sotuvchilar ro'yxati va KPI ko'rsatkichlari"
-        >
-          <Users size={15} />
-          <span>Sotuvchilar (KPI)</span>
-        </button>
-
-        <button 
-          className={`header-tab-btn ${currentView === 'director' ? 'active' : ''}`}
-          onClick={() => onChangeView('director')}
-          title="Direktor boshqaruv paneli"
-        >
-          <Crown size={15} />
-          <span>Direktor</span>
-        </button>
-
-        <button 
-          className={`header-tab-btn ${currentView === 'warehouse' ? 'active' : ''}`}
-          onClick={() => onChangeView('warehouse')}
-          title="Sklad va qoldiq tovarlar"
-        >
-          <Package size={15} />
-          <span>Sklad</span>
-          {lowStockCount > 0 && <span className="tab-pill-badge">{lowStockCount}</span>}
-        </button>
-
-        <button 
-          className={`header-tab-btn ${currentView === 'accounting' ? 'active' : ''}`}
-          onClick={() => onChangeView('accounting')}
-          title="Buxgalteriya va qarzlar daftari"
-        >
-          <Calculator size={15} />
-          <span>Moliya</span>
-          {pendingDebtsCount > 0 && <span className="tab-pill-badge warning">{pendingDebtsCount}</span>}
-        </button>
-      </nav>
-
-      {/* Right actions & Role Badge */}
+      {/* Right actions: DB Status & Active User Role */}
       <div className="header-actions">
         {/* Server / DB Status */}
         <div 
@@ -113,7 +61,7 @@ export default function Header({
             }} 
           />
           <span style={{ fontSize: '0.74rem', fontWeight: 700 }}>
-            {isServerConnected ? 'PostgreSQL' : 'Lokal'}
+            {isServerConnected ? 'PostgreSQL Ulangan' : 'Lokal Rejim'}
           </span>
         </div>
 

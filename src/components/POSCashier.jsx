@@ -207,7 +207,7 @@ export default function POSCashier({
   };
 
   return (
-    <div className="pos-container">
+    <div className="pos-page-wrapper">
       {/* Mobile-only view toggle tab */}
       <div className="mobile-only-tab-row">
         <button 
@@ -226,38 +226,20 @@ export default function POSCashier({
         </button>
       </div>
 
-      {/* Left: Products & Filter */}
-      <div className={`pos-products ${mobilePosTab === 'cart' ? 'pos-mobile-hidden' : ''}`}>
-        {/* Sotuvchi Bo'limi Title & Cashier Info */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ 
-              width: '38px', height: '38px', borderRadius: '10px', 
-              background: 'linear-gradient(135deg, var(--primary), #8b5cf6)', 
-              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem'
-            }}>
-              🛍️
-            </div>
+      <div className="pos-container">
+        {/* Left (1fr): Products & Filter */}
+        <div className={`pos-products ${mobilePosTab === 'cart' ? 'pos-mobile-hidden' : ''}`}>
+          {/* Header Title & Info */}
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
             <div>
-              <h2 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#fff' }}>
-                Sotuvchi Bo'limi (Kassa POS)
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#fff', letterSpacing: '-0.3px' }}>
+                💎 Kassa & Atirlar Savdosi
               </h2>
-              <div style={{ fontSize: '0.76rem', color: 'var(--text-sub)' }}>
-                Kassir: <strong style={{ color: 'var(--success)' }}>{currentUser?.name || 'Sotuvchi'}</strong> • Smena Ochiq
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-sub)', marginTop: '2px' }}>
+                Jami <strong style={{ color: 'var(--primary)' }}>{filteredProducts.length} ta</strong> atir • Kassir: <strong style={{ color: 'var(--success)' }}>{currentUser?.name || 'Sotuvchi'}</strong>
               </div>
             </div>
           </div>
-
-          {onOpenSellers && (
-            <button 
-              className="btn btn-sm btn-secondary"
-              onClick={onOpenSellers}
-              style={{ fontSize: '0.8rem', padding: '6px 12px' }}
-            >
-              👥 Sotuvchilar Jamoasi & KPI
-            </button>
-          )}
-        </div>
 
         {/* Search & Barcode Scan */}
         <div style={{ display: 'flex', gap: '12px' }}>
@@ -465,6 +447,7 @@ export default function POSCashier({
             </button>
           </div>
         )}
+      </div>
       </div>
 
       {/* Floating mobile checkout bar */}
