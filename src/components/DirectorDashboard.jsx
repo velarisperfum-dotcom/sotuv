@@ -12,7 +12,8 @@ export default function DirectorDashboard({
   balances, 
   debts, 
   expenses,
-  onViewReceipt 
+  onViewReceipt,
+  onChangeView
 }) {
   const [filterPeriod, setFilterPeriod] = useState('all'); // 'today', 'week', 'all'
 
@@ -96,7 +97,25 @@ export default function DirectorDashboard({
           <p>Barcha savdo statistikasi, sof foyda va bo'limlararo umumiy hisob-kitoblar</p>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
+          {onChangeView && (
+            <>
+              <button 
+                className="btn btn-primary"
+                onClick={() => onChangeView('pos')}
+                style={{ padding: '8px 14px', fontSize: '0.84rem' }}
+              >
+                <ShoppingBag size={15} /> 🛍️ Sotuvchi Kassa (POS)
+              </button>
+              <button 
+                className="btn btn-secondary"
+                onClick={() => onChangeView('sellers')}
+                style={{ padding: '8px 14px', fontSize: '0.84rem' }}
+              >
+                👥 Sotuvchilar Jamoasi
+              </button>
+            </>
+          )}
           <button 
             className={`pos-filter-btn ${filterPeriod === 'all' ? 'active' : ''}`}
             onClick={() => setFilterPeriod('all')}

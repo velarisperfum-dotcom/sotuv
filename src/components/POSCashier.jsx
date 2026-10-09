@@ -46,7 +46,8 @@ function playSuccessChime() {
 export default function POSCashier({ 
   products, 
   onCompleteSale, 
-  currentUser 
+  currentUser,
+  onOpenSellers 
 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Hammasi');
@@ -208,17 +209,17 @@ export default function POSCashier({
   return (
     <div className="pos-container">
       {/* Mobile-only view toggle tab */}
-      <div style={{ display: 'none', gap: '8px', marginBottom: '8px' }} className="mobile-only-tab-row">
+      <div className="mobile-only-tab-row">
         <button 
           className={`pos-filter-btn ${mobilePosTab === 'catalog' ? 'active' : ''}`}
-          style={{ flex: 1, padding: '10px', textAlign: 'center' }}
+          style={{ flex: 1, padding: '10px', textAlign: 'center', fontWeight: 700 }}
           onClick={() => setMobilePosTab('catalog')}
         >
-          🛍 Atirlar Katalogi ({filteredProducts.length})
+          🛍 Atirlar ({filteredProducts.length})
         </button>
         <button 
           className={`pos-filter-btn ${mobilePosTab === 'cart' ? 'active' : ''}`}
-          style={{ flex: 1, padding: '10px', textAlign: 'center' }}
+          style={{ flex: 1, padding: '10px', textAlign: 'center', fontWeight: 700 }}
           onClick={() => setMobilePosTab('cart')}
         >
           🛒 Savatcha ({cart.length})
@@ -226,7 +227,38 @@ export default function POSCashier({
       </div>
 
       {/* Left: Products & Filter */}
-      <div className="pos-products">
+      <div className={`pos-products ${mobilePosTab === 'cart' ? 'pos-mobile-hidden' : ''}`}>
+        {/* Sotuvchi Bo'limi Title & Cashier Info */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ 
+              width: '38px', height: '38px', borderRadius: '10px', 
+              background: 'linear-gradient(135deg, var(--primary), #8b5cf6)', 
+              display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.2rem'
+            }}>
+              🛍️
+            </div>
+            <div>
+              <h2 style={{ fontSize: '1.15rem', fontWeight: 800, margin: 0, color: '#fff' }}>
+                Sotuvchi Bo'limi (Kassa POS)
+              </h2>
+              <div style={{ fontSize: '0.76rem', color: 'var(--text-sub)' }}>
+                Kassir: <strong style={{ color: 'var(--success)' }}>{currentUser?.name || 'Sotuvchi'}</strong> • Smena Ochiq
+              </div>
+            </div>
+          </div>
+
+          {onOpenSellers && (
+            <button 
+              className="btn btn-sm btn-secondary"
+              onClick={onOpenSellers}
+              style={{ fontSize: '0.8rem', padding: '6px 12px' }}
+            >
+              👥 Sotuvchilar Jamoasi & KPI
+            </button>
+          )}
+        </div>
+
         {/* Search & Barcode Scan */}
         <div style={{ display: 'flex', gap: '12px' }}>
           <div className="header-search" style={{ width: '100%' }}>
@@ -262,6 +294,7 @@ export default function POSCashier({
             const currentPrice = (product.prices && product.prices[currentVol]) || product.price;
             const inCartItems = cart.filter(i => i.id === product.id);
             const totalInCart = inCartItems.reduce((acc, i) => acc + i.quantity, 0);
+            const isLowStock = product.stock <= (product.minStock || 3);
 
             return (
               <div 
@@ -338,7 +371,7 @@ export default function POSCashier({
       </div>
 
       {/* Right: Cart & Quick Checkout */}
-      <div className="pos-cart">
+      <div className={`pos-cart ${mobilePosTab === 'catalog' ? 'pos-mobile-hidden' : ''}`}>
         <div className="cart-header">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <ShoppingCart size={20} color="var(--primary)" />

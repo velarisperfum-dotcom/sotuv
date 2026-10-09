@@ -255,17 +255,90 @@ body {
 
 /* Top Header */
 .top-header {
-  height: 70px;
-  padding: 0 28px;
+  min-height: 64px;
+  padding: 8px 24px;
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 16px;
   border-bottom: 1px solid var(--border-light);
-  background: rgba(15, 21, 35, 0.8);
+  background: rgba(15, 21, 35, 0.85);
   backdrop-filter: blur(12px);
   position: sticky;
   top: 0;
   z-index: 30;
+}
+
+.header-brand-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-shrink: 0;
+}
+
+.header-nav-tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.28);
+  padding: 4px 6px;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-light);
+  overflow-x: auto;
+}
+
+.header-tab-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  border-radius: var(--radius-sm);
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+  font-family: inherit;
+}
+
+.header-tab-btn:hover {
+  color: #fff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.header-tab-btn.active {
+  background: linear-gradient(135deg, var(--primary), #8b5cf6);
+  color: #fff;
+  border-color: rgba(255, 255, 255, 0.25);
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.35);
+  font-weight: 700;
+}
+
+.tab-pill-badge {
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.65rem;
+  font-weight: 800;
+  padding: 1px 6px;
+  border-radius: 999px;
+}
+
+.tab-pill-badge.warning {
+  background: var(--gold);
+}
+
+.header-role-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border-light);
+  padding: 6px 12px;
+  border-radius: 999px;
+  flex-shrink: 0;
 }
 
 .header-search {
@@ -1008,8 +1081,21 @@ body {
   }
 
   .top-header {
-    padding: 0 16px;
-    height: 60px;
+    padding: 8px 14px;
+    height: auto;
+    min-height: 56px;
+  }
+
+  .header-nav-tabs {
+    display: none; /* Mobilda pastki navigatsiya paneli ishlaydi */
+  }
+
+  .mobile-only-tab-row {
+    display: flex !important;
+  }
+
+  .pos-mobile-hidden {
+    display: none !important;
   }
 
   .pos-container {

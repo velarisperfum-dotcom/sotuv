@@ -63,9 +63,9 @@ export default function App() {
 
   const [isServerConnected, setIsServerConnected] = useState(false);
 
-  // UI Navigation & Roles
-  const [currentRole, setCurrentRole] = useState('director'); // director, accountant, warehouse, cashier
-  const [currentView, setCurrentView] = useState('director'); // pos, director, warehouse, accounting
+  // UI Navigation & Roles (Boshlang'ich sahifa - Sotuvchi Kassa POS)
+  const [currentRole, setCurrentRole] = useState('cashier'); // cashier, director, accountant, warehouse
+  const [currentView, setCurrentView] = useState('pos'); // pos, sellers, director, warehouse, accounting
   const [activeReceiptSale, setActiveReceiptSale] = useState(null);
 
   // Initial fetch from Railway PostgreSQL backend
@@ -295,6 +295,7 @@ export default function App() {
                 products={products}
                 onCompleteSale={handleCompleteSale}
                 currentUser={currentUser}
+                onOpenSellers={() => setCurrentView('sellers')}
               />
             </div>
           )}
@@ -308,6 +309,7 @@ export default function App() {
               debts={debts}
               expenses={expenses}
               onViewReceipt={(sale) => setActiveReceiptSale(sale)}
+              onChangeView={(view) => setCurrentView(view)}
             />
           )}
 
