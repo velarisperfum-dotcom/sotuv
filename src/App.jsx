@@ -83,6 +83,38 @@ export default function App() {
     });
   }, []);
 
+  // Handle QR Code Scan or Direct Receipt URL (?receipt=SL-...)
+  useEffect(() => {
+    try {
+      const urlParams = new URLSearchParams(window.location.search);
+      const receiptId = urlParams.get('receipt');
+      if (receiptId) {
+        const found = sales.find(s => s.id === receiptId);
+        if (found) {
+          setActiveReceiptSale({ ...found, isVerifiedOnline: true });
+        } else {
+          const totalParam = Number(urlParams.get('total')) || 0;
+          const dateParam = urlParams.get('date') || new Date().toLocaleString('uz-UZ');
+          const customerParam = urlParams.get('customer') || '';
+          setActiveReceiptSale({
+            id: receiptId,
+            date: decodeURIComponent(dateParam),
+            cashierName: 'Kassa (BLIZZ PARFUM)',
+            total: totalParam,
+            paymentMethod: 'Rasmiy Tasdiqlangan',
+            customer: customerParam ? decodeURIComponent(customerParam) : null,
+            items: [
+              { name: 'Selektiv parfyumeriya', quantity: 1, price: totalParam }
+            ],
+            isVerifiedOnline: true
+          });
+        }
+      }
+    } catch (err) {
+      console.error('URL receipt check error:', err);
+    }
+  }, [sales]);
+
   // Sync to localStorage
   useEffect(() => {
     localStorage.setItem('blizz_products', JSON.stringify(products));

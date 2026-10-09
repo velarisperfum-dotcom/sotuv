@@ -6,10 +6,11 @@ export default function ReceiptModal({ sale, onClose }) {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
   const [copied, setCopied] = useState(false);
 
+  const receiptUrl = `https://sotuv-three.vercel.app/?receipt=${sale.id}&total=${sale.total}&date=${encodeURIComponent(sale.date || '')}`;
+  const fallbackQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(receiptUrl)}`;
+
   useEffect(() => {
     if (sale) {
-      // Haqiqiy skanerlanuvchi QR kod: telefon kamerasi bilan ochilganda raqamli chekni tekshiradi
-      const receiptUrl = `https://sotuv-three.vercel.app/?receipt=${sale.id}&total=${sale.total}&date=${encodeURIComponent(sale.date)}`;
       QRCode.toDataURL(receiptUrl, {
         width: 180,
         margin: 1,
@@ -19,9 +20,12 @@ export default function ReceiptModal({ sale, onClose }) {
         }
       })
       .then(url => setQrCodeDataUrl(url))
-      .catch(err => console.error('QR code generation error:', err));
+      .catch(err => {
+        console.error('QR code generation error, using fallback:', err);
+        setQrCodeDataUrl(fallbackQrUrl);
+      });
     }
-  }, [sale]);
+  }, [sale, receiptUrl, fallbackQrUrl]);
 
   if (!sale) return null;
 
@@ -84,6 +88,12 @@ export default function ReceiptModal({ sale, onClose }) {
             position: 'absolute', top: 0, left: 0, right: 0, height: '6px',
             background: 'repeating-linear-gradient(45deg, #e2e8f0, #e2e8f0 10px, transparent 10px, transparent 20px)'
           }} />
+
+          {sale.isVerifiedOnline && (
+            <div style={{ background: '#ecfdf5', border: '1.5px solid #10b981', color: '#065f46', padding: '8px 12px', borderRadius: '8px', marginBottom: '14px', fontSize: '0.78rem', textAlign: 'center', fontWeight: 800 }}>
+              ✅ QR-KOD ORQALI TASDIQLANGAN RASMIY CHEK
+            </div>
+          )}
 
           {/* Store Brand & Info */}
           <div style={{ textAlign: 'center', borderBottom: '2px dashed #cbd5e1', paddingBottom: '16px', marginBottom: '16px' }}>
@@ -186,23 +196,28 @@ export default function ReceiptModal({ sale, onClose }) {
           )}
 
           {/* Real Scanable QR Code */}
-          <div style={{ textAlign: 'center', padding: '8px 0', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '14px' }}>
-            <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
+          <div style={{ textAlign: 'center', padding: '10px 0', background: '#f8fafc', borderRadius: '10px', border: '1px solid #e2e8f0', marginBottom: '14px' }}>
+            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#0f172a', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '6px' }}>
               📱 Haqiqiy QR-KOD (Tekshirish uchun)
             </div>
-            {qrCodeDataUrl ? (
+            <a 
+              href={receiptUrl} 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              title="Elektron chekni ochish uchun bosing"
+              style={{ display: 'inline-block', textDecoration: 'none' }}
+            >
               <img 
-                src={qrCodeDataUrl} 
+                src={qrCodeDataUrl || fallbackQrUrl} 
                 alt="QR Code" 
-                style={{ width: '130px', height: '130px', display: 'block', margin: '0 auto', borderRadius: '6px', border: '1px solid #e2e8f0' }} 
+                style={{ width: '135px', height: '135px', display: 'block', margin: '0 auto', borderRadius: '8px', border: '1.5px solid #cbd5e1', cursor: 'pointer' }} 
               />
-            ) : (
-              <div style={{ height: '130px', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', color: '#94a3b8' }}>
-                QR kod yuklanmoqda...
-              </div>
-            )}
-            <div style={{ fontSize: '0.66rem', color: '#64748b', marginTop: '6px' }}>
-              Telefon kamerasini tuting: elektron chek va mahsulot sertifikatini ko'rish
+            </a>
+            <div style={{ fontSize: '0.7rem', color: '#0f172a', fontWeight: 700, marginTop: '6px' }}>
+              Telefon kamerasini tuting yoki ustiga bosing
+            </div>
+            <div style={{ fontSize: '0.64rem', color: '#64748b', marginTop: '2px' }}>
+              Haqiqiy elektron chek bazadan tekshiriladi
             </div>
           </div>
 

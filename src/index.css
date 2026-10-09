@@ -630,6 +630,41 @@ body {
   margin-bottom: 12px;
 }
 
+/* Filter button pills (DirectorDashboard, Mobile Tabs, etc.) */
+.pos-filter-btn {
+  padding: 8px 18px;
+  border-radius: 999px;
+  background: #17223b;
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  color: #cbd5e1;
+  font-size: 0.84rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.pos-filter-btn:hover {
+  background: #1e2c4d;
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.pos-filter-btn.active {
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  color: #ffffff;
+  border-color: #818cf8;
+  box-shadow: 0 4px 14px rgba(99, 102, 241, 0.4);
+  font-weight: 800;
+  transform: translateY(-1px);
+}
+
 .pos-container {
   display: grid;
   grid-template-columns: 1fr 390px;

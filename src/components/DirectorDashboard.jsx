@@ -15,15 +15,25 @@ export default function DirectorDashboard({
   onViewReceipt,
   onChangeView
 }) {
-  const [filterPeriod, setFilterPeriod] = useState('all'); // 'today', 'week', 'all'
+  const [filterPeriod, setFilterPeriod] = useState('all'); // 'all', 'month'
 
   const formatMoney = (val) => Number(val || 0).toLocaleString('uz-UZ') + " so'm";
 
-  // Calculations
-  const totalRevenue = sales.reduce((acc, s) => acc + (s.total || 0), 0);
+  // Filter sales based on chosen period
+  const filteredSales = sales.filter(s => {
+    if (filterPeriod === 'all') return true;
+    if (filterPeriod === 'month') {
+      const currentMonth = new Date().toISOString().slice(0, 7); // "2026-10"
+      return s.date && s.date.startsWith(currentMonth);
+    }
+    return true;
+  });
+
+  // Calculations based on filtered sales
+  const totalRevenue = filteredSales.reduce((acc, s) => acc + (s.total || 0), 0);
   
   // Cost of goods sold (COGS)
-  const totalCostOfGoodsSold = sales.reduce((acc, s) => {
+  const totalCostOfGoodsSold = filteredSales.reduce((acc, s) => {
     const saleCost = s.items?.reduce((itemAcc, item) => {
       const prod = products.find(p => p.id === item.id);
       const cost = item.costPrice || (prod ? prod.costPrice : 0);
@@ -36,7 +46,7 @@ export default function DirectorDashboard({
   const totalStaffSalaries = staff.reduce((acc, s) => acc + (s.paidThisMonth || 0), 0);
   const netProfit = totalRevenue - totalCostOfGoodsSold - totalExpenses - totalStaffSalaries;
 
-  const totalSalesCount = sales.length;
+  const totalSalesCount = filteredSales.length;
   const avgCheck = totalSalesCount > 0 ? Math.round(totalRevenue / totalSalesCount) : 0;
   
   // Warehouse Capital
@@ -45,15 +55,15 @@ export default function DirectorDashboard({
 
   // Payment Breakdown
   const paymentStats = {
-    cash: sales.filter(s => s.paymentMethod === 'Naqd').reduce((a, s) => a + s.total, 0),
-    card: sales.filter(s => s.paymentMethod === 'Karta').reduce((a, s) => a + s.total, 0),
-    bank: sales.filter(s => s.paymentMethod === 'Bank perech').reduce((a, s) => a + s.total, 0),
-    debt: sales.filter(s => s.paymentMethod === 'Qarz').reduce((a, s) => a + s.total, 0)
+    cash: filteredSales.filter(s => s.paymentMethod === 'Naqd').reduce((a, s) => a + s.total, 0),
+    card: filteredSales.filter(s => s.paymentMethod === 'Karta').reduce((a, s) => a + s.total, 0),
+    bank: filteredSales.filter(s => s.paymentMethod === 'Bank perech').reduce((a, s) => a + s.total, 0),
+    debt: filteredSales.filter(s => s.paymentMethod === 'Qarz').reduce((a, s) => a + s.total, 0)
   };
 
   // Top Products
   const productSalesMap = {};
-  sales.forEach(sale => {
+  filteredSales.forEach(sale => {
     sale.items?.forEach(item => {
       if (!productSalesMap[item.name]) {
         productSalesMap[item.name] = { name: item.name, quantity: 0, revenue: 0, id: item.id };
@@ -73,7 +83,7 @@ export default function DirectorDashboard({
     staffSalesMap[st.name] = { name: st.name, count: 0, total: 0, bonus: 0 };
   });
 
-  sales.forEach(s => {
+  filteredSales.forEach(s => {
     const cashier = s.cashierName || 'Boshqa';
     if (!staffSalesMap[cashier]) {
       staffSalesMap[cashier] = { name: cashier, count: 0, total: 0, bonus: 0 };
