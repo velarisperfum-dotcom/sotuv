@@ -71,7 +71,15 @@ export default function Sidebar({
           onClick={() => onChangeView('pos')}
         >
           <ShoppingCart size={18} />
-          <span>POS Kassa (Savdo)</span>
+          <span>Sotuvchi (Kassa POS)</span>
+        </button>
+
+        <button 
+          className={`nav-item ${currentView === 'sellers' ? 'active' : ''}`}
+          onClick={() => onChangeView('sellers')}
+        >
+          <Users size={18} />
+          <span>Sotuvchilar (Jamoa & KPI)</span>
         </button>
 
         <button 

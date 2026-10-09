@@ -7,6 +7,7 @@ import AccountingView from './components/AccountingView';
 import DirectorDashboard from './components/DirectorDashboard';
 import ReceiptModal from './components/ReceiptModal';
 import MobileNav from './components/MobileNav';
+import SellersView from './components/SellersView';
 
 import { 
   INITIAL_PRODUCTS, 
@@ -307,6 +308,15 @@ export default function App() {
               debts={debts}
               expenses={expenses}
               onViewReceipt={(sale) => setActiveReceiptSale(sale)}
+            />
+          )}
+
+          {currentView === 'sellers' && (
+            <SellersView 
+              staff={staff}
+              sales={sales}
+              onAddStaff={(newS) => setStaff(prev => [...prev, newS])}
+              onOpenPOS={() => setCurrentView('pos')}
             />
           )}
 

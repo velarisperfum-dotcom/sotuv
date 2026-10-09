@@ -49,7 +49,7 @@ export default function Header({
             className="btn btn-sm btn-primary"
             onClick={() => onChangeView('pos')}
           >
-            <ShoppingCart size={15} /> Kassa ochish (POS)
+            <ShoppingCart size={15} /> 🛍️ Sotuvchi Kassa (POS)
           </button>
         )}
 

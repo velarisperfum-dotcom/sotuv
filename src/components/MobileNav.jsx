@@ -1,5 +1,5 @@
 import React from 'react';
-import { ShoppingCart, BarChart3, Package, Calculator, Crown } from 'lucide-react';
+import { ShoppingCart, Users, Package, Calculator, Crown } from 'lucide-react';
 
 export default function MobileNav({ 
   currentView, 
@@ -15,8 +15,16 @@ export default function MobileNav({
         onClick={() => onChangeView('pos')}
       >
         <ShoppingCart size={20} />
-        <span>Kassa POS</span>
+        <span>Sotuvchi</span>
         {cartCount > 0 && <span className="mobile-badge" style={{ background: 'var(--primary)' }}>{cartCount}</span>}
+      </button>
+
+      <button 
+        className={`mobile-nav-btn ${currentView === 'sellers' ? 'active' : ''}`}
+        onClick={() => onChangeView('sellers')}
+      >
+        <Users size={20} />
+        <span>Sotuvchilar</span>
       </button>
 
       <button 
