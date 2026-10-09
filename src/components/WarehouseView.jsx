@@ -113,17 +113,47 @@ export default function WarehouseView({
     setShowAddModal(false);
   };
 
+  const handleExportCSV = () => {
+    const headers = ['ID', 'Nomi', 'Brend', 'Toifa', '10 ml Narxi', '20 ml Narxi', '30 ml Narxi', '50 ml Narxi', 'Qoldiq (dona)', 'Shtrix-kod'];
+    const rows = products.map(p => [
+      p.id,
+      `"${p.name.replace(/"/g, '""')}"`,
+      `"${p.brand.replace(/"/g, '""')}"`,
+      p.category,
+      p.prices?.['10 ml'] || p.price,
+      p.prices?.['20 ml'] || '',
+      p.prices?.['30 ml'] || '',
+      p.prices?.['50 ml'] || '',
+      p.stock,
+      p.barcode || ''
+    ]);
+    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.setAttribute('href', url);
+    link.setAttribute('download', `blizz_parfum_sklad_${new Date().toISOString().split('T')[0]}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
     <div className="page-container">
       {/* Top Header */}
       <div className="page-header">
         <div className="page-title-group">
           <h2>Sklad & Ombor Boshqaruvi</h2>
-          <p>Atirlar qoldig'i, yangi partiya kirimi va zaxira monitoringi</p>
+          <p>Atirlar qoldig'i, yangi partiya kirimi va zaxira monitoringi ({products.length} ta atir)</p>
         </div>
-        <button className="btn btn-primary" onClick={handleOpenAdd}>
-          <Plus size={18} /> Yangi atir / Kirim qilish
-        </button>
+        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+          <button className="btn btn-secondary" onClick={handleExportCSV}>
+            📥 Excel / CSV yuklab olish
+          </button>
+          <button className="btn btn-primary" onClick={handleOpenAdd}>
+            <Plus size={18} /> Yangi atir / Kirim qilish
+          </button>
+        </div>
       </div>
 
       {/* Sklad Stats Grid */}

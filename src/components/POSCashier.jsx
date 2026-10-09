@@ -5,6 +5,44 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
+function playBeepSound(freq = 680) {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    gain.gain.setValueAtTime(0.04, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.08);
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.start();
+    osc.stop(ctx.currentTime + 0.08);
+  } catch {}
+}
+
+function playSuccessChime() {
+  try {
+    const AudioContext = window.AudioContext || window.webkitAudioContext;
+    if (!AudioContext) return;
+    const ctx = new AudioContext();
+    [523.25, 659.25, 783.99, 1046.5].forEach((freq, idx) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'triangle';
+      osc.frequency.value = freq;
+      gain.gain.setValueAtTime(0.06, ctx.currentTime + idx * 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + idx * 0.08 + 0.25);
+      osc.connect(gain);
+      gain.connect(ctx.destination);
+      osc.start(ctx.currentTime + idx * 0.08);
+      osc.stop(ctx.currentTime + idx * 0.08 + 0.25);
+    });
+  } catch {}
+}
+
 export default function POSCashier({ 
   products, 
   onCompleteSale, 
@@ -14,6 +52,7 @@ export default function POSCashier({
   const [selectedCategory, setSelectedCategory] = useState('Hammasi');
   const [cart, setCart] = useState([]);
   const [discountPercent, setDiscountPercent] = useState(0);
+  const [mobilePosTab, setMobilePosTab] = useState('catalog'); // 'catalog' | 'cart'
   
   // Checkout modal states
   const [showCheckout, setShowCheckout] = useState(false);
@@ -55,6 +94,8 @@ export default function POSCashier({
     const chosenPrice = (product.prices && product.prices[chosenVol]) || product.price;
     const cartKey = `${product.id}-${chosenVol}`;
 
+    playBeepSound();
+
     setCart(prev => {
       const existing = prev.find(item => item.cartKey === cartKey);
       if (existing) {
@@ -78,6 +119,7 @@ export default function POSCashier({
   };
 
   const updateQuantity = (cartKey, delta) => {
+    playBeepSound(delta > 0 ? 720 : 540);
     setCart(prev => prev.map(item => {
       if (item.cartKey === cartKey) {
         const product = products.find(p => p.id === item.id);
@@ -120,7 +162,7 @@ export default function POSCashier({
         year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' 
       }),
       cashierName: currentUser?.name || 'Sotuvchi',
-      items: cart.map(i => ({ id: i.id, name: i.name, quantity: i.quantity, price: i.price, costPrice: i.costPrice })),
+      items: cart.map(i => ({ id: i.id, name: i.name, volume: i.volume, quantity: i.quantity, price: i.price, costPrice: i.costPrice })),
       total: finalTotal,
       subtotal,
       discount: discountAmount,
@@ -146,7 +188,8 @@ export default function POSCashier({
       }
     };
 
-    // Confetti effect
+    // Confetti effect & success audio chime
+    playSuccessChime();
     confetti({
       particleCount: 120,
       spread: 70,
@@ -164,6 +207,24 @@ export default function POSCashier({
 
   return (
     <div className="pos-container">
+      {/* Mobile-only view toggle tab */}
+      <div style={{ display: 'none', gap: '8px', marginBottom: '8px' }} className="mobile-only-tab-row">
+        <button 
+          className={`pos-filter-btn ${mobilePosTab === 'catalog' ? 'active' : ''}`}
+          style={{ flex: 1, padding: '10px', textAlign: 'center' }}
+          onClick={() => setMobilePosTab('catalog')}
+        >
+          🛍 Atirlar Katalogi ({filteredProducts.length})
+        </button>
+        <button 
+          className={`pos-filter-btn ${mobilePosTab === 'cart' ? 'active' : ''}`}
+          style={{ flex: 1, padding: '10px', textAlign: 'center' }}
+          onClick={() => setMobilePosTab('cart')}
+        >
+          🛒 Savatcha ({cart.length})
+        </button>
+      </div>
+
       {/* Left: Products & Filter */}
       <div className="pos-products">
         {/* Search & Barcode Scan */}
@@ -372,6 +433,24 @@ export default function POSCashier({
           </div>
         )}
       </div>
+
+      {/* Floating mobile checkout bar */}
+      {cart.length > 0 && (
+        <div 
+          className="mobile-cart-float-bar"
+          onClick={() => setShowCheckout(true)}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <ShoppingCart size={18} />
+            <span>{cart.reduce((a, b) => a + b.quantity, 0)} dona</span>
+            <span>•</span>
+            <strong>{formatMoney(finalTotal)}</strong>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontWeight: 800 }}>
+            To'lov <ArrowRight size={16} />
+          </div>
+        </div>
+      )}
 
       {/* Checkout Modal with exact payment options from notebook */}
       {showCheckout && (

@@ -6,6 +6,7 @@ import WarehouseView from './components/WarehouseView';
 import AccountingView from './components/AccountingView';
 import DirectorDashboard from './components/DirectorDashboard';
 import ReceiptModal from './components/ReceiptModal';
+import MobileNav from './components/MobileNav';
 
 import { 
   INITIAL_PRODUCTS, 
@@ -333,6 +334,14 @@ export default function App() {
           )}
         </main>
       </div>
+
+      {/* Mobile Bottom Navigation Bar (Telefonlar uchun) */}
+      <MobileNav 
+        currentView={currentView}
+        onChangeView={(view) => setCurrentView(view)}
+        lowStockCount={lowStockCount}
+        pendingDebtsCount={pendingDebtsCount}
+      />
 
       {/* Thermal receipt modal if any sale is open */}
       {activeReceiptSale && (

@@ -912,6 +912,175 @@ body {
   box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
 }
 
+/* Mobile Bottom Navigation Bar */
+.mobile-bottom-nav {
+  display: none;
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 64px;
+  background: rgba(15, 21, 35, 0.95);
+  backdrop-filter: blur(16px);
+  border-top: 1px solid var(--border-light);
+  z-index: 50;
+  justify-content: space-around;
+  align-items: center;
+  padding: 0 4px;
+}
+
+.mobile-nav-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  background: transparent;
+  border: none;
+  color: var(--text-sub);
+  font-size: 0.68rem;
+  font-weight: 700;
+  cursor: pointer;
+  flex: 1;
+  padding: 8px 0;
+  position: relative;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+
+.mobile-nav-btn.active {
+  color: var(--primary);
+}
+
+.mobile-nav-btn.active svg {
+  color: var(--primary);
+  transform: translateY(-2px);
+}
+
+.mobile-badge {
+  position: absolute;
+  top: 4px;
+  right: 18%;
+  background: var(--danger);
+  color: #fff;
+  font-size: 0.62rem;
+  font-weight: 800;
+  border-radius: 999px;
+  padding: 1px 5px;
+}
+
+/* Floating mobile cart bar */
+.mobile-cart-float-bar {
+  display: none;
+  position: fixed;
+  bottom: 74px;
+  left: 14px;
+  right: 14px;
+  background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+  color: #fff;
+  padding: 12px 18px;
+  border-radius: 999px;
+  box-shadow: 0 10px 25px rgba(99, 102, 241, 0.5);
+  z-index: 45;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+  animation: slideUp 0.3s ease;
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+/* Responsive Breakpoints */
+@media (max-width: 960px) {
+  .sidebar {
+    display: none;
+  }
+
+  .mobile-bottom-nav {
+    display: flex;
+  }
+
+  .main-wrapper {
+    padding-bottom: 76px;
+  }
+
+  .top-header {
+    padding: 0 16px;
+    height: 60px;
+  }
+
+  .pos-container {
+    grid-template-columns: 1fr;
+    height: auto;
+    gap: 16px;
+  }
+
+  .pos-products {
+    padding-right: 0;
+  }
+
+  .products-catalog-grid {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+  }
+
+  .perfume-card {
+    padding: 10px;
+  }
+
+  .perfume-img-wrap {
+    height: 110px;
+  }
+
+  .stats-grid {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+  }
+
+  .stat-card {
+    padding: 14px;
+  }
+
+  .stat-value {
+    font-size: 1.25rem;
+  }
+
+  .page-container {
+    padding: 16px;
+  }
+
+  .header-search {
+    width: 100%;
+    max-width: none;
+  }
+
+  .mobile-cart-float-bar {
+    display: flex;
+  }
+}
+
+@media (max-width: 520px) {
+  .stats-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .products-catalog-grid {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .page-title-group h2 {
+    font-size: 1.3rem;
+  }
+
+  .data-table th, .data-table td {
+    padding: 8px 10px;
+    font-size: 0.78rem;
+  }
+}
+
 /* Receipt Print Styling */
 @media print {
   body * {
@@ -927,7 +1096,8 @@ body {
     width: 80mm;
     background: #fff;
     color: #000 !important;
-    padding: 15px;
+    padding: 10px;
     font-family: 'Courier New', monospace;
+    box-shadow: none !important;
   }
 }
