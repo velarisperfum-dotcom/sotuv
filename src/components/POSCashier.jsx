@@ -74,14 +74,28 @@ export default function POSCashier({
   // Selected volume per product: { [productId]: '10 ml' | '20 ml' | '30 ml' | '50 ml' }
   const [selectedVolumes, setSelectedVolumes] = useState({});
 
-  const categories = ['Hammasi', 'Erkaklar', 'Ayollar', 'Unisex'];
+  const categories = [
+    { id: 'Hammasi', label: 'Barcha Atirlar', icon: '✨' },
+    { id: 'Erkaklar', label: 'Erkaklar', icon: '👔' },
+    { id: 'Ayollar', label: 'Ayollar', icon: '👗' },
+    { id: 'Unisex', label: 'Unisex', icon: '💎' }
+  ];
+
+  const getCategoryCount = (catId) => {
+    if (catId === 'Hammasi') return products.length;
+    return products.filter(p => p.category === catId).length;
+  };
 
   // Filter products
   const filteredProducts = products.filter(p => {
     const matchesCat = selectedCategory === 'Hammasi' || p.category === selectedCategory;
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          p.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (p.barcode && p.barcode.includes(searchTerm));
+    const term = searchTerm.trim().toLowerCase();
+    if (!term) return matchesCat;
+    const matchesSearch = p.name.toLowerCase().includes(term) ||
+                          p.brand.toLowerCase().includes(term) ||
+                          (p.category && p.category.toLowerCase().includes(term)) ||
+                          (p.notes && p.notes.toLowerCase().includes(term)) ||
+                          (p.barcode && p.barcode.includes(term));
     return matchesCat && matchesSearch;
   });
 
@@ -229,44 +243,50 @@ export default function POSCashier({
       <div className="pos-container">
         {/* Left (1fr): Products & Filter */}
         <div className={`pos-products ${mobilePosTab === 'cart' ? 'pos-mobile-hidden' : ''}`}>
-          {/* Header Title & Info */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px', flexWrap: 'wrap', gap: '8px' }}>
-            <div>
-              <h2 style={{ fontSize: '1.25rem', fontWeight: 800, margin: 0, color: '#fff', letterSpacing: '-0.3px' }}>
-                💎 Kassa & Atirlar Savdosi
-              </h2>
-              <div style={{ fontSize: '0.78rem', color: 'var(--text-sub)', marginTop: '2px' }}>
-                Jami <strong style={{ color: 'var(--primary)' }}>{filteredProducts.length} ta</strong> atir • Kassir: <strong style={{ color: 'var(--success)' }}>{currentUser?.name || 'Sotuvchi'}</strong>
-              </div>
+          {/* Sticky Top Controls: Qidiruv inputi qotib turadi va toifalar yaqqol ko'rinadi */}
+          <div className="pos-sticky-header">
+            {/* Search Input Row with clear button */}
+            <div className="pos-search-input-wrap">
+              <Search size={19} color="var(--primary)" style={{ flexShrink: 0 }} />
+              <input 
+                type="text"
+                placeholder="Atir nomi, brend (Creed, Tom Ford, Roja, LV...) yoki shtrix-kod..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                autoFocus
+              />
+              {searchTerm && (
+                <button 
+                  type="button"
+                  className="search-clear-btn"
+                  onClick={() => setSearchTerm('')}
+                  title="Qidiruvni tozalash"
+                >
+                  ✕
+                </button>
+              )}
+            </div>
+
+            {/* High-Contrast Category Filter Pills */}
+            <div className="pos-categories-row">
+              {categories.map(cat => {
+                const count = getCategoryCount(cat.id);
+                const isActive = selectedCategory === cat.id;
+                return (
+                  <button 
+                    key={cat.id}
+                    type="button"
+                    className={`pos-category-pill ${isActive ? 'active' : ''}`}
+                    onClick={() => setSelectedCategory(cat.id)}
+                  >
+                    <span className="pill-icon">{cat.icon}</span>
+                    <span className="pill-label">{cat.label}</span>
+                    <span className="pill-count">{count}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
-
-        {/* Search & Barcode Scan */}
-        <div style={{ display: 'flex', gap: '12px' }}>
-          <div className="header-search" style={{ width: '100%' }}>
-            <Search size={18} color="#94a3b8" />
-            <input 
-              type="text"
-              placeholder="Atir nomi, brend yoki shtrix-kodni skanerlang / qidiring..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              autoFocus
-            />
-          </div>
-        </div>
-
-        {/* Categories Chips */}
-        <div className="pos-filters">
-          {categories.map(cat => (
-            <button 
-              key={cat}
-              className={`pos-filter-btn ${selectedCategory === cat ? 'active' : ''}`}
-              onClick={() => setSelectedCategory(cat)}
-            >
-              {cat}
-            </button>
-          ))}
-        </div>
 
         {/* Catalog Grid */}
         <div className="products-catalog-grid">

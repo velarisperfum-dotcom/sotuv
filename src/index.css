@@ -643,32 +643,148 @@ body {
   display: flex;
   flex-direction: column;
   gap: 16px;
+  position: relative;
 }
 
-.pos-filters {
+/* Sticky Search & Category Filters */
+.pos-sticky-header {
+  position: sticky;
+  top: 0;
+  z-index: 25;
+  background: rgba(9, 13, 22, 0.96);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  padding: 4px 0 14px 0;
+  border-bottom: 1px solid var(--border-light);
   display: flex;
-  gap: 10px;
-  overflow-x: auto;
-  padding-bottom: 6px;
+  flex-direction: column;
+  gap: 12px;
 }
 
-.pos-filter-btn {
-  padding: 8px 16px;
-  border-radius: 999px;
+.pos-search-input-wrap {
+  width: 100% !important;
   background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  color: var(--text-muted);
-  font-size: 0.82rem;
-  font-weight: 600;
-  cursor: pointer;
-  white-space: nowrap;
+  border: 1.5px solid rgba(255, 255, 255, 0.15);
+  border-radius: var(--radius-md);
+  padding: 10px 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.35);
   transition: all 0.2s;
 }
 
-.pos-filter-btn.active, .pos-filter-btn:hover {
-  background: var(--primary);
-  color: #fff;
+.pos-search-input-wrap:focus-within {
   border-color: var(--primary);
+  background: #17223b;
+  box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.25);
+}
+
+.pos-search-input-wrap input {
+  color: #ffffff;
+  font-size: 0.94rem;
+  font-weight: 500;
+  width: 100%;
+  background: transparent;
+  border: none;
+  outline: none;
+}
+
+.pos-search-input-wrap input::placeholder {
+  color: #94a3b8;
+}
+
+.search-clear-btn {
+  background: rgba(255, 255, 255, 0.12);
+  border: none;
+  color: #cbd5e1;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  font-weight: 700;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.search-clear-btn:hover {
+  background: rgba(244, 63, 94, 0.4);
+  color: #fff;
+}
+
+/* High-Contrast Category Filter Pills */
+.pos-categories-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 2px 2px 4px;
+  scrollbar-width: none;
+}
+
+.pos-categories-row::-webkit-scrollbar {
+  display: none;
+}
+
+.pos-category-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 18px;
+  border-radius: 12px;
+  background: #17223b;
+  border: 1.5px solid rgba(255, 255, 255, 0.14);
+  color: #f1f5f9;
+  font-size: 0.88rem;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  font-family: inherit;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.pos-category-pill:hover {
+  background: #1e2c4d;
+  border-color: rgba(99, 102, 241, 0.5);
+  color: #ffffff;
+  transform: translateY(-1px);
+}
+
+.pos-category-pill.active {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+  border-color: #818cf8;
+  color: #ffffff;
+  box-shadow: 0 4px 16px rgba(99, 102, 241, 0.45);
+  transform: translateY(-1px);
+}
+
+.pos-category-pill .pill-icon {
+  font-size: 1rem;
+}
+
+.pos-category-pill .pill-label {
+  letter-spacing: -0.2px;
+}
+
+.pos-category-pill .pill-count {
+  background: rgba(0, 0, 0, 0.4);
+  color: #cbd5e1;
+  font-size: 0.74rem;
+  font-weight: 800;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.pos-category-pill.active .pill-count {
+  background: rgba(255, 255, 255, 0.25);
+  color: #ffffff;
+  border-color: rgba(255, 255, 255, 0.4);
 }
 
 .products-catalog-grid {
