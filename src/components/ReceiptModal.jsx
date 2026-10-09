@@ -6,7 +6,10 @@ export default function ReceiptModal({ sale, onClose }) {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
   const [copied, setCopied] = useState(false);
 
-  const receiptUrl = `https://sotuv-three.vercel.app/?receipt=${sale.id}&total=${sale.total}&date=${encodeURIComponent(sale.date || '')}`;
+  const itemsParam = encodeURIComponent(
+    (sale?.items || []).map(i => `${i.name}|${i.volume || ''}|${i.quantity}|${i.price}`).join('~')
+  );
+  const receiptUrl = `https://sotuv-three.vercel.app/?receipt=${sale?.id}&total=${sale?.total}&date=${encodeURIComponent(sale?.date || '')}&cashier=${encodeURIComponent(sale?.cashierName || '')}&method=${encodeURIComponent(sale?.paymentMethod || '')}&items=${itemsParam}`;
   const fallbackQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(receiptUrl)}`;
 
   useEffect(() => {

@@ -8,6 +8,7 @@ import DirectorDashboard from './components/DirectorDashboard';
 import ReceiptModal from './components/ReceiptModal';
 import MobileNav from './components/MobileNav';
 import SellersView from './components/SellersView';
+import CustomerReceiptView from './components/CustomerReceiptView';
 
 import { 
   INITIAL_PRODUCTS, 
@@ -67,6 +68,7 @@ export default function App() {
   const [currentRole, setCurrentRole] = useState('cashier'); // cashier, director, accountant, warehouse
   const [currentView, setCurrentView] = useState('pos'); // pos, sellers, director, warehouse, accounting
   const [activeReceiptSale, setActiveReceiptSale] = useState(null);
+  const [customerReceiptSale, setCustomerReceiptSale] = useState(null);
 
   // Initial fetch from Railway PostgreSQL backend
   useEffect(() => {
@@ -83,32 +85,59 @@ export default function App() {
     });
   }, []);
 
-  // Handle QR Code Scan or Direct Receipt URL (?receipt=SL-...)
+  // Handle QR Code Scan: agar QR-kod skaner qilingan bo'lsa, FAQAT CHEKNING O'ZI ochiladi!
   useEffect(() => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
-      const receiptId = urlParams.get('receipt');
+      const receiptId = urlParams.get('receipt') || urlParams.get('chek');
       if (receiptId) {
         const found = sales.find(s => s.id === receiptId);
         if (found) {
-          setActiveReceiptSale({ ...found, isVerifiedOnline: true });
-        } else {
-          const totalParam = Number(urlParams.get('total')) || 0;
-          const dateParam = urlParams.get('date') || new Date().toLocaleString('uz-UZ');
-          const customerParam = urlParams.get('customer') || '';
-          setActiveReceiptSale({
-            id: receiptId,
-            date: decodeURIComponent(dateParam),
-            cashierName: 'Kassa (BLIZZ PARFUM)',
-            total: totalParam,
-            paymentMethod: 'Rasmiy Tasdiqlangan',
-            customer: customerParam ? decodeURIComponent(customerParam) : null,
-            items: [
-              { name: 'Selektiv parfyumeriya', quantity: 1, price: totalParam }
-            ],
-            isVerifiedOnline: true
-          });
+          setCustomerReceiptSale({ ...found, isVerifiedOnline: true });
+          return;
         }
+
+        const totalParam = Number(urlParams.get('total')) || 0;
+        const dateParam = urlParams.get('date') || new Date().toLocaleString('uz-UZ');
+        const cashierParam = urlParams.get('cashier') || 'Sotuvchi-kassir';
+        const methodParam = urlParams.get('method') || 'Karta';
+        const customerParam = urlParams.get('customer') || '';
+        const rawItemsParam = urlParams.get('items');
+
+        let parsedItems = [];
+        if (rawItemsParam) {
+          try {
+            const decodedStr = decodeURIComponent(rawItemsParam);
+            if (decodedStr.includes('|')) {
+              parsedItems = decodedStr.split('~').map(part => {
+                const [name, volume, quantity, price] = part.split('|');
+                return {
+                  name: name || 'Atir',
+                  volume: volume || '',
+                  quantity: Number(quantity) || 1,
+                  price: Number(price) || totalParam
+                };
+              });
+            } else {
+              parsedItems = JSON.parse(decodedStr);
+            }
+          } catch {
+            parsedItems = [{ name: 'Selektiv parfyumeriya', quantity: 1, price: totalParam }];
+          }
+        } else {
+          parsedItems = [{ name: 'Selektiv parfyumeriya', quantity: 1, price: totalParam }];
+        }
+
+        setCustomerReceiptSale({
+          id: receiptId,
+          date: decodeURIComponent(dateParam),
+          cashierName: decodeURIComponent(cashierParam),
+          total: totalParam,
+          paymentMethod: decodeURIComponent(methodParam),
+          customer: customerParam ? decodeURIComponent(customerParam) : null,
+          items: parsedItems,
+          isVerifiedOnline: true
+        });
       }
     } catch (err) {
       console.error('URL receipt check error:', err);
@@ -294,6 +323,20 @@ export default function App() {
 
   const lowStockCount = products.filter(p => p.stock <= (p.minStock || 3)).length;
   const pendingDebtsCount = debts.filter(d => d.remainingAmount > 0).length;
+
+  // AGAR QR-KOD SKANERLANGAN BO'LSA, FAQAT CHEKNING O'ZI CHIQSIN!
+  if (customerReceiptSale) {
+    return (
+      <CustomerReceiptView 
+        sale={customerReceiptSale}
+        onGoHome={() => {
+          const newUrl = window.location.pathname;
+          window.history.pushState({}, '', newUrl);
+          setCustomerReceiptSale(null);
+        }}
+      />
+    );
+  }
 
   return (
     <div className="app-container">
