@@ -247,12 +247,13 @@ export default function App() {
   }, [expenses]);
 
   // Current active staff object
-  const currentUser = staff.find(s => {
+  const currentUser = (staff || []).find(s => {
+    if (!s) return false;
     if (currentRole === 'director') return s.role === 'Direktor';
     if (currentRole === 'accountant') return s.role === 'Bosh Buxgalter';
     if (currentRole === 'warehouse') return s.role === 'Sklad Mudiri';
-    return s.role.includes('Sotuvchi');
-  }) || staff[0];
+    return s?.role && typeof s.role === 'string' && s.role.includes('Sotuvchi');
+  }) || (staff && staff[0]) || { name: 'Admin', role: 'Direktor' };
 
   // Sale completion handler
   const handleCompleteSale = (newSale) => {

@@ -8,13 +8,15 @@ import {
 import { STORE_MODES, PRODUCT_TYPES, MEASURE_UNITS } from '../data/initialData';
 
 export default function WarehouseView({ 
-  products, 
+  products = [], 
   onAddProduct, 
   onUpdateProduct, 
   onDeleteProduct,
   storeMode = 'universal',
   onSelectStoreMode
 }) {
+  const safeProducts = Array.isArray(products) ? products : [];
+
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedType, setSelectedType] = useState(storeMode === 'universal' ? 'all' : storeMode); // all, clothing, perfume, electronics, grocery, general
   const [filterBrand, setFilterBrand] = useState('Hammasi');
@@ -76,6 +78,7 @@ export default function WarehouseView({
 
   // Helper: Tovar turini aniqlash
   const getProductType = (p) => {
+    if (!p) return 'general';
     if (p.productType) return p.productType;
     if (p.prices && (p.prices['10 ml'] || p.volume)) return 'perfume';
     return 'general';
@@ -91,31 +94,35 @@ export default function WarehouseView({
     }
   };
 
-  const brands = ['Hammasi', ...Array.from(new Set(products.map(p => p.brand).filter(Boolean)))];
+  const brands = ['Hammasi', ...Array.from(new Set(safeProducts.map(p => p?.brand).filter(Boolean)))];
 
   // Filtrlangan tovarlar ro'yxati
-  const filteredProducts = products.filter(p => {
+  const filteredProducts = safeProducts.filter(p => {
+    if (!p) return false;
     const pType = getProductType(p);
     const matchesType = selectedType === 'all' || pType === selectedType;
     const matchesBrand = filterBrand === 'Hammasi' || p.brand === filterBrand;
-    const matchesLowStock = !onlyLowStock || p.stock <= (p.minStock || 3);
+    const matchesLowStock = !onlyLowStock || Number(p.stock || 0) <= Number(p.minStock || 3);
 
     const term = searchTerm.toLowerCase();
     const matchesSearch = 
       !term ||
-      (p.name && p.name.toLowerCase().includes(term)) ||
-      (p.brand && p.brand.toLowerCase().includes(term)) ||
-      (p.category && p.category.toLowerCase().includes(term)) ||
-      (p.barcode && p.barcode.includes(term));
+      (p.name && String(p.name).toLowerCase().includes(term)) ||
+      (p.brand && String(p.brand).toLowerCase().includes(term)) ||
+      (p.category && String(p.category).toLowerCase().includes(term)) ||
+      (p.barcode && String(p.barcode).toLowerCase().includes(term));
 
     return matchesType && matchesBrand && matchesLowStock && matchesSearch;
   });
 
   // Ombordagi hisob-kitoblar
-  const lowStockCount = products.filter(p => p.stock <= (p.minStock || 3)).length;
-  const totalStockCount = products.reduce((acc, p) => acc + Number(p.stock || 0), 0);
-  const totalCostValue = products.reduce((acc, p) => acc + (Number(p.costPrice || 0) * Number(p.stock || 0)), 0);
-  const totalRetailValue = products.reduce((acc, p) => acc + (Number(p.price || 0) * Number(p.stock || 0)), 0);
+  const lowStockCount = safeProducts.filter(p => Number(p?.stock || 0) <= Number(p?.minStock || 3)).length;
+  const totalStockCount = safeProducts.reduce((acc, p) => acc + Number(p?.stock || 0), 0);
+  const totalCostValue = safeProducts.reduce((acc, p) => acc + (Number(p?.costPrice || 0) * Number(p?.stock || 0)), 0);
+  const totalRetailValue = safeProducts.reduce((acc, p) => {
+    const unitPrice = p?.price || (p?.prices ? Math.min(...Object.values(p.prices).filter(Boolean)) : 0) || 0;
+    return acc + (Number(unitPrice) * Number(p?.stock || 0));
+  }, 0);
   const potentialProfit = totalRetailValue - totalCostValue;
 
   const formatMoney = (val) => Number(val || 0).toLocaleString('uz-UZ') + " so'm";

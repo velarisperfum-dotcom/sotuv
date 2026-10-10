@@ -2,74 +2,84 @@ import React, { useState } from 'react';
 import { 
   TrendingUp, DollarSign, ShoppingBag, Box, Award, 
   ArrowUpRight, ArrowDownRight, CreditCard, Banknote, Building2, 
-  Clock, Eye, Sparkles, UserCheck, BarChart3
+  Clock, Eye, Sparkles, UserCheck, BarChart3, Layers
 } from 'lucide-react';
 
 export default function DirectorDashboard({ 
-  sales, 
-  products, 
-  staff, 
-  balances, 
-  debts, 
-  expenses,
+  sales = [], 
+  products = [], 
+  staff = [], 
+  balances = {}, 
+  debts = [], 
+  expenses = [],
   onViewReceipt,
   onChangeView
 }) {
   const [filterPeriod, setFilterPeriod] = useState('all'); // 'all', 'month'
 
+  const safeSales = Array.isArray(sales) ? sales : [];
+  const safeProducts = Array.isArray(products) ? products : [];
+  const safeStaff = Array.isArray(staff) ? staff : [];
+  const safeExpenses = Array.isArray(expenses) ? expenses : [];
+
   const formatMoney = (val) => Number(val || 0).toLocaleString('uz-UZ') + " so'm";
 
   // Filter sales based on chosen period
-  const filteredSales = sales.filter(s => {
+  const filteredSales = safeSales.filter(s => {
+    if (!s) return false;
     if (filterPeriod === 'all') return true;
     if (filterPeriod === 'month') {
       const currentMonth = new Date().toISOString().slice(0, 7); // "2026-10"
-      return s.date && s.date.startsWith(currentMonth);
+      return s.date && String(s.date).startsWith(currentMonth);
     }
     return true;
   });
 
   // Calculations based on filtered sales
-  const totalRevenue = filteredSales.reduce((acc, s) => acc + (s.total || 0), 0);
+  const totalRevenue = filteredSales.reduce((acc, s) => acc + Number(s?.total || 0), 0);
   
   // Cost of goods sold (COGS)
   const totalCostOfGoodsSold = filteredSales.reduce((acc, s) => {
-    const saleCost = s.items?.reduce((itemAcc, item) => {
-      const prod = products.find(p => p.id === item.id);
-      const cost = item.costPrice || (prod ? prod.costPrice : 0);
-      return itemAcc + (cost * item.quantity);
+    const saleCost = s?.items?.reduce((itemAcc, item) => {
+      const prod = safeProducts.find(p => p?.id === item?.id);
+      const cost = item?.costPrice || (prod ? prod.costPrice : 0) || 0;
+      return itemAcc + (Number(cost) * Number(item?.quantity || 1));
     }, 0) || 0;
     return acc + saleCost;
   }, 0);
 
-  const totalExpenses = expenses.reduce((acc, e) => acc + (e.amount || 0), 0);
-  const totalStaffSalaries = staff.reduce((acc, s) => acc + (s.paidThisMonth || 0), 0);
+  const totalExpenses = safeExpenses.reduce((acc, e) => acc + Number(e?.amount || 0), 0);
+  const totalStaffSalaries = safeStaff.reduce((acc, s) => acc + Number(s?.paidThisMonth || 0), 0);
   const netProfit = totalRevenue - totalCostOfGoodsSold - totalExpenses - totalStaffSalaries;
 
   const totalSalesCount = filteredSales.length;
   const avgCheck = totalSalesCount > 0 ? Math.round(totalRevenue / totalSalesCount) : 0;
   
   // Warehouse Capital
-  const warehouseCost = products.reduce((acc, p) => acc + (p.costPrice * p.stock), 0);
-  const warehouseRetail = products.reduce((acc, p) => acc + (p.price * p.stock), 0);
+  const warehouseCost = safeProducts.reduce((acc, p) => acc + (Number(p?.costPrice || 0) * Number(p?.stock || 0)), 0);
+  const warehouseRetail = safeProducts.reduce((acc, p) => {
+    const unitPrice = p?.price || (p?.prices ? Math.min(...Object.values(p.prices).filter(Boolean)) : 0) || 0;
+    return acc + (Number(unitPrice) * Number(p?.stock || 0));
+  }, 0);
 
   // Payment Breakdown
   const paymentStats = {
-    cash: filteredSales.filter(s => s.paymentMethod === 'Naqd').reduce((a, s) => a + s.total, 0),
-    card: filteredSales.filter(s => s.paymentMethod === 'Karta').reduce((a, s) => a + s.total, 0),
-    bank: filteredSales.filter(s => s.paymentMethod === 'Bank perech').reduce((a, s) => a + s.total, 0),
-    debt: filteredSales.filter(s => s.paymentMethod === 'Qarz').reduce((a, s) => a + s.total, 0)
+    cash: filteredSales.filter(s => s?.paymentMethod === 'Naqd').reduce((a, s) => a + Number(s?.total || 0), 0),
+    card: filteredSales.filter(s => s?.paymentMethod === 'Karta').reduce((a, s) => a + Number(s?.total || 0), 0),
+    bank: filteredSales.filter(s => s?.paymentMethod === 'Bank perech').reduce((a, s) => a + Number(s?.total || 0), 0),
+    debt: filteredSales.filter(s => s?.paymentMethod === 'Qarz').reduce((a, s) => a + Number(s?.total || 0), 0)
   };
 
   // Top Products
   const productSalesMap = {};
   filteredSales.forEach(sale => {
-    sale.items?.forEach(item => {
+    sale?.items?.forEach(item => {
+      if (!item?.name) return;
       if (!productSalesMap[item.name]) {
         productSalesMap[item.name] = { name: item.name, quantity: 0, revenue: 0, id: item.id };
       }
-      productSalesMap[item.name].quantity += item.quantity;
-      productSalesMap[item.name].revenue += item.quantity * item.price;
+      productSalesMap[item.name].quantity += Number(item.quantity || 1);
+      productSalesMap[item.name].revenue += Number(item.quantity || 1) * Number(item.price || 0);
     });
   });
 
@@ -79,17 +89,17 @@ export default function DirectorDashboard({
 
   // Cashier Performance
   const staffSalesMap = {};
-  staff.filter(s => s.role.includes('Sotuvchi')).forEach(st => {
+  safeStaff.filter(s => s?.role && typeof s.role === 'string' && s.role.includes('Sotuvchi')).forEach(st => {
     staffSalesMap[st.name] = { name: st.name, count: 0, total: 0, bonus: 0 };
   });
 
   filteredSales.forEach(s => {
-    const cashier = s.cashierName || 'Boshqa';
+    const cashier = s?.cashierName || 'Boshqa';
     if (!staffSalesMap[cashier]) {
       staffSalesMap[cashier] = { name: cashier, count: 0, total: 0, bonus: 0 };
     }
     staffSalesMap[cashier].count += 1;
-    staffSalesMap[cashier].total += s.total;
+    staffSalesMap[cashier].total += Number(s?.total || 0);
     staffSalesMap[cashier].bonus = Math.round(staffSalesMap[cashier].total * 0.02); // 2% bonus
   });
 
@@ -105,13 +115,13 @@ export default function DirectorDashboard({
   };
 
   filteredSales.forEach(sale => {
-    sale.items?.forEach(item => {
-      const prod = products.find(p => p.id === item.id);
-      let pType = item.productType || (prod?.productType) || (item.volume ? 'perfume' : 'general');
+    sale?.items?.forEach(item => {
+      const prod = safeProducts.find(p => p?.id === item?.id);
+      let pType = item?.productType || (prod?.productType) || (item?.volume ? 'perfume' : 'general');
       if (!industrySalesMap[pType]) pType = 'general';
-      const itemRev = (item.quantity || 1) * (item.price || 0);
+      const itemRev = Number(item?.quantity || 1) * Number(item?.price || 0);
       industrySalesMap[pType].revenue += itemRev;
-      industrySalesMap[pType].count += (item.quantity || 1);
+      industrySalesMap[pType].count += Number(item?.quantity || 1);
     });
   });
 
