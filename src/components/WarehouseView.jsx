@@ -15,6 +15,7 @@ export default function WarehouseView({
   onBatchAddProducts,
   onUpdateProduct, 
   onDeleteProduct,
+  onClearAllProducts,
   storeMode = 'universal',
   onSelectStoreMode
 }) {
@@ -145,18 +146,20 @@ export default function WarehouseView({
   // Yangi tovar modalini ochish
   const handleOpenAdd = () => {
     setEditingProduct(null);
-    setFormType('clothing');
+    const indType = currentIndustry?.specialType || currentIndustry?.id || 'general';
+    setFormType(indType);
     setFormName('');
     setFormBrand('');
-    setFormCategory('Kiyim-kechak');
-    setFormUnit('dona');
+    const defaultCat = currentIndustry?.categories?.find(c => c !== 'Hammasi') || 'Boshqa';
+    setFormCategory(defaultCat);
+    setFormUnit(currentIndustry?.unit || 'dona');
     setFormBarcode(Math.floor(100000000000 + Math.random() * 900000000000).toString());
     setFormCostPrice('');
     setFormPrice('');
     setFormWholesalePrice('');
-    setFormStock('15');
+    setFormStock('10');
     setFormMinStock('3');
-    setFormImage('https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&q=80');
+    setFormImage('');
     setFormNotes('');
     setFormClothingSizes('S, M, L, XL');
     setFormClothingColors('Qora, Oq');
@@ -165,7 +168,7 @@ export default function WarehouseView({
     setFormTechMemory('128GB, 256GB');
     setFormPerfumeVolume('50 ml');
     setFormPerfumeConcentration('EDP');
-    setFormPerfumePrices({ '10 ml': '', '20 ml': '', '30 ml': '', '50 ml': '' });
+    setFormPerfumePrices({ '5 ml': '', '10 ml': '', '20 ml': '', '30 ml': '', '50 ml': '', '100 ml': '' });
     setFormGroceryExpiry('');
     setShowAddModal(true);
   };
@@ -305,13 +308,13 @@ export default function WarehouseView({
       <div className="page-header">
         <div className="page-title-group">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '1.4rem' }}>📦</span>
-            <h2>Ombor va Mahsulotlar Katalogi (BILLZ ERP)</h2>
+            <span style={{ fontSize: '1.4rem' }}>{currentIndustry.emoji || '📦'}</span>
+            <h2>Ombor va Mahsulotlar Katalogi ({currentIndustry.shortName})</h2>
           </div>
-          <p>Har qanday tovar turini (kiyim, elektronika, parfyum, oziq-ovqat) to'liq boshqarish</p>
+          <p>{currentIndustry.name} — Mahsulotlar, qoldiqlar va narxlarni boshqarish</p>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
           <button 
             type="button"
             className="btn btn-primary" 
@@ -330,9 +333,28 @@ export default function WarehouseView({
             <Sparkles size={16} /> 
             <span>✨ AI & Excel/PDF Import</span>
           </button>
+          
           <button className="btn btn-secondary" onClick={handleExportCSV}>
             <Download size={16} /> Excel / CSV Eksport
           </button>
+
+          {products.length > 0 && (
+            <button 
+              type="button"
+              className="btn btn-secondary"
+              style={{ color: 'var(--danger)', borderColor: 'rgba(244, 63, 94, 0.3)', display: 'flex', alignItems: 'center', gap: '5px' }}
+              onClick={() => {
+                if (window.confirm("DIQQAT: Ushbu do'kondagi barcha tovarlarni bazadan tozalab o'chirmoqchimisiz?")) {
+                  if (onClearAllProducts) onClearAllProducts();
+                }
+              }}
+              title="Do'kondagi barcha mahsulotlarni o'chirish"
+            >
+              <Trash2 size={15} />
+              <span>Tozalash ({products.length})</span>
+            </button>
+          )}
+
           <button className="btn btn-primary" onClick={handleOpenAdd}>
             <Plus size={16} /> Yangi Tovar Qo'shish
           </button>
@@ -594,32 +616,55 @@ export default function WarehouseView({
                   {editingProduct ? 'Mahsulotni Tahrirlash' : 'Yangi Mahsulot Qo\'shish'}
                 </h3>
                 <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  BILLZ: Tovar turini tanlang, xususiyatlar avtomatik moslashadi
+                  {currentIndustry.name} tizimi uchun tovar ma'lumotlarini kiritish
                 </p>
               </div>
               <button className="modal-close" onClick={() => setShowAddModal(false)}>✕</button>
             </div>
 
             <form onSubmit={handleSaveProduct} style={{ padding: '20px' }}>
-              {/* Step 1: Industry Selector */}
-              <div style={{ marginBottom: '16px' }}>
-                <label className="form-label">Tovar Turi (Biznes Yo'nalishi):</label>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(135px, 1fr))', gap: '6px', maxHeight: '150px', overflowY: 'auto', padding: '4px' }}>
-                  {PRODUCT_TYPES.filter(t => t.id !== 'all').map(t => (
-                    <button
-                      key={t.id}
-                      type="button"
-                      className={`btn btn-sm ${formType === t.id ? 'btn-primary' : 'btn-secondary'}`}
-                      style={{ fontSize: '0.74rem', padding: '6px 4px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}
-                      onClick={() => {
-                        setFormType(t.id);
-                        setFormCategory(t.name);
-                      }}
-                    >
-                      <span style={{ fontSize: '1.1rem' }}>{t.emoji}</span>
-                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{t.name}</span>
-                    </button>
-                  ))}
+              {/* Do'kon Soha Identifikatori (Bitta yo'nalish bo'yicha) */}
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                padding: '12px 16px',
+                borderRadius: '12px',
+                background: 'rgba(99, 102, 241, 0.08)',
+                border: '1px solid rgba(99, 102, 241, 0.2)',
+                marginBottom: '16px'
+              }}>
+                <div style={{
+                  fontSize: '1.6rem',
+                  width: '42px',
+                  height: '42px',
+                  borderRadius: '10px',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}>
+                  {currentIndustry.emoji}
+                </div>
+                <div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fff' }}>
+                      {currentIndustry.name}
+                    </span>
+                    <span style={{
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: '8px',
+                      background: 'rgba(16, 185, 129, 0.15)',
+                      color: 'var(--success)'
+                    }}>
+                      Aktiv Tizim
+                    </span>
+                  </div>
+                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
+                    Ushbu tovar faqat {currentIndustry.shortName} katalogiga kiritiladi.
+                  </p>
                 </div>
               </div>
 
@@ -650,14 +695,17 @@ export default function WarehouseView({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
                 <div>
-                  <label className="form-label">Kategoriya</label>
-                  <input 
-                    type="text" 
+                  <label className="form-label">Kategoriya *</label>
+                  <select 
                     className="form-input" 
-                    placeholder="Poyabzal, Smartfon..." 
                     value={formCategory} 
-                    onChange={(e) => setFormCategory(e.target.value)} 
-                  />
+                    onChange={(e) => setFormCategory(e.target.value)}
+                  >
+                    {currentIndustry.categories.filter(c => c !== 'Hammasi').map(cat => (
+                      <option key={cat} value={cat}>{cat}</option>
+                    ))}
+                    <option value="Boshqa">+ Boshqa toifa</option>
+                  </select>
                 </div>
                 <div>
                   <label className="form-label">O'lchov Birligi</label>
@@ -753,19 +801,19 @@ export default function WarehouseView({
                 </div>
               )}
 
-              {formType === 'perfume' && (
+              {(formType === 'perfume' || currentIndustry.hasVolumeMl) && (
                 <div className="industry-specific-box">
                   <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--gold)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Sparkles size={15} /> Parfyumeriya va Go'zallik Parametrlari:
+                    <Sparkles size={15} /> Parfyumeriya Quyma Hajmlar Narxi:
                   </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
-                    {['10 ml', '20 ml', '30 ml', '50 ml'].map(vol => (
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px' }}>
+                    {['5 ml', '10 ml', '20 ml', '30 ml', '50 ml', '100 ml'].map(vol => (
                       <div key={vol}>
-                        <label className="form-label">{vol} Narxi:</label>
+                        <label className="form-label" style={{ fontSize: '0.74rem' }}>{vol}:</label>
                         <input 
                           type="number" 
                           className="form-input" 
-                          placeholder="210000"
+                          placeholder="Narx"
                           value={formPerfumePrices[vol] || ''}
                           onChange={(e) => setFormPerfumePrices({ ...formPerfumePrices, [vol]: Number(e.target.value) })}
                         />

@@ -71,17 +71,32 @@ export default function App() {
   // Persistence with LocalStorage + Server sync
   const [products, setProducts] = useState(() => {
     try {
-      const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
-      const activeIndustry = session?.industryId || localStorage.getItem('billz_store_mode');
-      if (activeIndustry && activeIndustry !== 'universal') {
-        const savedInd = localStorage.getItem(`billz_products_${activeIndustry}`);
-        if (savedInd) return JSON.parse(savedInd);
-        return getSampleProductsForIndustry(activeIndustry);
+      // Bir martalik tozalash: agar eski aralashgan parfyum tovarlari qolib ketgan bo'lsa
+      if (!localStorage.getItem('billz_store_cleaned_v2')) {
+        localStorage.removeItem('billz_products_v4');
+        localStorage.removeItem('blizz_products');
+        localStorage.removeItem('billz_products_electronics');
+        localStorage.removeItem('billz_products_clothing');
+        localStorage.removeItem('billz_products_universal');
+        localStorage.setItem('billz_store_cleaned_v2', 'true');
+        return [];
       }
-    } catch {}
-    const saved = localStorage.getItem('billz_products_v4');
-    if (saved) return JSON.parse(saved);
-    return INITIAL_PRODUCTS;
+
+      const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
+      const activeIndustry = session?.industryId || localStorage.getItem('billz_store_mode') || 'universal';
+      const savedInd = localStorage.getItem(`billz_products_${activeIndustry}`);
+      if (savedInd) {
+        const parsed = JSON.parse(savedInd);
+        // Agar bu parfyum bo'lmagan soha bo'lsa, ichida parfyum tovarlari aralashib qolgan bo'lsa tozalaymiz
+        if (activeIndustry !== 'perfume') {
+          return parsed.filter(p => !p.id?.startsWith('prd-') || p.productType === activeIndustry);
+        }
+        return parsed;
+      }
+      return [];
+    } catch {
+      return [];
+    }
   });
 
   const [customers, setCustomers] = useState(() => {
@@ -138,21 +153,27 @@ export default function App() {
           try {
             const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
             const currentMode = session?.industryId || localStorage.getItem('billz_store_mode') || 'universal';
+            
+            // Faqat va faqat joriy do'konga tegishli tovarlar qabul qilinadi!
+            // Boshqa soha do'konlariga parfyumeriya tovarlari aslo tushmaydi!
             if (currentMode === 'perfume') {
-              setProducts(serverData.products);
-            } else if (currentMode === 'universal') {
-              const genericSamples = getSampleProductsForIndustry('universal');
-              setProducts([...genericSamples, ...serverData.products.slice(0, 4)]);
+              const perfumeOnly = serverData.products.filter(p => 
+                p.productType === 'perfume' || p.category === 'Erkaklar' || p.category === 'Ayollar' || p.category === 'Unisex'
+              );
+              if (perfumeOnly.length > 0 && products.length === 0) {
+                setProducts(perfumeOnly);
+              }
             } else {
-              const matching = serverData.products.filter(p => p.productType === currentMode);
+              // Boshqa barcha sohalar uchun faqat shu sohaga tegishlilari:
+              const matching = serverData.products.filter(p => 
+                p.productType === currentMode || (p.storeId && p.storeId === session?.id)
+              );
               if (matching.length > 0) {
                 setProducts(matching);
-              } else {
-                setProducts(getSampleProductsForIndustry(currentMode));
               }
             }
-          } catch {
-            setProducts(serverData.products);
+          } catch (e) {
+            console.error('Server product filter error:', e);
           }
         }
         if (serverData.sales && serverData.sales.length > 0) setSales(serverData.sales);
@@ -223,11 +244,11 @@ export default function App() {
     }
   }, [sales]);
 
-  // Sync to localStorage
+  // Sync to localStorage strictly per active store industry
   useEffect(() => {
-    localStorage.setItem('billz_products_v4', JSON.stringify(products));
-    localStorage.setItem('blizz_products', JSON.stringify(products));
-  }, [products]);
+    const indId = currentStoreSession?.industryId || storeMode || 'universal';
+    localStorage.setItem(`billz_products_${indId}`, JSON.stringify(products));
+  }, [products, currentStoreSession, storeMode]);
 
   useEffect(() => {
     localStorage.setItem('billz_customers', JSON.stringify(customers));
@@ -416,6 +437,14 @@ export default function App() {
     deleteProductOnServer(prodId);
   };
 
+  const handleClearAllProducts = () => {
+    const indId = currentStoreSession?.industryId || storeMode || 'universal';
+    setProducts([]);
+    localStorage.removeItem(`billz_products_${indId}`);
+    localStorage.removeItem('billz_products_v4');
+    localStorage.removeItem('blizz_products');
+  };
+
   const lowStockCount = products.filter(p => p.stock <= (p.minStock || 3)).length;
   const pendingDebtsCount = debts.filter(d => d.remainingAmount > 0).length;
 
@@ -560,6 +589,7 @@ export default function App() {
               onBatchAddProducts={handleBatchAddProducts}
               onUpdateProduct={handleUpdateProduct}
               onDeleteProduct={handleDeleteProduct}
+              onClearAllProducts={handleClearAllProducts}
               storeMode={storeMode}
               onSelectStoreMode={handleSelectStoreMode}
             />
