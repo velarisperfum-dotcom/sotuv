@@ -7,10 +7,12 @@ import {
 } from 'lucide-react';
 import { MEASURE_UNITS, PRODUCT_TYPES } from '../data/initialData';
 import { getIndustryById } from '../data/industriesData';
+import CatalogImportModal from './CatalogImportModal';
 
 export default function WarehouseView({ 
   products = [], 
   onAddProduct, 
+  onBatchAddProducts,
   onUpdateProduct, 
   onDeleteProduct,
   storeMode = 'universal',
@@ -24,6 +26,7 @@ export default function WarehouseView({
   const [filterBrand, setFilterBrand] = useState('Hammasi');
   const [onlyLowStock, setOnlyLowStock] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [showAiImportModal, setShowAiImportModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
   // Form states for dynamic product creation
@@ -309,6 +312,24 @@ export default function WarehouseView({
         </div>
 
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
+          <button 
+            type="button"
+            className="btn btn-primary" 
+            style={{ 
+              background: 'linear-gradient(135deg, #f59e0b, #6366f1)', 
+              border: 'none', 
+              display: 'flex', 
+              alignItems: 'center', 
+              gap: '6px', 
+              fontWeight: 800,
+              boxShadow: '0 0 16px rgba(99, 102, 241, 0.35)'
+            }}
+            onClick={() => setShowAiImportModal(true)}
+            title="Excel, PDF yoki Telegram narxnomalaridan AI orqali avtomatik kiritish"
+          >
+            <Sparkles size={16} /> 
+            <span>✨ AI & Excel/PDF Import</span>
+          </button>
           <button className="btn btn-secondary" onClick={handleExportCSV}>
             <Download size={16} /> Excel / CSV Eksport
           </button>
@@ -944,6 +965,22 @@ export default function WarehouseView({
             </form>
           </div>
         </div>
+      )}
+
+      {/* AI & Excel/PDF Smart Catalog Import Modal */}
+      {showAiImportModal && (
+        <CatalogImportModal 
+          isOpen={showAiImportModal}
+          onClose={() => setShowAiImportModal(false)}
+          storeMode={storeMode}
+          onImportProducts={(importedList) => {
+            if (onBatchAddProducts) {
+              onBatchAddProducts(importedList);
+            } else {
+              importedList.forEach(p => onAddProduct(p));
+            }
+          }}
+        />
       )}
     </div>
   );

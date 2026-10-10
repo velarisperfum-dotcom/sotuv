@@ -400,6 +400,12 @@ export default function App() {
     postProductToServer(newProd);
   };
 
+  const handleBatchAddProducts = (newProductsList) => {
+    if (!Array.isArray(newProductsList) || newProductsList.length === 0) return;
+    setProducts(prev => [...newProductsList, ...prev]);
+    newProductsList.forEach(p => postProductToServer(p));
+  };
+
   const handleUpdateProduct = (updatedProd) => {
     setProducts(prev => prev.map(p => p.id === updatedProd.id ? updatedProd : p));
     updateProductOnServer(updatedProd);
@@ -551,6 +557,7 @@ export default function App() {
             <WarehouseView 
               products={products}
               onAddProduct={handleAddProduct}
+              onBatchAddProducts={handleBatchAddProducts}
               onUpdateProduct={handleUpdateProduct}
               onDeleteProduct={handleDeleteProduct}
               storeMode={storeMode}
