@@ -2,13 +2,13 @@ import React, { useEffect, useState } from 'react';
 import { Printer, X, CheckCircle, Share2, Download, Copy, ExternalLink, Sparkles } from 'lucide-react';
 import QRCode from 'qrcode';
 
-import { STORE_MODES } from '../data/initialData';
+import { getIndustryById } from '../data/industriesData';
 
 export default function ReceiptModal({ sale, onClose, storeMode = 'universal', currentStoreSession = null }) {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
   const [copied, setCopied] = useState(false);
 
-  const activeStore = STORE_MODES.find(m => m.id === (sale?.storeMode || storeMode)) || STORE_MODES[0];
+  const activeStore = getIndustryById(sale?.storeMode || currentStoreSession?.industryId || storeMode);
   const displayBrandName = currentStoreSession?.storeName || activeStore.brandName;
 
   const itemsParam = encodeURIComponent(
@@ -105,8 +105,15 @@ export default function ReceiptModal({ sale, onClose, storeMode = 'universal', c
 
           {/* Store Brand & Info */}
           <div style={{ textAlign: 'center', borderBottom: '2px dashed #cbd5e1', paddingBottom: '16px', marginBottom: '16px' }}>
+            {currentStoreSession?.logo && (
+              <img 
+                src={currentStoreSession.logo} 
+                alt="Store Logo" 
+                style={{ maxHeight: '54px', maxWidth: '160px', objectFit: 'contain', margin: '0 auto 10px auto', display: 'block' }} 
+              />
+            )}
             <div style={{ fontSize: '1.45rem', fontWeight: 900, letterSpacing: '1px', color: '#090d16', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-              <span>{activeStore.emoji}</span> {displayBrandName}
+              {!currentStoreSession?.logo && <span>{activeStore.emoji}</span>} {displayBrandName}
             </div>
             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '3px' }}>
               {activeStore.subTitle}
@@ -239,8 +246,7 @@ export default function ReceiptModal({ sale, onClose, storeMode = 'universal', c
           {/* Footer message */}
           <div style={{ textAlign: 'center', fontSize: '0.7rem', color: '#64748b', borderTop: '1px dashed #cbd5e1', paddingTop: '10px', marginTop: '10px' }}>
             <p style={{ margin: 0, fontWeight: 700, color: '#0f172a' }}>Xaridingiz uchun tashakkur!</p>
-            <p style={{ margin: '2px 0 0' }}>Xushbo'y iforlar sizga quvonch ulashsin ✨</p>
-            <p style={{ margin: '3px 0 0', fontSize: '0.62rem', color: '#94a3b8' }}>Tovar xarid qilingan kundan boshlab almashtirilmaydi</p>
+            <p style={{ margin: '2px 0 0' }}>{currentStoreSession?.receiptFooter || activeStore.receiptFooter || "Xaridingiz uchun rahmat!"}</p>
           </div>
         </div>
 

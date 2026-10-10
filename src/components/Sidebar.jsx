@@ -3,7 +3,7 @@ import {
   Crown, Calculator, Package, ShoppingCart, 
   BarChart3, Users, Building2
 } from 'lucide-react';
-import { STORE_MODES } from '../data/initialData';
+import { getIndustryById } from '../data/industriesData';
 
 export default function Sidebar({ 
   currentRole, 
@@ -15,8 +15,9 @@ export default function Sidebar({
   storeMode = 'universal',
   currentStoreSession = null
 }) {
-  const activeStore = STORE_MODES.find(m => m.id === storeMode) || STORE_MODES[0];
+  const activeStore = getIndustryById(currentStoreSession?.industryId || storeMode);
   const displayBrandName = currentStoreSession?.storeName || activeStore.brandName;
+  const storeLogo = currentStoreSession?.logo;
 
   const roles = [
     { id: 'director', name: 'Direktor', icon: Crown, desc: 'Barcha stat & hisoblar' },
@@ -29,8 +30,12 @@ export default function Sidebar({
     <aside className="sidebar">
       {/* Brand */}
       <div className="brand-section">
-        <div className="brand-logo" style={{ background: activeStore.color }}>
-          <span style={{ fontSize: '1.4rem' }}>{activeStore.emoji}</span>
+        <div className="brand-logo" style={{ background: activeStore.color, overflow: 'hidden' }}>
+          {storeLogo ? (
+            <img src={storeLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+          ) : (
+            <span style={{ fontSize: '1.4rem' }}>{activeStore.emoji}</span>
+          )}
         </div>
         <div className="brand-info">
           <h1>{displayBrandName}</h1>

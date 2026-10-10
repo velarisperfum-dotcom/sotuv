@@ -476,3 +476,9 @@ export const STAFF_COUNT_OPTIONS = [
     recommendedRoles: ['Boshqaruv kengashi', 'Filial direktorlari', 'Moliya bo\'limi', 'Logistika & POS']
   }
 ];
+
+// Helper: id orqali soha ma'lumotlarini olish
+export const getIndustryById = (id) => {
+  if (!id || id === 'universal') return STORE_INDUSTRIES[0];
+  return STORE_INDUSTRIES.find(i => i.id === id) || STORE_INDUSTRIES[0];
+};

@@ -3,10 +3,12 @@ import {
   Search, ShoppingCart, Trash2, Plus, Minus, CreditCard, 
   Banknote, Check, User, ArrowRight,
   Barcode, Layers, Smartphone, Package,
-  UserPlus, X, AlertCircle, Sparkles, Scale
+  UserPlus, X, AlertCircle, Sparkles, Scale,
+  Upload, Image
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { PRODUCT_TYPES, MEASURE_UNITS, INITIAL_CUSTOMERS, STORE_MODES } from '../data/initialData';
+import { PRODUCT_TYPES, MEASURE_UNITS, INITIAL_CUSTOMERS } from '../data/initialData';
+import { getIndustryById } from '../data/industriesData';
 
 function playBeepSound(freq = 680) {
   try {
@@ -83,6 +85,22 @@ export default function POSCashier({
   const [quickProdStock, setQuickProdStock] = useState('10');
   const [quickProdBarcode, setQuickProdBarcode] = useState('');
   const [quickProdUnit, setQuickProdUnit] = useState('dona');
+  const [quickProdImage, setQuickProdImage] = useState('');
+
+  // Rasm faylini qurilmadan yuklash
+  const handleQuickImageFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Rasm hajmi 5MB dan oshmasligi kerak!");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setQuickProdImage(ev.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
   
   // Checkout modal states
   const [showCheckout, setShowCheckout] = useState(false);
@@ -105,7 +123,7 @@ export default function POSCashier({
 
   const barcodeInputRef = useRef(null);
 
-  const activeStoreConfig = STORE_MODES.find(m => m.id === storeMode) || STORE_MODES[0];
+  const activeStoreConfig = getIndustryById(storeMode);
 
   // Sync selectedType when storeMode prop changes
   useEffect(() => {
@@ -139,13 +157,11 @@ export default function POSCashier({
     }
   };
 
-  // Dinamik kategoriyalar
-  const dynamicCategories = ['Hammasi', ...Array.from(new Set(
-    products
-      .filter(p => selectedType === 'all' || getProductType(p) === selectedType)
-      .map(p => p.category)
-      .filter(Boolean)
-  ))];
+  // Dinamik kategoriyalar (Do'kon sohasiga xos)
+  const dynamicCategories = ['Hammasi', ...Array.from(new Set([
+    ...(activeStoreConfig?.categories?.filter(c => c !== 'Hammasi') || []),
+    ...products.map(p => p.category).filter(Boolean)
+  ]))];
 
   // Filtrlangan tovarlar
   const filteredProducts = products.filter(p => {
@@ -390,7 +406,7 @@ export default function POSCashier({
       stock: Number(quickProdStock) || 10,
       minStock: 2,
       barcode: quickProdBarcode || Math.floor(100000000000 + Math.random() * 900000000000).toString(),
-      image: 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400&q=80',
+      image: quickProdImage || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400&q=80',
       notes: `${activeStoreConfig.shortName} do'konidan qo'shilgan tovar`
     };
 
@@ -425,33 +441,16 @@ export default function POSCashier({
         {/* Left: Products & BILLZ Filters */}
         <div className={`pos-products ${mobilePosTab === 'cart' ? 'pos-mobile-hidden' : ''}`}>
           
-          {/* STORE INDUSTRY MODE SWITCHER (BILLZ MULTI-STORE NAV BAR) */}
-          <div className="billz-industry-nav">
-            <div className="billz-industry-scroll">
-              {STORE_MODES.map(mode => {
-                const isActive = (storeMode === mode.id) || (mode.id === 'universal' && selectedType === 'all');
-                const count = mode.id === 'universal'
-                  ? products.length
-                  : products.filter(p => getProductType(p) === mode.id).length;
-
-                return (
-                  <button
-                    key={mode.id}
-                    type="button"
-                    className={`billz-industry-tab ${isActive ? 'active' : ''}`}
-                    onClick={() => {
-                      if (onSelectStoreMode) onSelectStoreMode(mode.id);
-                      setSelectedType(mode.id === 'universal' ? 'all' : mode.id);
-                      setSelectedCategory('Hammasi');
-                    }}
-                    style={isActive ? { borderColor: mode.color, background: `linear-gradient(135deg, ${mode.color}, #4f46e5)` } : {}}
-                  >
-                    <span className="tab-emoji">{mode.emoji}</span>
-                    <span className="tab-name">{mode.name}</span>
-                    <span className="tab-badge">{count}</span>
-                  </button>
-                );
-              })}
+          {/* STORE DEDICATED POS HEADER */}
+          <div className="billz-industry-nav" style={{ justifyContent: 'space-between', alignItems: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '4px 8px' }}>
+              <span style={{ fontSize: '1.3rem' }}>{activeStoreConfig.emoji}</span>
+              <div>
+                <strong style={{ fontSize: '0.92rem', color: '#fff' }}>{activeStoreConfig.name}</strong>
+                <span style={{ marginLeft: '8px', fontSize: '0.72rem', color: activeStoreConfig.color, fontWeight: 700, padding: '2px 8px', background: `${activeStoreConfig.color}20`, borderRadius: '12px' }}>
+                  Kassa POS
+                </span>
+              </div>
             </div>
 
             {/* Quick Add Product Button */}
@@ -462,8 +461,9 @@ export default function POSCashier({
                 setQuickProdPrice('');
                 setQuickProdCostPrice('');
                 setQuickProdStock('10');
+                setQuickProdImage('');
                 setQuickProdBarcode(Math.floor(100000000000 + Math.random() * 900000000000).toString());
-                setQuickProdType(storeMode === 'universal' ? 'clothing' : storeMode);
+                setQuickProdType(activeStoreConfig.specialType || 'general');
                 setShowQuickAddModal(true);
               }}
               title="Kassadan chiqmasdan tezkor tovar qo'shish"
@@ -1155,6 +1155,39 @@ export default function POSCashier({
                   >
                     🎲 Yangilash
                   </button>
+                </div>
+              </div>
+
+              {/* Quick Add Image from device */}
+              <div style={{ marginBottom: '18px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-light)', borderRadius: '10px', padding: '10px' }}>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '6px' }}>
+                  <Image size={14} color="var(--primary)" />
+                  <span>Tovar Rasmi (Qurilmadan yuklash):</span>
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ width: '48px', height: '48px', borderRadius: '8px', background: 'var(--bg-elevated)', border: '1px dashed var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden' }}>
+                    {quickProdImage ? (
+                      <img src={quickProdImage} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <Package size={20} color="var(--text-sub)" />
+                    )}
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', gap: '6px', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <label className="btn btn-sm btn-secondary" style={{ cursor: 'pointer', padding: '5px 10px', fontSize: '0.78rem' }}>
+                      <Upload size={13} /> <span>📁 Qurilmadan tanlash</span>
+                      <input type="file" accept="image/*" onChange={handleQuickImageFile} style={{ display: 'none' }} />
+                    </label>
+                    {quickProdImage && (
+                      <button 
+                        type="button" 
+                        className="btn btn-sm btn-secondary" 
+                        style={{ color: 'var(--danger)', padding: '5px 8px' }} 
+                        onClick={() => setQuickProdImage('')}
+                      >
+                        <Trash2 size={13} />
+                      </button>
+                    )}
+                  </div>
                 </div>
               </div>
 

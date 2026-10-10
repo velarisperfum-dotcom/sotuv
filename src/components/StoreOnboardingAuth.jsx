@@ -3,7 +3,7 @@ import {
   Store, Sparkles, Check, ChevronRight, ChevronLeft, 
   User, Phone, Lock, Eye, EyeOff, Copy, CheckCircle2, 
   Search, ShieldCheck, Zap, Users, LogIn, KeyRound, 
-  ArrowRight, RefreshCw, Layers
+  ArrowRight, RefreshCw, Layers, Image, Upload, Trash2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { STORE_INDUSTRIES, INDUSTRY_GROUPS, STAFF_COUNT_OPTIONS } from '../data/industriesData';
@@ -19,12 +19,28 @@ export default function StoreOnboardingAuth({
   // Onboarding qadamlari (1 -> 2 -> 3 -> 4)
   const [step, setStep] = useState(1);
 
-  // 1-Qadam: Do'kon nomi va Rahbar ma'lumotlari
+  // 1-Qadam: Do'kon nomi va Rahbar ma'lumotlari + Logo
   const [storeName, setStoreName] = useState('');
   const [directorName, setDirectorName] = useState('');
   const [directorPhone, setDirectorPhone] = useState('+998 ');
   const [customPassword, setCustomPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [storeLogo, setStoreLogo] = useState('');
+
+  // Logo file upload handler
+  const handleLogoUpload = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 4 * 1024 * 1024) {
+      alert("Logo hajmi 4MB dan oshmasligi kerak!");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      setStoreLogo(ev.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
 
   // 2-Qadam: Savdo tizimi (24+ sohalar)
   const [selectedIndustryId, setSelectedIndustryId] = useState('clothing');
@@ -150,6 +166,7 @@ export default function StoreOnboardingAuth({
       password: generatedPassword,
       industryId: selectedIndustryId,
       staffTier: selectedStaffTier,
+      logo: storeLogo,
       createdAt: new Date().toISOString()
     };
 
@@ -476,6 +493,52 @@ export default function StoreOnboardingAuth({
                         </button>
                       </div>
                     </div>
+
+                    {/* Logo Upload Box */}
+                    <div className="form-field-group">
+                      <label className="field-label">
+                        <Image size={15} color="var(--primary)" />
+                        <span>Do'kon Logosi (ixtiyoriy, qurilmadan yuklash):</span>
+                      </label>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                        <div style={{
+                          width: '56px',
+                          height: '56px',
+                          borderRadius: '12px',
+                          background: 'var(--bg-elevated)',
+                          border: '1.5px dashed var(--border-light)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          overflow: 'hidden',
+                          flexShrink: 0
+                        }}>
+                          {storeLogo ? (
+                            <img src={storeLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                          ) : (
+                            <span style={{ fontSize: '1.5rem' }}>🏪</span>
+                          )}
+                        </div>
+                        <div style={{ flex: 1, display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                          <label className="btn btn-sm btn-secondary" style={{ cursor: 'pointer', padding: '6px 12px', fontSize: '0.8rem' }}>
+                            <Upload size={14} /> <span>📁 Telefondan / PC dan rasm tanlash</span>
+                            <input type="file" accept="image/*" onChange={handleLogoUpload} style={{ display: 'none' }} />
+                          </label>
+                          {storeLogo && (
+                            <button 
+                              type="button" 
+                              className="btn btn-sm btn-secondary" 
+                              style={{ color: 'var(--danger)', padding: '6px 10px' }} 
+                              onClick={() => setStoreLogo('')}
+                              title="Logoni o'chirish"
+                            >
+                              <Trash2 size={14} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <span className="input-hint">Kassa chekida va yon paneldagi do'kon brendingiz logotipi</span>
+                    </div>
                   </div>
 
                   {/* Live Animated Store Badge Preview */}
@@ -488,8 +551,14 @@ export default function StoreOnboardingAuth({
                       </div>
                       
                       <div className="live-card-body">
-                        <div className="live-card-avatar">
-                          {storeName.trim() ? storeName.trim().charAt(0).toUpperCase() : '🏪'}
+                        <div className="live-card-avatar" style={{ overflow: 'hidden' }}>
+                          {storeLogo ? (
+                            <img src={storeLogo} alt="Logo" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                          ) : storeName.trim() ? (
+                            storeName.trim().charAt(0).toUpperCase()
+                          ) : (
+                            '🏪'
+                          )}
                         </div>
                         <h3 className="live-card-name">
                           {storeName.trim() || 'Do\'koningiz Nomi'}

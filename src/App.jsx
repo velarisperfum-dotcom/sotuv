@@ -10,7 +10,9 @@ import MobileNav from './components/MobileNav';
 import SellersView from './components/SellersView';
 import CustomerReceiptView from './components/CustomerReceiptView';
 import StoreOnboardingAuth from './components/StoreOnboardingAuth';
+import StoreSettingsModal from './components/StoreSettingsModal';
 import { getSampleProductsForIndustry } from './data/industryProducts';
+import { getIndustryById } from './data/industriesData';
 
 import { 
   INITIAL_PRODUCTS, 
@@ -53,6 +55,8 @@ export default function App() {
       return true;
     }
   });
+
+  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
 
   // Store Mode (Savdo sohasi)
   const [storeMode, setStoreMode] = useState(() => {
@@ -117,6 +121,13 @@ export default function App() {
   const [currentView, setCurrentView] = useState('pos'); // pos, sellers, director, warehouse, accounting
   const [activeReceiptSale, setActiveReceiptSale] = useState(null);
   const [customerReceiptSale, setCustomerReceiptSale] = useState(null);
+
+  // Dynamic Multi-Industry Theme engine
+  useEffect(() => {
+    const indId = currentStoreSession?.industryId || storeMode || 'clothing';
+    document.documentElement.setAttribute('data-industry', indId);
+    document.body.setAttribute('data-industry', indId);
+  }, [currentStoreSession, storeMode]);
 
   // Initial fetch from Railway PostgreSQL backend
   useEffect(() => {
@@ -494,6 +505,7 @@ export default function App() {
           storeMode={storeMode}
           onSelectStoreMode={handleSelectStoreMode}
           currentStoreSession={currentStoreSession}
+          onOpenSettings={() => setIsSettingsModalOpen(true)}
           onOpenAuth={() => setIsAuthModalOpen(true)}
         />
 
@@ -586,6 +598,32 @@ export default function App() {
           onCompleteOnboarding={handleCompleteOnboarding}
           onLoginSuccess={handleLoginSuccess}
           existingSession={currentStoreSession}
+        />
+      )}
+
+      {/* Do'kon Sozlamalari & Logo yuklash modali */}
+      {isSettingsModalOpen && (
+        <StoreSettingsModal 
+          isOpen={isSettingsModalOpen}
+          onClose={() => setIsSettingsModalOpen(false)}
+          currentStoreSession={currentStoreSession}
+          onUpdateSession={(updated) => {
+            setCurrentStoreSession(updated);
+            localStorage.setItem('savdo_current_session', JSON.stringify(updated));
+            if (updated.directorName) {
+              setStaff(prev => prev.map(s => s.role === 'Direktor' ? { ...s, name: updated.directorName, phone: updated.phone || s.phone } : s));
+            }
+          }}
+          onOpenNewStoreOnboarding={() => {
+            setIsSettingsModalOpen(false);
+            setIsAuthModalOpen(true);
+          }}
+          onLogout={() => {
+            localStorage.removeItem('savdo_current_session');
+            setCurrentStoreSession(null);
+            setIsSettingsModalOpen(false);
+            setIsAuthModalOpen(true);
+          }}
         />
       )}
     </div>

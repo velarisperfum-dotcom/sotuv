@@ -1,9 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React from 'react';
 import { 
   ShoppingCart, Crown, Calculator, 
-  Package, ChevronDown, Check, Sparkles, Store, LogOut
+  Package, Settings, Store, Sparkles
 } from 'lucide-react';
-import { STORE_MODES } from '../data/initialData';
+import { getIndustryById } from '../data/industriesData';
 
 export default function Header({ 
   currentRole, 
@@ -11,15 +11,13 @@ export default function Header({
   balances,
   isServerConnected,
   storeMode = 'universal',
-  onSelectStoreMode,
   currentStoreSession,
+  onOpenSettings,
   onOpenAuth
 }) {
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
-  const activeStore = STORE_MODES.find(m => m.id === storeMode) || STORE_MODES[0];
-  const displayBrandName = currentStoreSession?.storeName || activeStore.brandName;
+  const activeIndustry = getIndustryById(currentStoreSession?.industryId || storeMode);
+  const displayBrandName = currentStoreSession?.storeName || activeIndustry.brandName;
+  const storeLogo = currentStoreSession?.logo;
 
   const roleNames = {
     director: { label: 'Direktor', color: 'var(--gold)', icon: Crown },
@@ -33,78 +31,40 @@ export default function Header({
 
   const formatMoney = (val) => Number(val || 0).toLocaleString('uz-UZ') + " so'm";
 
-  // Close dropdown on outside click
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setDropdownOpen(false);
-      }
-    }
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   return (
     <header className="top-header">
-      {/* Brand & Store Mode Switcher */}
-      <div className="header-brand-wrap" ref={dropdownRef} style={{ position: 'relative' }}>
-        <button 
-          className="store-mode-trigger-btn"
-          onClick={() => setDropdownOpen(!dropdownOpen)}
-          title="Do'kon yo'nalishini (Atir, Kiyim, Oziq-ovqat, Elektronika) almashtirish"
+      {/* Brand & Store Profile Card */}
+      <div className="header-brand-wrap">
+        <div 
+          className="header-store-brand-card" 
+          onClick={onOpenSettings} 
+          style={{ cursor: 'pointer' }} 
+          title="Do'kon sozlamalari va logotipni o'zgartirish"
         >
-          <span className="store-mode-emoji">{activeStore.emoji}</span>
+          <div className="header-store-logo-box" style={{ borderColor: `${activeIndustry.color}60` }}>
+            {storeLogo ? (
+              <img src={storeLogo} alt="Logo" className="header-store-img-logo" />
+            ) : (
+              <span style={{ fontSize: '1.4rem' }}>{activeIndustry.emoji}</span>
+            )}
+          </div>
           <div className="store-mode-info">
             <div className="store-mode-title-row">
               <span className="store-mode-brand">{displayBrandName}</span>
-              <span className="store-mode-tag" style={{ color: activeStore.color, borderColor: `${activeStore.color}40` }}>
-                {activeStore.shortName}
+              <span 
+                className="store-mode-tag" 
+                style={{ 
+                  color: activeIndustry.color, 
+                  borderColor: `${activeIndustry.color}40`,
+                  background: `${activeIndustry.color}15`
+                }}
+              >
+                {activeIndustry.shortName} ERP
               </span>
             </div>
-            <span className="store-mode-sub">{activeStore.subTitle}</span>
+            <span className="store-mode-sub">{activeIndustry.subTitle}</span>
           </div>
-          <ChevronDown size={15} color="var(--text-sub)" style={{ marginLeft: '4px', transform: dropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
-        </button>
-
-        {/* Store Mode Dropdown Menu */}
-        {dropdownOpen && (
-          <div className="store-mode-dropdown">
-            <div className="store-dropdown-header">
-              <Sparkles size={14} color="var(--primary)" />
-              <span>DO'KON YO'NALISHINI TANLANG:</span>
-            </div>
-            <div className="store-dropdown-list">
-              {STORE_MODES.map(mode => {
-                const isSelected = mode.id === storeMode;
-                return (
-                  <div
-                    key={mode.id}
-                    className={`store-dropdown-item ${isSelected ? 'active' : ''}`}
-                    onClick={() => {
-                      if (onSelectStoreMode) onSelectStoreMode(mode.id);
-                      setDropdownOpen(false);
-                    }}
-                  >
-                    <span className="dropdown-emoji">{mode.emoji}</span>
-                    <div style={{ flex: 1 }}>
-                      <div className="dropdown-item-title">
-                        <strong>{mode.brandName}</strong>
-                        <span className="dropdown-short-tag" style={{ color: mode.color }}>
-                          {mode.shortName}
-                        </span>
-                      </div>
-                      <span className="dropdown-item-desc">{mode.subTitle}</span>
-                    </div>
-                    {isSelected && <Check size={16} color="var(--primary)" style={{ flexShrink: 0 }} />}
-                  </div>
-                );
-              })}
-            </div>
-            <div className="store-dropdown-footer">
-              Tizim tanlangan soha tovarlari, kassa va omboriga bir zumda to'liq moslashadi.
-            </div>
-          </div>
-        )}
+        </div>
 
         <span style={{ color: 'var(--border-light)', margin: '0 4px' }}>|</span>
         
@@ -115,7 +75,7 @@ export default function Header({
         </div>
       </div>
 
-      {/* Right actions: DB Status & Active User Role */}
+      {/* Right actions: DB Status, Role & Settings */}
       <div className="header-actions">
         {/* Server / DB Status */}
         <div 
@@ -152,16 +112,17 @@ export default function Header({
           </div>
         </div>
 
-        {/* Switch / New Store Auth Button */}
-        {onOpenAuth && (
+        {/* Store Settings Button (Logo upload, store name, new client onboarding) */}
+        {onOpenSettings && (
           <button 
             type="button"
             className="header-store-switch-btn"
-            onClick={onOpenAuth}
-            title="Do'kon hisobini ko'rish yoki yangi do'kon ochish"
+            onClick={onOpenSettings}
+            title="Do'kon sozlamalari, logotip yuklash va yangi do'kon o'rnatish"
+            style={{ borderColor: `${activeIndustry.color}50` }}
           >
-            <Store size={15} color="var(--primary)" />
-            <span>Do'konlar</span>
+            <Settings size={15} color={activeIndustry.color} />
+            <span>Do'kon Sozlamalari</span>
           </button>
         )}
       </div>

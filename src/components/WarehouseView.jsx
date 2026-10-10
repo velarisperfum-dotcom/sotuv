@@ -3,9 +3,10 @@ import {
   Plus, AlertTriangle, Search, Filter, 
   ArrowUpRight, Edit2, Trash2, Box,
   Download, Barcode, Shirt, Smartphone, Apple, 
-  Sparkles, Check
+  Sparkles, Check, Image, Upload
 } from 'lucide-react';
-import { STORE_MODES, PRODUCT_TYPES, MEASURE_UNITS } from '../data/initialData';
+import { MEASURE_UNITS, PRODUCT_TYPES } from '../data/initialData';
+import { getIndustryById } from '../data/industriesData';
 
 export default function WarehouseView({ 
   products = [], 
@@ -16,20 +17,21 @@ export default function WarehouseView({
   onSelectStoreMode
 }) {
   const safeProducts = Array.isArray(products) ? products : [];
+  const currentIndustry = getIndustryById(storeMode);
 
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedType, setSelectedType] = useState(storeMode === 'universal' ? 'all' : storeMode); // all, clothing, perfume, electronics, grocery, general
+  const [selectedCategory, setSelectedCategory] = useState('Hammasi');
   const [filterBrand, setFilterBrand] = useState('Hammasi');
   const [onlyLowStock, setOnlyLowStock] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
   // Form states for dynamic product creation
-  const [formType, setFormType] = useState('clothing');
+  const [formType, setFormType] = useState(currentIndustry?.specialType || 'clothing');
   const [formName, setFormName] = useState('');
   const [formBrand, setFormBrand] = useState('');
   const [formCategory, setFormCategory] = useState('');
-  const [formUnit, setFormUnit] = useState('dona');
+  const [formUnit, setFormUnit] = useState(currentIndustry?.unit || 'dona');
   const [formBarcode, setFormBarcode] = useState('');
   const [formCostPrice, setFormCostPrice] = useState('');
   const [formPrice, setFormPrice] = useState('');
@@ -66,15 +68,20 @@ export default function WarehouseView({
   const [formPharmacyExpiry, setFormPharmacyExpiry] = useState('');
   const [formPharmacyDosage, setFormPharmacyDosage] = useState('');
 
-  // Sync with storeMode
-  useEffect(() => {
-    if (storeMode && storeMode !== 'universal') {
-      setSelectedType(storeMode);
-      setFormType(storeMode);
-    } else {
-      setSelectedType('all');
+  // Rasm faylini qurilmadan yuklash handler
+  const handleProductImageFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 5 * 1024 * 1024) {
+      alert("Rasm hajmi 5MB dan oshmasligi kerak!");
+      return;
     }
-  }, [storeMode]);
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      setFormImage(event.target.result);
+    };
+    reader.readAsDataURL(file);
+  };
 
   // Helper: Tovar turini aniqlash
   const getProductType = (p) => {
@@ -94,13 +101,18 @@ export default function WarehouseView({
     }
   };
 
+  // Do'konning maxsus sohasiga xos kategoriyalar
+  const industryCategories = ['Hammasi', ...Array.from(new Set([
+    ...(currentIndustry?.categories?.filter(c => c !== 'Hammasi') || []),
+    ...safeProducts.map(p => p.category).filter(Boolean)
+  ]))];
+
   const brands = ['Hammasi', ...Array.from(new Set(safeProducts.map(p => p?.brand).filter(Boolean)))];
 
   // Filtrlangan tovarlar ro'yxati
   const filteredProducts = safeProducts.filter(p => {
     if (!p) return false;
-    const pType = getProductType(p);
-    const matchesType = selectedType === 'all' || pType === selectedType;
+    const matchesCategory = selectedCategory === 'Hammasi' || p.category === selectedCategory;
     const matchesBrand = filterBrand === 'Hammasi' || p.brand === filterBrand;
     const matchesLowStock = !onlyLowStock || Number(p.stock || 0) <= Number(p.minStock || 3);
 
@@ -112,7 +124,7 @@ export default function WarehouseView({
       (p.category && String(p.category).toLowerCase().includes(term)) ||
       (p.barcode && String(p.barcode).toLowerCase().includes(term));
 
-    return matchesType && matchesBrand && matchesLowStock && matchesSearch;
+    return matchesCategory && matchesBrand && matchesLowStock && matchesSearch;
   });
 
   // Ombordagi hisob-kitoblar
@@ -360,28 +372,30 @@ export default function WarehouseView({
         </div>
       </div>
 
-      {/* STORE MODES INDUSTRY NAV TABS */}
+      {/* STORE DEDICATED INDUSTRY CATEGORIES */}
       <div className="billz-industry-nav" style={{ marginBottom: '16px' }}>
         <div className="billz-industry-scroll">
-          {STORE_MODES.map(mode => {
-            const isActive = (storeMode === mode.id) || (mode.id === 'universal' && selectedType === 'all');
-            const count = mode.id === 'universal' 
-              ? products.length 
-              : products.filter(p => getProductType(p) === mode.id).length;
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '8px', padding: '0 8px' }}>
+            <span style={{ fontSize: '1.2rem' }}>{currentIndustry.emoji}</span>
+            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: currentIndustry.color }}>
+              {currentIndustry.shortName} Kategoriyalari:
+            </span>
+          </div>
+          {industryCategories.map(cat => {
+            const isActive = selectedCategory === cat;
+            const count = cat === 'Hammasi' 
+              ? safeProducts.length 
+              : safeProducts.filter(p => p.category === cat).length;
 
             return (
               <button
-                key={mode.id}
+                key={cat}
                 type="button"
                 className={`billz-industry-tab ${isActive ? 'active' : ''}`}
-                onClick={() => {
-                  if (onSelectStoreMode) onSelectStoreMode(mode.id);
-                  setSelectedType(mode.id === 'universal' ? 'all' : mode.id);
-                }}
-                style={isActive ? { borderColor: mode.color, background: `linear-gradient(135deg, ${mode.color}, #4f46e5)` } : {}}
+                onClick={() => setSelectedCategory(cat)}
+                style={isActive ? { borderColor: currentIndustry.color, background: `linear-gradient(135deg, ${currentIndustry.color}, #4f46e5)` } : {}}
               >
-                <span className="tab-emoji">{mode.emoji}</span>
-                <span className="tab-name">{mode.name}</span>
+                <span className="tab-name">{cat}</span>
                 <span className="tab-badge">{count}</span>
               </button>
             );
@@ -821,7 +835,7 @@ export default function WarehouseView({
                 </div>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: '12px', marginBottom: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
                 <div>
                   <label className="form-label">Ombordagi Soni *</label>
                   <input 
@@ -833,7 +847,7 @@ export default function WarehouseView({
                   />
                 </div>
                 <div>
-                  <label className="form-label">Min Limit</label>
+                  <label className="form-label">Min Zaxira Limiti</label>
                   <input 
                     type="number" 
                     className="form-input" 
@@ -841,15 +855,69 @@ export default function WarehouseView({
                     onChange={(e) => setFormMinStock(e.target.value)} 
                   />
                 </div>
-                <div>
-                  <label className="form-label">Rasm Havolasi (URL)</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    placeholder="https://..." 
-                    value={formImage} 
-                    onChange={(e) => setFormImage(e.target.value)} 
-                  />
+              </div>
+
+              {/* Device Image Uploader */}
+              <div style={{
+                background: 'rgba(0,0,0,0.2)',
+                border: '1px solid var(--border-light)',
+                borderRadius: '12px',
+                padding: '14px',
+                marginBottom: '16px'
+              }}>
+                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
+                  <Image size={15} color="var(--primary)" />
+                  <span>Tovar Rasmi (Qurilmangizdan yuklash):</span>
+                </label>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                  <div style={{
+                    width: '64px',
+                    height: '64px',
+                    borderRadius: '12px',
+                    background: 'var(--bg-elevated)',
+                    border: '1.5px dashed var(--border-light)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    flexShrink: 0
+                  }}>
+                    {formImage ? (
+                      <img src={formImage} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    ) : (
+                      <Box size={24} color="var(--text-sub)" />
+                    )}
+                  </div>
+                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <label className="btn btn-sm btn-secondary" style={{ cursor: 'pointer', padding: '6px 12px', fontSize: '0.8rem' }}>
+                        <Upload size={14} /> <span>📁 Qurilmadan rasm tanlash (Telefon / Kompyuter)</span>
+                        <input type="file" accept="image/*" onChange={handleProductImageFile} style={{ display: 'none' }} />
+                      </label>
+                      {formImage && (
+                        <button 
+                          type="button" 
+                          className="btn btn-sm btn-secondary" 
+                          style={{ color: 'var(--danger)', padding: '6px 10px' }} 
+                          onClick={() => setFormImage('')}
+                          title="Rasmni o'chirish"
+                        >
+                          <Trash2 size={14} /> <span>O'chirish</span>
+                        </button>
+                      )}
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <span style={{ fontSize: '0.72rem', color: 'var(--text-sub)' }}>yoki URL:</span>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        placeholder="https://images.unsplash.com/..." 
+                        value={formImage} 
+                        onChange={(e) => setFormImage(e.target.value)} 
+                        style={{ fontSize: '0.75rem', padding: '4px 8px', height: '28px' }}
+                      />
+                    </div>
+                  </div>
                 </div>
               </div>
 

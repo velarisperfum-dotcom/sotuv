@@ -3618,4 +3618,143 @@ body {
   100% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0); }
 }
 
+/* =========================================================
+   BILLZ MULTI-INDUSTRY THEMES (Har bir sohaga xos zamonaviy dizayn)
+   ========================================================= */
+
+/* 1. Kiyim-kechak va Moda Butigi (Luxury Indigo & Rose Gold) */
+[data-industry="clothing"], [data-industry="shoes"] {
+  --primary: #818cf8;
+  --primary-hover: #6366f1;
+  --primary-glow: rgba(129, 140, 248, 0.35);
+  --accent: #f43f5e;
+  --border-focus: rgba(129, 140, 248, 0.6);
+  --industry-gradient: linear-gradient(135deg, #818cf8, #4f46e5);
+}
+
+/* 2. Parfyumeriya & Kosmetika (Luxury Amber & Gold Fragrance) */
+[data-industry="perfume"], [data-industry="cosmetics"] {
+  --primary: #f59e0b;
+  --primary-hover: #d97706;
+  --primary-glow: rgba(245, 158, 11, 0.35);
+  --accent: #ec4899;
+  --border-focus: rgba(245, 158, 11, 0.6);
+  --industry-gradient: linear-gradient(135deg, #f59e0b, #b45309);
+}
+
+/* 3. Supermarket & Oziq-ovqat (Fresh Emerald & Mint Retail) */
+[data-industry="grocery"] {
+  --primary: #10b981;
+  --primary-hover: #059669;
+  --primary-glow: rgba(16, 185, 129, 0.35);
+  --accent: #f59e0b;
+  --border-focus: rgba(16, 185, 129, 0.6);
+  --industry-gradient: linear-gradient(135deg, #10b981, #047857);
+}
+
+/* 4. Dorixona & Salomatlik (Clinical Teal & Medicine Pink) */
+[data-industry="pharmacy"] {
+  --primary: #0d9488;
+  --primary-hover: #0f766e;
+  --primary-glow: rgba(13, 148, 136, 0.35);
+  --accent: #ec4899;
+  --border-focus: rgba(13, 148, 136, 0.6);
+  --industry-gradient: linear-gradient(135deg, #0d9488, #115e59);
+}
+
+/* 5. Smartfonlar & Elektronika (Cyber Neon Cyan & Tech Blue) */
+[data-industry="electronics"], [data-industry="appliances"] {
+  --primary: #06b6d4;
+  --primary-hover: #0891b2;
+  --primary-glow: rgba(6, 182, 212, 0.35);
+  --accent: #6366f1;
+  --border-focus: rgba(6, 182, 212, 0.6);
+  --industry-gradient: linear-gradient(135deg, #06b6d4, #0e7490);
+}
+
+/* 6. Restoran & Kafe (Flame Orange & Warm Spice) */
+[data-industry="restaurant"], [data-industry="fastfood"], [data-industry="bakery"] {
+  --primary: #ea580c;
+  --primary-hover: #c2410c;
+  --primary-glow: rgba(234, 88, 12, 0.35);
+  --accent: #eab308;
+  --border-focus: rgba(234, 88, 12, 0.6);
+  --industry-gradient: linear-gradient(135deg, #ea580c, #9a3412);
+}
+
+/* 7. Avtoehtiyot qismlar & Qurilish (Industrial Crimson & Gunmetal) */
+[data-industry="auto_parts"], [data-industry="building"], [data-industry="hardware"] {
+  --primary: #e11d48;
+  --primary-hover: #be123c;
+  --primary-glow: rgba(225, 29, 72, 0.35);
+  --accent: #f97316;
+  --border-focus: rgba(225, 29, 72, 0.6);
+  --industry-gradient: linear-gradient(135deg, #e11d48, #9f1239);
+}
+
+/* 8. Zargarlik & Aksessuarlar (Brilliant Gold & Diamond Sparkle) */
+[data-industry="jewelry"] {
+  --primary: #eab308;
+  --primary-hover: #ca8a04;
+  --primary-glow: rgba(234, 179, 8, 0.4);
+  --accent: #38bdf8;
+  --border-focus: rgba(234, 179, 8, 0.6);
+  --industry-gradient: linear-gradient(135deg, #eab308, #854d0e);
+}
+
+/* 9. Kitoblar & Kantselyariya (Rich Royal Violet) */
+[data-industry="books"], [data-industry="stationery"] {
+  --primary: #8b5cf6;
+  --primary-hover: #7c3aed;
+  --primary-glow: rgba(139, 92, 246, 0.35);
+  --accent: #06b6d4;
+  --border-focus: rgba(139, 92, 246, 0.6);
+  --industry-gradient: linear-gradient(135deg, #8b5cf6, #6d28d9);
+}
+
+/* 10. Gullar & Sovg'alar (Rose Bloom & Floral Emerald) */
+[data-industry="flowers"], [data-industry="toys"] {
+  --primary: #ec4899;
+  --primary-hover: #db2777;
+  --primary-glow: rgba(236, 72, 153, 0.35);
+  --accent: #10b981;
+  --border-focus: rgba(236, 72, 153, 0.6);
+  --industry-gradient: linear-gradient(135deg, #ec4899, #be185d);
+}
+
+/* Store logo & avatar styling in header & sidebar */
+.header-store-brand-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 14px;
+  background: var(--bg-card);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  transition: all 0.25s ease;
+}
+.header-store-brand-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--primary);
+  transform: translateY(-1px);
+}
+.header-store-logo-box {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--bg-elevated);
+  border: 1.5px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+.header-store-img-logo {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+
 
