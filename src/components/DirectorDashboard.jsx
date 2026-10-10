@@ -4,6 +4,7 @@ import {
   ArrowUpRight, ArrowDownRight, CreditCard, Banknote, Building2, 
   Clock, Eye, Sparkles, UserCheck, BarChart3, Layers
 } from 'lucide-react';
+import { getIndustryById } from '../data/industriesData';
 
 export default function DirectorDashboard({ 
   sales = [], 
@@ -12,9 +13,11 @@ export default function DirectorDashboard({
   balances = {}, 
   debts = [], 
   expenses = [],
+  storeMode = 'universal',
   onViewReceipt,
   onChangeView
 }) {
+  const currentIndustry = getIndustryById(storeMode);
   const [filterPeriod, setFilterPeriod] = useState('all'); // 'all', 'month'
 
   const safeSales = Array.isArray(sales) ? sales : [];
@@ -105,27 +108,41 @@ export default function DirectorDashboard({
 
   const staffPerformance = Object.values(staffSalesMap);
 
-  // Industry / Category Sales breakdown (BILLZ Multi-Industry Analytics)
-  const industrySalesMap = {
-    clothing: { name: 'Kiyim & Poyabzal', emoji: '👕', revenue: 0, count: 0, color: '#818cf8' },
-    perfume: { name: 'Parfyumeriya & Go\'zallik', emoji: '💎', revenue: 0, count: 0, color: '#f59e0b' },
-    electronics: { name: 'Elektronika & Gadjetlar', emoji: '📱', revenue: 0, count: 0, color: '#38bdf8' },
-    grocery: { name: 'Oziq-ovqat & Supermarket', emoji: '🛒', revenue: 0, count: 0, color: '#34d399' },
-    general: { name: 'Umumiy Tovar & Aksessuar', emoji: '📦', revenue: 0, count: 0, color: '#a78bfa' }
-  };
+  // Store's own categories breakdown (Single-Store Analytics)
+  const rawCategories = currentIndustry?.categories?.filter(c => c !== 'Hammasi') || ['Asosiy toifalar'];
+  const palette = ['#6366f1', '#10b981', '#f59e0b', '#38bdf8', '#ec4899', '#8b5cf6', '#f43f5e', '#14b8a6', '#06b6d4'];
+  const categorySalesMap = {};
+
+  rawCategories.forEach((cat, idx) => {
+    categorySalesMap[cat] = {
+      name: cat,
+      emoji: currentIndustry.emoji || '🛍️',
+      revenue: 0,
+      count: 0,
+      color: palette[idx % palette.length]
+    };
+  });
 
   filteredSales.forEach(sale => {
     sale?.items?.forEach(item => {
       const prod = safeProducts.find(p => p?.id === item?.id);
-      let pType = item?.productType || (prod?.productType) || (item?.volume ? 'perfume' : 'general');
-      if (!industrySalesMap[pType]) pType = 'general';
+      const cat = prod?.category || item?.category || rawCategories[0];
+      if (!categorySalesMap[cat]) {
+        categorySalesMap[cat] = {
+          name: cat,
+          emoji: currentIndustry.emoji || '🛍️',
+          revenue: 0,
+          count: 0,
+          color: palette[Object.keys(categorySalesMap).length % palette.length]
+        };
+      }
       const itemRev = Number(item?.quantity || 1) * Number(item?.price || 0);
-      industrySalesMap[pType].revenue += itemRev;
-      industrySalesMap[pType].count += Number(item?.quantity || 1);
+      categorySalesMap[cat].revenue += itemRev;
+      categorySalesMap[cat].count += Number(item?.quantity || 1);
     });
   });
 
-  const industrySalesList = Object.values(industrySalesMap);
+  const categorySalesList = Object.values(categorySalesMap);
 
   return (
     <div className="page-container">
@@ -230,45 +247,55 @@ export default function DirectorDashboard({
         </div>
       </div>
 
-      {/* Tovar Turlari Bo'yicha Tushum (BILLZ Multi-Industry Analytics) */}
+      {/* Tovar Toifalari Bo'yicha Tushum Taqsimoti */}
       <div className="glass-panel">
         <div className="panel-header">
           <h3 className="panel-title">
             <Layers size={20} color="var(--primary)" />
-            Tovar Turlari Bo'yicha Tushum Taqsimoti (BILLZ Retail)
+            {currentIndustry.shortName} Toifalari Bo'yicha Tushum Taqsimoti
           </h3>
-          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Kiyim, Gadjet, Parfyum, Oziq-ovqat</span>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+            {currentIndustry.name} toifalari bo'yicha sotuv ulushi
+          </span>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px', marginBottom: '16px' }}>
-          {industrySalesList.map((ind, idx) => {
-            const share = totalRevenue > 0 ? Math.round((ind.revenue / totalRevenue) * 100) : 0;
-            return (
-              <div 
-                key={idx} 
-                style={{ 
-                  background: 'rgba(255,255,255,0.02)', 
-                  border: `1px solid ${ind.color}33`, 
-                  padding: '14px', 
-                  borderRadius: '12px' 
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '0.86rem', color: ind.color }}>
-                    <span style={{ fontSize: '1.1rem' }}>{ind.emoji}</span> {ind.name}
+        {filteredSales.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '32px 20px', color: 'var(--text-muted)' }}>
+            <div style={{ fontSize: '2rem', marginBottom: '8px' }}>{currentIndustry.emoji}</div>
+            <strong style={{ color: '#fff', fontSize: '0.95rem' }}>Ushbu {currentIndustry.shortName} do'konida hali savdo amalga oshirilmagan</strong>
+            <p style={{ fontSize: '0.8rem', marginTop: '6px' }}>Sotuvchi Kassa (POS) orqali ilk tovarlarni sotgach, bu yerda avtomatik toifalar bo'yicha tushum ko'rsatiladi.</p>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px', marginBottom: '16px' }}>
+            {categorySalesList.map((cat, idx) => {
+              const share = totalRevenue > 0 ? Math.round((cat.revenue / totalRevenue) * 100) : 0;
+              return (
+                <div 
+                  key={idx} 
+                  style={{ 
+                    background: 'rgba(255,255,255,0.02)', 
+                    border: `1px solid ${cat.color}33`, 
+                    padding: '14px', 
+                    borderRadius: '12px' 
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '0.86rem', color: cat.color }}>
+                      <span style={{ fontSize: '1.1rem' }}>{cat.emoji}</span> {cat.name}
+                    </div>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--text-sub)' }}>{cat.count} dona</span>
                   </div>
-                  <span style={{ fontSize: '0.74rem', color: 'var(--text-sub)' }}>{ind.count} dona</span>
+                  <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff' }}>
+                    {formatMoney(cat.revenue)}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                    Ulush: <strong style={{ color: cat.color }}>{share}%</strong>
+                  </div>
                 </div>
-                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff' }}>
-                  {formatMoney(ind.revenue)}
-                </div>
-                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>
-                  Ulush: <strong style={{ color: ind.color }}>{share}%</strong>
-                </div>
-              </div>
-            );
-          })}
-        </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Payment Methods Breakdown (Rasmdagi: Oplata turlari) */}
@@ -409,51 +436,57 @@ export default function DirectorDashboard({
           </h3>
         </div>
 
-        <div className="table-responsive">
-          <table className="data-table">
-            <thead>
-              <tr>
-                <th>Chek ID</th>
-                <th>Sana va Vaqt</th>
-                <th>Sotuvchi (Kassir)</th>
-                <th>Sotilgan Mahsulotlar</th>
-                <th>To'lov Turi</th>
-                <th>Jami Summa</th>
-                <th style={{ textAlign: 'right' }}>Chekni ko'rish</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sales.slice(0, 10).map(sale => (
-                <tr key={sale.id}>
-                  <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--primary)' }}>{sale.id}</td>
-                  <td style={{ color: 'var(--text-sub)' }}>{sale.date}</td>
-                  <td style={{ fontWeight: 600 }}>{sale.cashierName}</td>
-                  <td>
-                    {sale.items?.map(i => `${i.name} (${i.quantity}x)`).join(', ')}
-                  </td>
-                  <td>
-                    <span className={`badge ${
-                      sale.paymentMethod === 'Naqd' ? 'badge-cash' :
-                      sale.paymentMethod === 'Karta' ? 'badge-card' :
-                      sale.paymentMethod === 'Bank perech' ? 'badge-bank' : 'badge-debt'
-                    }`}>
-                      {sale.paymentMethod}
-                    </span>
-                  </td>
-                  <td style={{ fontWeight: 800, color: '#fff' }}>{formatMoney(sale.total)}</td>
-                  <td style={{ textAlign: 'right' }}>
-                    <button 
-                      className="btn btn-sm btn-secondary"
-                      onClick={() => onViewReceipt(sale)}
-                    >
-                      <Eye size={14} /> Chek
-                    </button>
-                  </td>
+        {sales.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '36px', color: 'var(--text-muted)' }}>
+            <p style={{ fontSize: '0.9rem' }}>Ushbu do'konda hozircha sotuv cheklari mavjud emas.</p>
+          </div>
+        ) : (
+          <div className="table-responsive">
+            <table className="data-table">
+              <thead>
+                <tr>
+                  <th>Chek ID</th>
+                  <th>Sana va Vaqt</th>
+                  <th>Sotuvchi (Kassir)</th>
+                  <th>Sotilgan Mahsulotlar</th>
+                  <th>To'lov Turi</th>
+                  <th>Jami Summa</th>
+                  <th style={{ textAlign: 'right' }}>Chekni ko'rish</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {sales.slice(0, 10).map(sale => (
+                  <tr key={sale.id}>
+                    <td style={{ fontFamily: 'monospace', fontWeight: 700, color: 'var(--primary)' }}>{sale.id}</td>
+                    <td style={{ color: 'var(--text-sub)' }}>{sale.date}</td>
+                    <td style={{ fontWeight: 600 }}>{sale.cashierName}</td>
+                    <td>
+                      {sale.items?.map(i => `${i.name} (${i.quantity}x)`).join(', ')}
+                    </td>
+                    <td>
+                      <span className={`badge ${
+                        sale.paymentMethod === 'Naqd' ? 'badge-cash' :
+                        sale.paymentMethod === 'Karta' ? 'badge-card' :
+                        sale.paymentMethod === 'Bank perech' ? 'badge-bank' : 'badge-debt'
+                      }`}>
+                        {sale.paymentMethod}
+                      </span>
+                    </td>
+                    <td style={{ fontWeight: 800, color: '#fff' }}>{formatMoney(sale.total)}</td>
+                    <td style={{ textAlign: 'right' }}>
+                      <button 
+                        className="btn btn-sm btn-secondary"
+                        onClick={() => onViewReceipt(sale)}
+                      >
+                        <Eye size={14} /> Chek
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
     </div>
   );

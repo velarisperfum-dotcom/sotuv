@@ -100,67 +100,12 @@ export const INITIAL_STAFF = [
   }
 ];
 
-export const INITIAL_DEBTS = [
-  {
-    id: 'dbt-1',
-    customerName: 'Dilshod Ergashev',
-    phone: '+998 90 123 45 67',
-    productSummary: 'Creed Aventus (50 ml)',
-    totalAmount: 892500,
-    paidAmount: 400000,
-    remainingAmount: 492500,
-    dueDate: '2026-10-25',
-    createdAt: '2026-10-02',
-    status: 'Faol'
-  },
-  {
-    id: 'dbt-2',
-    customerName: 'Shaxzoda Usmanova',
-    phone: '+998 97 765 43 21',
-    productSummary: 'Imagination Louis Vuitton (30 ml)',
-    totalAmount: 633600,
-    paidAmount: 300000,
-    remainingAmount: 333600,
-    dueDate: '2026-10-18',
-    createdAt: '2026-10-04',
-    status: 'Muddati yaqin'
-  }
-];
-
-export const INITIAL_SALES = [
-  {
-    id: 'SL-1092',
-    date: '2026-10-08 18:30',
-    cashierName: 'Jasur Qodirov',
-    items: [
-      { id: 'prd-1', name: 'Aventus (Creed)', volume: '20 ml', quantity: 1, price: 378000 }
-    ],
-    total: 378000,
-    paymentMethod: 'Naqd',
-    status: 'Yakunlangan'
-  },
-  {
-    id: 'SL-1091',
-    date: '2026-10-08 16:15',
-    cashierName: 'Nilufar Karimova',
-    items: [
-      { id: 'prd-11', name: 'Imagination (Louis Vuitton)', volume: '30 ml', quantity: 1, price: 633600 },
-      { id: 'prd-2', name: 'Absolu Aventus (Creed)', volume: '10 ml', quantity: 1, price: 210000 }
-    ],
-    total: 843600,
-    paymentMethod: 'Karta',
-    status: 'Yakunlangan'
-  }
-];
-
-export const INITIAL_EXPENSES = [
-  { id: 'exp-1', title: 'Do\'kon ijarasi (Oktyabr)', amount: 15000000, category: 'Ijara', date: '2026-10-01' },
-  { id: 'exp-2', title: 'Instagram reklama', amount: 3500000, category: 'Marketing', date: '2026-10-03' },
-  { id: 'exp-3', title: 'Flakon va atomayzerlar xaridi', amount: 2800000, category: 'Qadoqlash', date: '2026-10-05' }
-];
-
+export const INITIAL_DEBTS = [];
+export const INITIAL_SALES = [];
+export const INITIAL_EXPENSES = [];
 export const INITIAL_BALANCES = {
-  cash: 18450000,
-  card: 34200000,
-  bank: 86500000
+  cash: 0,
+  card: 0,
+  bank: 0
 };
+

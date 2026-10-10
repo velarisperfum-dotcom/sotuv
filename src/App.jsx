@@ -105,18 +105,45 @@ export default function App() {
   });
 
   const [sales, setSales] = useState(() => {
-    const saved = localStorage.getItem('blizz_sales');
-    return saved ? JSON.parse(saved) : INITIAL_SALES;
+    try {
+      // Bir martalik tozalash: agar eski parfyum savdolari qolgan bo'lsa
+      if (!localStorage.getItem('billz_sales_isolated_v3')) {
+        localStorage.removeItem('blizz_sales');
+        localStorage.removeItem('blizz_balances');
+        localStorage.removeItem('blizz_debts');
+        localStorage.removeItem('blizz_expenses');
+        localStorage.setItem('billz_sales_isolated_v3', 'true');
+        return [];
+      }
+      const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
+      const activeIndustry = session?.industryId || localStorage.getItem('billz_store_mode') || 'universal';
+      const saved = localStorage.getItem(`billz_sales_${activeIndustry}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
 
   const [balances, setBalances] = useState(() => {
-    const saved = localStorage.getItem('blizz_balances');
-    return saved ? JSON.parse(saved) : INITIAL_BALANCES;
+    try {
+      const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
+      const activeIndustry = session?.industryId || localStorage.getItem('billz_store_mode') || 'universal';
+      const saved = localStorage.getItem(`billz_balances_${activeIndustry}`);
+      return saved ? JSON.parse(saved) : { cash: 0, card: 0, bank: 0 };
+    } catch {
+      return { cash: 0, card: 0, bank: 0 };
+    }
   });
 
   const [debts, setDebts] = useState(() => {
-    const saved = localStorage.getItem('blizz_debts');
-    return saved ? JSON.parse(saved) : INITIAL_DEBTS;
+    try {
+      const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
+      const activeIndustry = session?.industryId || localStorage.getItem('billz_store_mode') || 'universal';
+      const saved = localStorage.getItem(`billz_debts_${activeIndustry}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
 
   const [staff, setStaff] = useState(() => {
@@ -125,8 +152,14 @@ export default function App() {
   });
 
   const [expenses, setExpenses] = useState(() => {
-    const saved = localStorage.getItem('blizz_expenses');
-    return saved ? JSON.parse(saved) : INITIAL_EXPENSES;
+    try {
+      const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
+      const activeIndustry = session?.industryId || localStorage.getItem('billz_store_mode') || 'universal';
+      const saved = localStorage.getItem(`billz_expenses_${activeIndustry}`);
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
   });
 
   const [isServerConnected, setIsServerConnected] = useState(false);
@@ -149,11 +182,11 @@ export default function App() {
     fetchAllServerData().then(serverData => {
       if (serverData) {
         setIsServerConnected(true);
-        if (serverData.products && serverData.products.length > 0) {
-          try {
-            const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
-            const currentMode = session?.industryId || localStorage.getItem('billz_store_mode') || 'universal';
-            
+        try {
+          const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
+          const currentMode = session?.industryId || localStorage.getItem('billz_store_mode') || 'universal';
+
+          if (serverData.products && serverData.products.length > 0) {
             // Faqat va faqat joriy do'konga tegishli tovarlar qabul qilinadi!
             // Boshqa soha do'konlariga parfyumeriya tovarlari aslo tushmaydi!
             if (currentMode === 'perfume') {
@@ -172,15 +205,24 @@ export default function App() {
                 setProducts(matching);
               }
             }
-          } catch (e) {
-            console.error('Server product filter error:', e);
           }
+
+          // Faqat parfyumeriya do'koni bo'lsa serverdagi eski parfyumeriya savdolarini yuklash:
+          if (currentMode === 'perfume') {
+            if (serverData.sales && serverData.sales.length > 0) setSales(serverData.sales);
+            if (serverData.balances) setBalances(serverData.balances);
+            if (serverData.debts) setDebts(serverData.debts);
+            if (serverData.expenses) setExpenses(serverData.expenses);
+          } else {
+            // Boshqa barcha sohalar (Maishiy texnika, kiyim-kechak, elektronika va h.k.) uchun:
+            // Faqat shu do'konga tegishli savdolar yuklanadi, parfyumeriya ma'lumotlari aslo tushmaydi!
+            const storeSales = (serverData.sales || []).filter(s => s.storeId && s.storeId === session?.id);
+            if (storeSales.length > 0) setSales(storeSales);
+          }
+          if (serverData.staff) setStaff(serverData.staff);
+        } catch (e) {
+          console.error('Server data filter error:', e);
         }
-        if (serverData.sales && serverData.sales.length > 0) setSales(serverData.sales);
-        if (serverData.balances) setBalances(serverData.balances);
-        if (serverData.debts) setDebts(serverData.debts);
-        if (serverData.staff) setStaff(serverData.staff);
-        if (serverData.expenses) setExpenses(serverData.expenses);
       }
     });
   }, []);
@@ -259,16 +301,24 @@ export default function App() {
   }, [storeMode]);
 
   useEffect(() => {
-    localStorage.setItem('blizz_sales', JSON.stringify(sales));
-  }, [sales]);
+    const indId = currentStoreSession?.industryId || storeMode || 'universal';
+    localStorage.setItem(`billz_sales_${indId}`, JSON.stringify(sales));
+  }, [sales, currentStoreSession, storeMode]);
 
   useEffect(() => {
-    localStorage.setItem('blizz_balances', JSON.stringify(balances));
-  }, [balances]);
+    const indId = currentStoreSession?.industryId || storeMode || 'universal';
+    localStorage.setItem(`billz_balances_${indId}`, JSON.stringify(balances));
+  }, [balances, currentStoreSession, storeMode]);
 
   useEffect(() => {
-    localStorage.setItem('blizz_debts', JSON.stringify(debts));
-  }, [debts]);
+    const indId = currentStoreSession?.industryId || storeMode || 'universal';
+    localStorage.setItem(`billz_debts_${indId}`, JSON.stringify(debts));
+  }, [debts, currentStoreSession, storeMode]);
+
+  useEffect(() => {
+    const indId = currentStoreSession?.industryId || storeMode || 'universal';
+    localStorage.setItem(`billz_expenses_${indId}`, JSON.stringify(expenses));
+  }, [expenses, currentStoreSession, storeMode]);
 
   useEffect(() => {
     localStorage.setItem('blizz_staff', JSON.stringify(staff));
@@ -455,15 +505,22 @@ export default function App() {
     setStoreMode(indId);
     localStorage.setItem('billz_store_mode', indId);
 
-    // Yangi soha tanlanganda darhol o'sha sohaga xos tovarlar katalogi yuklanadi!
+    // Yangi soha tanlanganda unga xos tovarlar va toza moliyaviy hisobot yuklanadi
     const sampleProds = getSampleProductsForIndustry(indId);
     setProducts(sampleProds);
-    localStorage.setItem('billz_products_v4', JSON.stringify(sampleProds));
     localStorage.setItem(`billz_products_${indId}`, JSON.stringify(sampleProds));
+
+    const savedSales = localStorage.getItem(`billz_sales_${indId}`);
+    setSales(savedSales ? JSON.parse(savedSales) : []);
+    const savedBalances = localStorage.getItem(`billz_balances_${indId}`);
+    setBalances(savedBalances ? JSON.parse(savedBalances) : { cash: 0, card: 0, bank: 0 });
+    const savedDebts = localStorage.getItem(`billz_debts_${indId}`);
+    setDebts(savedDebts ? JSON.parse(savedDebts) : []);
+    const savedExpenses = localStorage.getItem(`billz_expenses_${indId}`);
+    setExpenses(savedExpenses ? JSON.parse(savedExpenses) : []);
 
     setIsAuthModalOpen(false);
 
-    // Agar rahbar ismi kiritilgan bo'lsa, xodimlar orasida Direktor ismini yangilaymiz
     if (sessionData.directorName) {
       setStaff(prev => prev.map(s => {
         if (s.role === 'Direktor') {
@@ -480,22 +537,36 @@ export default function App() {
     setStoreMode(indId);
     localStorage.setItem('billz_store_mode', indId);
 
-    const sampleProds = getSampleProductsForIndustry(indId);
-    setProducts(sampleProds);
-    localStorage.setItem('billz_products_v4', JSON.stringify(sampleProds));
-    localStorage.setItem(`billz_products_${indId}`, JSON.stringify(sampleProds));
+    const savedProds = localStorage.getItem(`billz_products_${indId}`);
+    setProducts(savedProds ? JSON.parse(savedProds) : getSampleProductsForIndustry(indId));
+    
+    const savedSales = localStorage.getItem(`billz_sales_${indId}`);
+    setSales(savedSales ? JSON.parse(savedSales) : []);
+    const savedBalances = localStorage.getItem(`billz_balances_${indId}`);
+    setBalances(savedBalances ? JSON.parse(savedBalances) : { cash: 0, card: 0, bank: 0 });
+    const savedDebts = localStorage.getItem(`billz_debts_${indId}`);
+    setDebts(savedDebts ? JSON.parse(savedDebts) : []);
+    const savedExpenses = localStorage.getItem(`billz_expenses_${indId}`);
+    setExpenses(savedExpenses ? JSON.parse(savedExpenses) : []);
 
     setIsAuthModalOpen(false);
   };
 
-  // Do'kon sohasini almashtirish: katalog va tovarlar ham o'sha sohaga mos yangilanadi
+  // Do'kon sohasini almashtirish: katalog va savdolar ham o'sha sohaga mos yangilanadi
   const handleSelectStoreMode = (mode) => {
     setStoreMode(mode);
     localStorage.setItem('billz_store_mode', mode);
-    const sampleProds = getSampleProductsForIndustry(mode);
-    setProducts(sampleProds);
-    localStorage.setItem('billz_products_v4', JSON.stringify(sampleProds));
-    localStorage.setItem(`billz_products_${mode}`, JSON.stringify(sampleProds));
+    const savedProds = localStorage.getItem(`billz_products_${mode}`);
+    setProducts(savedProds ? JSON.parse(savedProds) : getSampleProductsForIndustry(mode));
+
+    const savedSales = localStorage.getItem(`billz_sales_${mode}`);
+    setSales(savedSales ? JSON.parse(savedSales) : []);
+    const savedBalances = localStorage.getItem(`billz_balances_${mode}`);
+    setBalances(savedBalances ? JSON.parse(savedBalances) : { cash: 0, card: 0, bank: 0 });
+    const savedDebts = localStorage.getItem(`billz_debts_${mode}`);
+    setDebts(savedDebts ? JSON.parse(savedDebts) : []);
+    const savedExpenses = localStorage.getItem(`billz_expenses_${mode}`);
+    setExpenses(savedExpenses ? JSON.parse(savedExpenses) : []);
   };
 
   // AGAR QR-KOD SKANERLANGAN BO'LSA, FAQAT CHEKNING O'ZI CHIQSIN!
@@ -568,6 +639,7 @@ export default function App() {
               balances={balances}
               debts={debts}
               expenses={expenses}
+              storeMode={storeMode}
               onViewReceipt={(sale) => setActiveReceiptSale(sale)}
               onChangeView={(view) => setCurrentView(view)}
             />
