@@ -1,107 +1,245 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
-  Package, Plus, AlertTriangle, Search, Filter, 
-  ArrowUpRight, ArrowDownRight, Edit2, Trash2, CheckCircle2, Box
+  Plus, AlertTriangle, Search, Filter, 
+  ArrowUpRight, Edit2, Trash2, Box,
+  Download, Barcode, Shirt, Smartphone, Apple, 
+  Sparkles, Check
 } from 'lucide-react';
+import { STORE_MODES, PRODUCT_TYPES, MEASURE_UNITS } from '../data/initialData';
 
 export default function WarehouseView({ 
   products, 
   onAddProduct, 
   onUpdateProduct, 
-  onDeleteProduct 
+  onDeleteProduct,
+  storeMode = 'universal',
+  onSelectStoreMode
 }) {
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedType, setSelectedType] = useState(storeMode === 'universal' ? 'all' : storeMode); // all, clothing, perfume, electronics, grocery, general
   const [filterBrand, setFilterBrand] = useState('Hammasi');
+  const [onlyLowStock, setOnlyLowStock] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
-  // New product form
+  // Form states for dynamic product creation
+  const [formType, setFormType] = useState('clothing');
   const [formName, setFormName] = useState('');
   const [formBrand, setFormBrand] = useState('');
-  const [formCategory, setFormCategory] = useState('Unisex');
-  const [formVolume, setFormVolume] = useState('100 ml');
-  const [formConcentration, setFormConcentration] = useState('EDP');
+  const [formCategory, setFormCategory] = useState('');
+  const [formUnit, setFormUnit] = useState('dona');
   const [formBarcode, setFormBarcode] = useState('');
   const [formCostPrice, setFormCostPrice] = useState('');
   const [formPrice, setFormPrice] = useState('');
-  const [formStock, setFormStock] = useState('');
+  const [formWholesalePrice, setFormWholesalePrice] = useState('');
+  const [formStock, setFormStock] = useState('10');
   const [formMinStock, setFormMinStock] = useState('3');
   const [formImage, setFormImage] = useState('');
   const [formNotes, setFormNotes] = useState('');
 
-  const brands = ['Hammasi', ...Array.from(new Set(products.map(p => p.brand)))];
-
-  const filteredProducts = products.filter(p => {
-    const matchesBrand = filterBrand === 'Hammasi' || p.brand === filterBrand;
-    const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          p.brand.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                          (p.barcode && p.barcode.includes(searchTerm));
-    return matchesBrand && matchesSearch;
+  // Industry-specific attribute states:
+  // 1. Clothing:
+  const [formClothingSizes, setFormClothingSizes] = useState('S, M, L, XL');
+  const [formClothingColors, setFormClothingColors] = useState('Qora, Oq');
+  const [formClothingMaterial, setFormClothingMaterial] = useState('Paxta 100%');
+  
+  // 2. Electronics:
+  const [formTechWarranty, setFormTechWarranty] = useState('12 oy');
+  const [formTechMemory, setFormTechMemory] = useState('128GB, 256GB');
+  
+  // 3. Perfume:
+  const [formPerfumeVolume, setFormPerfumeVolume] = useState('50 ml');
+  const [formPerfumeConcentration, setFormPerfumeConcentration] = useState('EDP');
+  const [formPerfumePrices, setFormPerfumePrices] = useState({
+    '10 ml': '',
+    '20 ml': '',
+    '30 ml': '',
+    '50 ml': ''
   });
 
+  // 4. Grocery:
+  const [formGroceryExpiry, setFormGroceryExpiry] = useState('');
+
+  // 5. Pharmacy:
+  const [formPharmacyExpiry, setFormPharmacyExpiry] = useState('');
+  const [formPharmacyDosage, setFormPharmacyDosage] = useState('');
+
+  // Sync with storeMode
+  useEffect(() => {
+    if (storeMode && storeMode !== 'universal') {
+      setSelectedType(storeMode);
+      setFormType(storeMode);
+    } else {
+      setSelectedType('all');
+    }
+  }, [storeMode]);
+
+  // Helper: Tovar turini aniqlash
+  const getProductType = (p) => {
+    if (p.productType) return p.productType;
+    if (p.prices && (p.prices['10 ml'] || p.volume)) return 'perfume';
+    return 'general';
+  };
+
+  const getTypeBadge = (type) => {
+    switch (type) {
+      case 'clothing': return { label: 'Kiyim', emoji: '👕', color: '#818cf8', bg: 'rgba(129, 140, 248, 0.15)' };
+      case 'perfume': return { label: 'Parfyum', emoji: '💎', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' };
+      case 'electronics': return { label: 'Gadjet', emoji: '📱', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.15)' };
+      case 'grocery': return { label: 'Oziq-ovqat', emoji: '🛒', color: '#34d399', bg: 'rgba(52, 211, 153, 0.15)' };
+      default: return { label: 'Tovar', emoji: '📦', color: '#a78bfa', bg: 'rgba(167, 139, 250, 0.15)' };
+    }
+  };
+
+  const brands = ['Hammasi', ...Array.from(new Set(products.map(p => p.brand).filter(Boolean)))];
+
+  // Filtrlangan tovarlar ro'yxati
+  const filteredProducts = products.filter(p => {
+    const pType = getProductType(p);
+    const matchesType = selectedType === 'all' || pType === selectedType;
+    const matchesBrand = filterBrand === 'Hammasi' || p.brand === filterBrand;
+    const matchesLowStock = !onlyLowStock || p.stock <= (p.minStock || 3);
+
+    const term = searchTerm.toLowerCase();
+    const matchesSearch = 
+      !term ||
+      (p.name && p.name.toLowerCase().includes(term)) ||
+      (p.brand && p.brand.toLowerCase().includes(term)) ||
+      (p.category && p.category.toLowerCase().includes(term)) ||
+      (p.barcode && p.barcode.includes(term));
+
+    return matchesType && matchesBrand && matchesLowStock && matchesSearch;
+  });
+
+  // Ombordagi hisob-kitoblar
   const lowStockCount = products.filter(p => p.stock <= (p.minStock || 3)).length;
-  const totalStockCount = products.reduce((acc, p) => acc + Number(p.stock), 0);
-  const totalCostValue = products.reduce((acc, p) => acc + (Number(p.costPrice) * Number(p.stock)), 0);
-  const totalRetailValue = products.reduce((acc, p) => acc + (Number(p.price) * Number(p.stock)), 0);
+  const totalStockCount = products.reduce((acc, p) => acc + Number(p.stock || 0), 0);
+  const totalCostValue = products.reduce((acc, p) => acc + (Number(p.costPrice || 0) * Number(p.stock || 0)), 0);
+  const totalRetailValue = products.reduce((acc, p) => acc + (Number(p.price || 0) * Number(p.stock || 0)), 0);
   const potentialProfit = totalRetailValue - totalCostValue;
 
   const formatMoney = (val) => Number(val || 0).toLocaleString('uz-UZ') + " so'm";
 
+  // Yangi tovar modalini ochish
   const handleOpenAdd = () => {
     setEditingProduct(null);
+    setFormType('clothing');
     setFormName('');
     setFormBrand('');
-    setFormCategory('Unisex');
-    setFormVolume('100 ml');
-    setFormConcentration('EDP');
-    setFormBarcode(Math.floor(1000000000000 + Math.random() * 9000000000000).toString());
+    setFormCategory('Kiyim-kechak');
+    setFormUnit('dona');
+    setFormBarcode(Math.floor(100000000000 + Math.random() * 900000000000).toString());
     setFormCostPrice('');
     setFormPrice('');
-    setFormStock('');
+    setFormWholesalePrice('');
+    setFormStock('15');
     setFormMinStock('3');
-    setFormImage('https://images.unsplash.com/photo-1594035910387-fea47794261f?w=400&q=80');
+    setFormImage('https://images.unsplash.com/photo-1523381210434-271e8be1f52b?w=400&q=80');
     setFormNotes('');
+    setFormClothingSizes('S, M, L, XL');
+    setFormClothingColors('Qora, Oq');
+    setFormClothingMaterial('Paxta 100%');
+    setFormTechWarranty('12 oy');
+    setFormTechMemory('128GB, 256GB');
+    setFormPerfumeVolume('50 ml');
+    setFormPerfumeConcentration('EDP');
+    setFormPerfumePrices({ '10 ml': '', '20 ml': '', '30 ml': '', '50 ml': '' });
+    setFormGroceryExpiry('');
     setShowAddModal(true);
   };
 
+  // Tahrirlash modalini ochish
   const handleOpenEdit = (p) => {
     setEditingProduct(p);
-    setFormName(p.name);
-    setFormBrand(p.brand);
-    setFormCategory(p.category);
-    setFormVolume(p.volume);
-    setFormConcentration(p.concentration);
+    const pType = getProductType(p);
+    setFormType(pType);
+    setFormName(p.name || '');
+    setFormBrand(p.brand || '');
+    setFormCategory(p.category || '');
+    setFormUnit(p.unit || 'dona');
     setFormBarcode(p.barcode || '');
-    setFormCostPrice(p.costPrice);
-    setFormPrice(p.price);
-    setFormStock(p.stock);
-    setFormMinStock(p.minStock || 3);
-    setFormImage(p.image);
+    setFormCostPrice(p.costPrice || '');
+    setFormPrice(p.price || '');
+    setFormWholesalePrice(p.wholesalePrice || '');
+    setFormStock(p.stock || '0');
+    setFormMinStock(p.minStock || '3');
+    setFormImage(p.image || '');
     setFormNotes(p.notes || '');
+
+    if (pType === 'clothing' && p.variants) {
+      const sizes = Array.from(new Set(p.variants.map(v => v.size).filter(Boolean))).join(', ');
+      const colors = Array.from(new Set(p.variants.map(v => v.color).filter(Boolean))).join(', ');
+      setFormClothingSizes(sizes || 'S, M, L');
+      setFormClothingColors(colors || 'Qora, Oq');
+    }
+
+    if (pType === 'perfume') {
+      setFormPerfumeVolume(p.volume || '50 ml');
+      setFormPerfumeConcentration(p.concentration || 'EDP');
+      setFormPerfumePrices(p.prices || { '10 ml': '', '20 ml': '', '30 ml': '', '50 ml': '' });
+    }
+
     setShowAddModal(true);
   };
 
+  // Mahsulotni saqlash (Qo'shish yoki Tahrirlash)
   const handleSaveProduct = (e) => {
     e.preventDefault();
-    if (!formName || !formBrand || !formPrice || !formCostPrice || !formStock) {
-      alert("Iltimos, barcha majburiy maydonlarni to'ldiring!");
+    if (!formName || !formPrice) {
+      alert("Iltimos, tovar nomi va sotish narxini kiriting!");
       return;
+    }
+
+    const priceNum = Number(formPrice);
+    const costPriceNum = Number(formCostPrice) || Math.round(priceNum * 0.7);
+
+    // Variantlarni generatsiya qilish (agar kiyim yoki elektronika bo'lsa)
+    let variants = editingProduct?.variants || [];
+    if (formType === 'clothing' && formClothingSizes) {
+      const sizes = formClothingSizes.split(',').map(s => s.trim()).filter(Boolean);
+      const colors = formClothingColors.split(',').map(c => c.trim()).filter(Boolean);
+      variants = [];
+      sizes.forEach((sz, idx) => {
+        colors.forEach((col, cIdx) => {
+          variants.push({
+            id: `v-${idx}-${cIdx}-${Date.now()}`,
+            name: `${sz} / ${col}`,
+            size: sz,
+            color: col,
+            price: priceNum,
+            costPrice: costPriceNum,
+            stock: Math.max(1, Math.floor(Number(formStock) / (sizes.length * colors.length || 1)))
+          });
+        });
+      });
     }
 
     const payload = {
       id: editingProduct ? editingProduct.id : `prd-${Date.now()}`,
       name: formName,
-      brand: formBrand,
-      category: formCategory,
-      volume: formVolume,
-      concentration: formConcentration,
-      barcode: formBarcode,
-      costPrice: Number(formCostPrice),
-      price: Number(formPrice),
-      stock: Number(formStock),
-      minStock: Number(formMinStock),
-      image: formImage || 'https://images.unsplash.com/photo-1594035910387-fea47794261f?w=400&q=80',
-      notes: formNotes
+      brand: formBrand || 'Do\'kon',
+      category: formCategory || 'Tovarlar',
+      productType: formType,
+      unit: formUnit || 'dona',
+      barcode: formBarcode || Math.floor(100000000000 + Math.random() * 900000000000).toString(),
+      price: priceNum,
+      costPrice: costPriceNum,
+      wholesalePrice: Number(formWholesalePrice) || Math.round(priceNum * 0.85),
+      stock: Number(formStock) || 0,
+      minStock: Number(formMinStock) || 3,
+      image: formImage || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400&q=80',
+      notes: formNotes,
+      hasVariants: variants.length > 0 || (formType === 'perfume' && Boolean(formPerfumePrices['10 ml'])),
+      variants: variants.length > 0 ? variants : undefined,
+      // Perfume-specific:
+      volume: formType === 'perfume' ? formPerfumeVolume : undefined,
+      concentration: formType === 'perfume' ? formPerfumeConcentration : undefined,
+      prices: formType === 'perfume' ? formPerfumePrices : undefined,
+      // Electronics-specific:
+      warranty: formType === 'electronics' ? formTechWarranty : undefined,
+      // Grocery & Pharmacy-specific:
+      expiryDate: (formType === 'grocery' ? formGroceryExpiry : (formType === 'pharmacy' ? formPharmacyExpiry : undefined)),
+      dosage: formType === 'pharmacy' ? formPharmacyDosage : undefined
     };
 
     if (editingProduct) {
@@ -113,18 +251,19 @@ export default function WarehouseView({
     setShowAddModal(false);
   };
 
+  // CSV Export
   const handleExportCSV = () => {
-    const headers = ['ID', 'Nomi', 'Brend', 'Toifa', '10 ml Narxi', '20 ml Narxi', '30 ml Narxi', '50 ml Narxi', 'Qoldiq (dona)', 'Shtrix-kod'];
+    const headers = ['ID', 'Tovar Nomi', 'Brend', 'Toifa', 'Tovar Turi', 'Birlik', 'Sotish Narxi', 'Tannarx', 'Qoldiq', 'Shtrix-kod'];
     const rows = products.map(p => [
       p.id,
-      `"${p.name.replace(/"/g, '""')}"`,
-      `"${p.brand.replace(/"/g, '""')}"`,
-      p.category,
-      p.prices?.['10 ml'] || p.price,
-      p.prices?.['20 ml'] || '',
-      p.prices?.['30 ml'] || '',
-      p.prices?.['50 ml'] || '',
-      p.stock,
+      `"${(p.name || '').replace(/"/g, '""')}"`,
+      `"${(p.brand || '').replace(/"/g, '""')}"`,
+      `"${(p.category || '').replace(/"/g, '""')}"`,
+      getProductType(p),
+      p.unit || 'dona',
+      p.price || 0,
+      p.costPrice || 0,
+      p.stock || 0,
       p.barcode || ''
     ]);
     const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
@@ -132,7 +271,7 @@ export default function WarehouseView({
     const url = URL.createObjectURL(blob);
     const link = document.createElement('a');
     link.setAttribute('href', url);
-    link.setAttribute('download', `blizz_parfum_sklad_${new Date().toISOString().split('T')[0]}.csv`);
+    link.setAttribute('download', `billz_ombor_baza_${new Date().toISOString().split('T')[0]}.csv`);
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -143,369 +282,588 @@ export default function WarehouseView({
       {/* Top Header */}
       <div className="page-header">
         <div className="page-title-group">
-          <h2>Sklad & Ombor Boshqaruvi</h2>
-          <p>Atirlar qoldig'i, yangi partiya kirimi va zaxira monitoringi ({products.length} ta atir)</p>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '1.4rem' }}>📦</span>
+            <h2>Ombor va Mahsulotlar Katalogi (BILLZ ERP)</h2>
+          </div>
+          <p>Har qanday tovar turini (kiyim, elektronika, parfyum, oziq-ovqat) to'liq boshqarish</p>
         </div>
-        <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+
+        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap' }}>
           <button className="btn btn-secondary" onClick={handleExportCSV}>
-            📥 Excel / CSV yuklab olish
+            <Download size={16} /> Excel / CSV Eksport
           </button>
           <button className="btn btn-primary" onClick={handleOpenAdd}>
-            <Plus size={18} /> Yangi atir / Kirim qilish
+            <Plus size={16} /> Yangi Tovar Qo'shish
           </button>
         </div>
       </div>
 
-      {/* Sklad Stats Grid */}
-      <div className="stats-grid">
-        <div className="stat-card cyan">
-          <div className="stat-header">
-            <span className="stat-title">Jami Atirlar zaxirasi</span>
-            <div className="stat-icon"><Package size={20} color="var(--info)" /></div>
+      {/* Warehouse Summary KPI Cards */}
+      <div className="kpi-grid">
+        <div className="kpi-card">
+          <div className="kpi-title">
+            <span>Jami Tovar Birligi</span>
+            <Box size={18} color="var(--primary)" />
           </div>
-          <div className="stat-value">{totalStockCount} dona</div>
-          <div className="stat-desc">{products.length} xil parfyum turi mavjud</div>
+          <div className="kpi-value">{totalStockCount.toLocaleString()}</div>
+          <div className="kpi-subtitle">
+            Bazada: <strong>{products.length} xil</strong> mahsulot turi
+          </div>
         </div>
 
-        <div className="stat-card amber">
-          <div className="stat-header">
-            <span className="stat-title">Ombor Tan Narxi (Kapital)</span>
-            <div className="stat-icon"><Box size={20} color="var(--gold)" /></div>
+        <div className="kpi-card">
+          <div className="kpi-title">
+            <span>Ombor Tannarx Sarmoyasi</span>
+            <ArrowUpRight size={18} color="var(--info)" />
           </div>
-          <div className="stat-value">{formatMoney(totalCostValue)}</div>
-          <div className="stat-desc">Xarid qilingan asl bahosi</div>
+          <div className="kpi-value">{formatMoney(totalCostValue)}</div>
+          <div className="kpi-subtitle">Xarid qilingan jami qiymat</div>
         </div>
 
-        <div className="stat-card emerald">
-          <div className="stat-header">
-            <span className="stat-title">Sotuvdagi umumiy qiymati</span>
-            <div className="stat-icon"><ArrowUpRight size={20} color="var(--success)" /></div>
+        <div className="kpi-card">
+          <div className="kpi-title">
+            <span>Chakana Savdo Qiymati</span>
+            <Sparkles size={18} color="var(--success)" />
           </div>
-          <div className="stat-value">{formatMoney(totalRetailValue)}</div>
-          <div className="stat-desc">Kutilayotgan sof marja: {formatMoney(potentialProfit)}</div>
+          <div className="kpi-value">{formatMoney(totalRetailValue)}</div>
+          <div className="kpi-subtitle">
+            Kutilayotgan sof marja: <strong style={{ color: 'var(--success)' }}>+{formatMoney(potentialProfit)}</strong>
+          </div>
         </div>
 
-        <div className={`stat-card ${lowStockCount > 0 ? 'rose' : ''}`}>
-          <div className="stat-header">
-            <span className="stat-title">Kam qolgan atirlar</span>
-            <div className="stat-icon"><AlertTriangle size={20} color={lowStockCount > 0 ? "var(--danger)" : "#94a3b8"} /></div>
+        <div className="kpi-card">
+          <div className="kpi-title">
+            <span>Kam Qolgan Zaxira</span>
+            <AlertTriangle size={18} color={lowStockCount > 0 ? 'var(--danger)' : 'var(--success)'} />
           </div>
-          <div className="stat-value" style={{ color: lowStockCount > 0 ? 'var(--danger)' : undefined }}>
-            {lowStockCount} ta atir
+          <div className="kpi-value" style={{ color: lowStockCount > 0 ? 'var(--danger)' : 'var(--text-main)' }}>
+            {lowStockCount} ta
           </div>
-          <div className="stat-desc">{lowStockCount > 0 ? 'Zudlik bilan buyurtma berish lozim' : 'Barcha zaxiralar me’yorda'}</div>
+          <div className="kpi-subtitle">
+            {lowStockCount > 0 ? (
+              <button 
+                onClick={() => setOnlyLowStock(!onlyLowStock)} 
+                style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontWeight: 700, padding: 0 }}
+              >
+                {onlyLowStock ? 'Barchasini ko\'rsatish' : 'Faqat kam qolganlarni ko\'rish →'}
+              </button>
+            ) : 'Barcha tovarlar yetarli miqdorda'}
+          </div>
+        </div>
+      </div>
+
+      {/* STORE MODES INDUSTRY NAV TABS */}
+      <div className="billz-industry-nav" style={{ marginBottom: '16px' }}>
+        <div className="billz-industry-scroll">
+          {STORE_MODES.map(mode => {
+            const isActive = (storeMode === mode.id) || (mode.id === 'universal' && selectedType === 'all');
+            const count = mode.id === 'universal' 
+              ? products.length 
+              : products.filter(p => getProductType(p) === mode.id).length;
+
+            return (
+              <button
+                key={mode.id}
+                type="button"
+                className={`billz-industry-tab ${isActive ? 'active' : ''}`}
+                onClick={() => {
+                  if (onSelectStoreMode) onSelectStoreMode(mode.id);
+                  setSelectedType(mode.id === 'universal' ? 'all' : mode.id);
+                }}
+                style={isActive ? { borderColor: mode.color, background: `linear-gradient(135deg, ${mode.color}, #4f46e5)` } : {}}
+              >
+                <span className="tab-emoji">{mode.emoji}</span>
+                <span className="tab-name">{mode.name}</span>
+                <span className="tab-badge">{count}</span>
+              </button>
+            );
+          })}
         </div>
       </div>
 
       {/* Filter and Search Bar */}
-      <div className="glass-panel" style={{ padding: '16px 20px', marginBottom: '20px' }}>
-        <div style={{ display: 'flex', gap: '16px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div className="header-search" style={{ flex: 1, minWidth: '260px' }}>
-            <Search size={18} color="#94a3b8" />
-            <input 
-              type="text" 
-              placeholder="Nomi, brendi yoki shtrix-kod bo'yicha qidirish..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-            />
-          </div>
+      <div className="filter-card">
+        <div className="search-wrap">
+          <Search size={18} color="var(--text-sub)" />
+          <input 
+            type="text" 
+            placeholder="Tovar nomi, brendi, toifasi yoki shtrix-kod bo'yicha qidirish..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+        </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <Filter size={16} color="var(--text-muted)" />
-            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Brend bo'yicha:</span>
+        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+            <Filter size={15} color="var(--text-sub)" />
+            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Brend:</span>
             <select 
-              className="form-control" 
-              style={{ width: 'auto', padding: '6px 12px' }}
+              className="filter-select"
               value={filterBrand}
               onChange={(e) => setFilterBrand(e.target.value)}
             >
-              {brands.map(b => <option key={b} value={b}>{b}</option>)}
+              {brands.map(b => (
+                <option key={b} value={b}>{b}</option>
+              ))}
             </select>
           </div>
+
+          <label className="checkbox-wrap" style={{ cursor: 'pointer' }}>
+            <input 
+              type="checkbox" 
+              checked={onlyLowStock} 
+              onChange={(e) => setOnlyLowStock(e.target.checked)} 
+            />
+            <span style={{ fontSize: '0.82rem', color: onlyLowStock ? 'var(--danger)' : 'var(--text-muted)' }}>
+              Faqat kam qolganlar ({lowStockCount})
+            </span>
+          </label>
         </div>
       </div>
 
-      {/* Warehouse Products Table */}
-      <div className="glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
-        <div className="panel-header" style={{ padding: '20px 24px', margin: 0, borderBottom: '1px solid var(--border-light)' }}>
-          <h3 className="panel-title">
-            <Package size={20} color="var(--primary)" />
-            Ombordagi tovarlar ro'yxati ({filteredProducts.length})
-          </h3>
-        </div>
-
+      {/* BILLZ Products Table */}
+      <div className="table-card">
         <div className="table-responsive">
-          <table className="data-table">
+          <table className="custom-table">
             <thead>
               <tr>
-                <th>Atir / Mahsulot</th>
-                <th>Brend & Kategoriya</th>
-                <th>Hajmlar & Narxlar (10, 20, 30, 50 ml)</th>
-                <th>Tan Narxi</th>
-                <th>Ombor Qoldig'i</th>
+                <th>Tovar va Brend</th>
+                <th>Turi & Toifa</th>
                 <th>Shtrix-kod</th>
-                <th style={{ textAlign: 'right' }}>Amallar</th>
+                <th>Tannarx</th>
+                <th>Sotish Narxi</th>
+                <th>Foyda (Marja)</th>
+                <th>Qoldiq (Sklad)</th>
+                <th>Holat</th>
+                <th style={{ textAlign: 'center' }}>Amallar</th>
               </tr>
             </thead>
             <tbody>
-              {filteredProducts.map(product => {
-                const isLow = product.stock <= (product.minStock || 3);
-                return (
-                  <tr key={product.id}>
-                    <td>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                        <img 
-                          src={product.image} 
-                          alt={product.name} 
-                          style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} 
-                        />
-                        <div>
-                          <div style={{ fontWeight: 700, color: '#fff' }}>{product.name}</div>
-                          <div style={{ fontSize: '0.75rem', color: 'var(--text-sub)' }}>{product.notes ? product.notes.slice(0, 32) + '...' : ''}</div>
+              {filteredProducts.length === 0 ? (
+                <tr>
+                  <td colSpan="9" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-sub)' }}>
+                    Mos keluvchi tovar topilmadi
+                  </td>
+                </tr>
+              ) : (
+                filteredProducts.map(product => {
+                  const pType = getProductType(product);
+                  const badge = getTypeBadge(pType);
+                  const isLow = product.stock <= (product.minStock || 3);
+                  const profitSum = (product.price || 0) - (product.costPrice || 0);
+                  const profitPercent = product.price > 0 ? Math.round((profitSum / product.price) * 100) : 0;
+
+                  return (
+                    <tr key={product.id}>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                          <img 
+                            src={product.image || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400&q=80'} 
+                            alt="" 
+                            style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} 
+                          />
+                          <div>
+                            <strong style={{ color: '#fff', fontSize: '0.88rem' }}>{product.name}</strong>
+                            <div style={{ fontSize: '0.74rem', color: 'var(--text-sub)' }}>
+                              {product.brand} {product.unit ? `• ${product.unit}` : ''}
+                              {product.variants ? ` • (${product.variants.length} variant)` : ''}
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                    </td>
-                    <td>
-                      <span style={{ fontWeight: 600, color: 'var(--gold)' }}>{product.brand}</span>
-                      <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{product.category}</div>
-                    </td>
-                    <td>
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '3px', minWidth: '170px' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                          <span style={{ color: 'var(--text-sub)' }}>10 ml:</span>
-                          <strong style={{ color: '#fff' }}>{formatMoney(product.prices?.['10 ml'] || product.price)}</strong>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
+                          <span className="product-type-badge-inline" style={{ color: badge.color, background: badge.bg }}>
+                            {badge.emoji} {badge.label}
+                          </span>
+                          <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                            {product.category || 'Tovarlar'}
+                          </span>
                         </div>
-                        {product.prices?.['20 ml'] && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                            <span style={{ color: 'var(--text-sub)' }}>20 ml:</span>
-                            <span style={{ color: 'var(--text-muted)' }}>{formatMoney(product.prices['20 ml'])}</span>
-                          </div>
-                        )}
-                        {product.prices?.['30 ml'] && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                            <span style={{ color: 'var(--text-sub)' }}>30 ml:</span>
-                            <span style={{ color: 'var(--text-muted)' }}>{formatMoney(product.prices['30 ml'])}</span>
-                          </div>
-                        )}
-                        {product.prices?.['50 ml'] && (
-                          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem' }}>
-                            <span style={{ color: 'var(--text-sub)' }}>50 ml:</span>
-                            <span style={{ color: 'var(--gold)' }}>{formatMoney(product.prices['50 ml'])}</span>
-                          </div>
-                        )}
-                      </div>
-                    </td>
-                    <td style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                      {formatMoney(product.costPrice)}
-                    </td>
-                    <td>
-                      <span className={`badge ${isLow ? 'badge-danger' : 'badge-cash'}`}>
-                        {product.stock} dona {isLow && '(Kam qoldi)'}
-                      </span>
-                    </td>
-                    <td style={{ fontFamily: 'monospace', fontSize: '0.82rem', color: 'var(--text-sub)' }}>
-                      {product.barcode || '—'}
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end' }}>
-                        <button 
-                          className="cart-qty-btn" 
-                          title="Tahrirlash / Zaxira qo'shish"
-                          onClick={() => handleOpenEdit(product)}
-                        >
-                          <Edit2 size={14} color="var(--primary)" />
-                        </button>
-                        <button 
-                          className="cart-qty-btn" 
-                          title="O'chirish"
-                          onClick={() => {
-                            if (confirm(`${product.name} atirini ro'yxatdan o'chirishni tasdiqlaysizmi?`)) {
-                              onDeleteProduct(product.id);
-                            }
-                          }}
-                        >
-                          <Trash2 size={14} color="var(--danger)" />
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                      </td>
+                      <td>
+                        <div style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
+                          <Barcode size={13} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
+                          {product.barcode || '—'}
+                        </div>
+                      </td>
+                      <td style={{ color: 'var(--text-muted)', fontSize: '0.84rem' }}>
+                        {formatMoney(product.costPrice)}
+                      </td>
+                      <td style={{ color: '#fff', fontWeight: 700, fontSize: '0.88rem' }}>
+                        {formatMoney(product.price)}
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.82rem', color: profitSum >= 0 ? 'var(--success)' : 'var(--danger)' }}>
+                          <strong>+{formatMoney(profitSum)}</strong>
+                          <span style={{ fontSize: '0.72rem', opacity: 0.8 }}>({profitPercent}%)</span>
+                        </div>
+                      </td>
+                      <td>
+                        <strong style={{ fontSize: '0.92rem', color: isLow ? 'var(--danger)' : '#fff' }}>
+                          {product.stock} {product.unit || 'dona'}
+                        </strong>
+                      </td>
+                      <td>
+                        <span className={`status-pill ${isLow ? 'status-danger' : 'status-success'}`}>
+                          {product.stock === 0 ? 'Tugagan' : isLow ? 'Kam qoldi' : 'Mavjud'}
+                        </span>
+                      </td>
+                      <td>
+                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
+                          <button 
+                            className="btn btn-icon btn-secondary" 
+                            onClick={() => handleOpenEdit(product)}
+                            title="Tahrirlash"
+                          >
+                            <Edit2 size={14} />
+                          </button>
+                          <button 
+                            className="btn btn-icon btn-secondary" 
+                            style={{ color: 'var(--danger)', borderColor: 'rgba(244,63,94,0.3)' }}
+                            onClick={() => {
+                              if (confirm(`Haqiqatan ham "${product.name}" mahsulotini o'chirmoqchimisiz?`)) {
+                                onDeleteProduct(product.id);
+                              }
+                            }}
+                            title="O'chirish"
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })
+              )}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Add / Edit Product Modal */}
+      {/* Universal BILLZ Product Add/Edit Modal */}
       {showAddModal && (
         <div className="modal-backdrop" onClick={() => setShowAddModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+          <div className="modal-content" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>
-                {editingProduct ? 'Atir ma’lumotlarini tahrirlash / Kirim' : 'Yangi Atir Qo‘shish (Kirim)'}
-              </h3>
-              <button className="cart-qty-btn" onClick={() => setShowAddModal(false)}>✕</button>
+              <div>
+                <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>
+                  {editingProduct ? 'Mahsulotni Tahrirlash' : 'Yangi Mahsulot Qo\'shish'}
+                </h3>
+                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+                  BILLZ: Tovar turini tanlang, xususiyatlar avtomatik moslashadi
+                </p>
+              </div>
+              <button className="modal-close" onClick={() => setShowAddModal(false)}>✕</button>
             </div>
 
-            <form onSubmit={handleSaveProduct}>
-              <div className="modal-body">
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Atir nomi *</label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
-                      placeholder="Masalan: Baccarat Rouge 540"
-                      value={formName}
-                      onChange={(e) => setFormName(e.target.value)}
-                      required 
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Brendi *</label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
-                      placeholder="Masalan: Maison Francis Kurkdjian"
-                      value={formBrand}
-                      onChange={(e) => setFormBrand(e.target.value)}
-                      required 
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Toifa</label>
-                    <select 
-                      className="form-control"
-                      value={formCategory}
-                      onChange={(e) => setFormCategory(e.target.value)}
+            <form onSubmit={handleSaveProduct} style={{ padding: '20px' }}>
+              {/* Step 1: Industry Selector */}
+              <div style={{ marginBottom: '16px' }}>
+                <label className="form-label">Tovar Turi (Biznes Yo'nalishi):</label>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(135px, 1fr))', gap: '6px', maxHeight: '150px', overflowY: 'auto', padding: '4px' }}>
+                  {PRODUCT_TYPES.filter(t => t.id !== 'all').map(t => (
+                    <button
+                      key={t.id}
+                      type="button"
+                      className={`btn btn-sm ${formType === t.id ? 'btn-primary' : 'btn-secondary'}`}
+                      style={{ fontSize: '0.74rem', padding: '6px 4px', textAlign: 'center', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '3px' }}
+                      onClick={() => {
+                        setFormType(t.id);
+                        setFormCategory(t.name);
+                      }}
                     >
-                      <option value="Erkaklar">Erkaklar</option>
-                      <option value="Ayollar">Ayollar</option>
-                      <option value="Unisex">Unisex</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Hajmi (ml)</label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
-                      placeholder="100 ml"
-                      value={formVolume}
-                      onChange={(e) => setFormVolume(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Konsentratsiya</label>
-                    <select 
-                      className="form-control"
-                      value={formConcentration}
-                      onChange={(e) => setFormConcentration(e.target.value)}
-                    >
-                      <option value="EDP">EDP (Parfumer suvi)</option>
-                      <option value="Parfum">Parfum (Sof atir)</option>
-                      <option value="Extrait">Extrait de Parfum</option>
-                      <option value="EDT">EDT (Tualet suvi)</option>
-                    </select>
-                  </div>
+                      <span style={{ fontSize: '1.1rem' }}>{t.emoji}</span>
+                      <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '100%' }}>{t.name}</span>
+                    </button>
+                  ))}
                 </div>
+              </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Tan narxi (Kirim bahosi) *</label>
-                    <input 
-                      type="number" 
-                      className="form-control" 
-                      placeholder="2500000"
-                      value={formCostPrice}
-                      onChange={(e) => setFormCostPrice(e.target.value)}
-                      required 
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Sotish narxi *</label>
-                    <input 
-                      type="number" 
-                      className="form-control" 
-                      placeholder="3500000"
-                      value={formPrice}
-                      onChange={(e) => setFormPrice(e.target.value)}
-                      required 
-                    />
-                  </div>
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Ombor miqdori (dona) *</label>
-                    <input 
-                      type="number" 
-                      className="form-control" 
-                      placeholder="10"
-                      value={formStock}
-                      onChange={(e) => setFormStock(e.target.value)}
-                      required 
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Min. ogohlantirish zaxirasi</label>
-                    <input 
-                      type="number" 
-                      className="form-control" 
-                      placeholder="3"
-                      value={formMinStock}
-                      onChange={(e) => setFormMinStock(e.target.value)}
-                    />
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">Shtrix-kod</label>
-                    <input 
-                      type="text" 
-                      className="form-control" 
-                      placeholder="Shtrix-kod"
-                      value={formBarcode}
-                      onChange={(e) => setFormBarcode(e.target.value)}
-                    />
-                  </div>
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">Rasm URL manzili</label>
+              {/* Basic Fields */}
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div>
+                  <label className="form-label">Tovar Nomi *</label>
                   <input 
                     type="text" 
-                    className="form-control" 
-                    placeholder="https://images.unsplash.com/..."
-                    value={formImage}
-                    onChange={(e) => setFormImage(e.target.value)}
+                    className="form-input" 
+                    placeholder="Masalan: Nike Air Force, iPhone 15, Creed Aventus..." 
+                    value={formName} 
+                    onChange={(e) => setFormName(e.target.value)} 
+                    required 
                   />
                 </div>
-
-                <div className="form-group">
-                  <label className="form-label">Atir notalari (Tavsif)</label>
-                  <textarea 
-                    className="form-control" 
-                    rows={2}
-                    placeholder="Masalan: Bergamot, ananas, pachuli, kedr..."
-                    value={formNotes}
-                    onChange={(e) => setFormNotes(e.target.value)}
+                <div>
+                  <label className="form-label">Brend / Ishlab chiqaruvchi</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="Nike, Zara, Apple..." 
+                    value={formBrand} 
+                    onChange={(e) => setFormBrand(e.target.value)} 
                   />
                 </div>
               </div>
 
-              <div className="modal-footer">
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
+                <div>
+                  <label className="form-label">Kategoriya</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="Poyabzal, Smartfon..." 
+                    value={formCategory} 
+                    onChange={(e) => setFormCategory(e.target.value)} 
+                  />
+                </div>
+                <div>
+                  <label className="form-label">O'lchov Birligi</label>
+                  <select 
+                    className="form-input"
+                    value={formUnit}
+                    onChange={(e) => setFormUnit(e.target.value)}
+                  >
+                    {MEASURE_UNITS.map(u => (
+                      <option key={u.id} value={u.id}>{u.label}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="form-label">Shtrix-kod (EAN-13)</label>
+                  <div style={{ display: 'flex', gap: '4px' }}>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      value={formBarcode} 
+                      onChange={(e) => setFormBarcode(e.target.value)} 
+                    />
+                    <button 
+                      type="button" 
+                      className="btn btn-secondary btn-sm"
+                      onClick={() => setFormBarcode(Math.floor(100000000000 + Math.random() * 900000000000).toString())}
+                      title="Tasodifiy generatsiya"
+                    >
+                      🎲
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              {/* Dynamic Industry Specific Attributes */}
+              {formType === 'clothing' && (
+                <div className="industry-specific-box">
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#818cf8', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Shirt size={15} /> Kiyim va Poyabzal Variantlari (Razmer & Rang):
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label className="form-label">O'lchamlar (vergul bilan):</label>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        placeholder="S, M, L, XL yoki 40, 41, 42" 
+                        value={formClothingSizes} 
+                        onChange={(e) => setFormClothingSizes(e.target.value)} 
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label">Ranglar (vergul bilan):</label>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        placeholder="Qora, Oq, Moviy" 
+                        value={formClothingColors} 
+                        onChange={(e) => setFormClothingColors(e.target.value)} 
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {formType === 'electronics' && (
+                <div className="industry-specific-box">
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#38bdf8', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Smartphone size={15} /> Elektronika Xususiyatlari:
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                    <div>
+                      <label className="form-label">Xotira / Variantlar:</label>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        placeholder="128GB, 256GB, 512GB" 
+                        value={formTechMemory} 
+                        onChange={(e) => setFormTechMemory(e.target.value)} 
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label">Rasmiy Kafolat Muddati:</label>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        placeholder="12 oy, 6 oy..." 
+                        value={formTechWarranty} 
+                        onChange={(e) => setFormTechWarranty(e.target.value)} 
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {formType === 'perfume' && (
+                <div className="industry-specific-box">
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--gold)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Sparkles size={15} /> Parfyumeriya va Go'zallik Parametrlari:
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '6px' }}>
+                    {['10 ml', '20 ml', '30 ml', '50 ml'].map(vol => (
+                      <div key={vol}>
+                        <label className="form-label">{vol} Narxi:</label>
+                        <input 
+                          type="number" 
+                          className="form-input" 
+                          placeholder="210000"
+                          value={formPerfumePrices[vol] || ''}
+                          onChange={(e) => setFormPerfumePrices({ ...formPerfumePrices, [vol]: Number(e.target.value) })}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {formType === 'grocery' && (
+                <div className="industry-specific-box">
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#34d399', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <Apple size={15} /> Oziq-ovqat va Supermarket Parametrlari:
+                  </div>
+                  <div>
+                    <label className="form-label">Yaroqlilik muddati:</label>
+                    <input 
+                      type="date" 
+                      className="form-input" 
+                      value={formGroceryExpiry} 
+                      onChange={(e) => setFormGroceryExpiry(e.target.value)} 
+                    />
+                  </div>
+                </div>
+              )}
+
+              {formType === 'pharmacy' && (
+                <div className="industry-specific-box">
+                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#ec4899', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    💊 Dorixona va Salomatlik Parametrlari:
+                  </div>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                    <div>
+                      <label className="form-label">Yaroqlilik muddati:</label>
+                      <input 
+                        type="date" 
+                        className="form-input" 
+                        value={formPharmacyExpiry} 
+                        onChange={(e) => setFormPharmacyExpiry(e.target.value)} 
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label">Dozasi (masalan: 500mg, 10ml):</label>
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        placeholder="500 mg, 100 ml..." 
+                        value={formPharmacyDosage} 
+                        onChange={(e) => setFormPharmacyDosage(e.target.value)} 
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Prices and Stock */}
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', margin: '14px 0' }}>
+                <div>
+                  <label className="form-label">Tannarxi (so'm)</label>
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    placeholder="150000" 
+                    value={formCostPrice} 
+                    onChange={(e) => setFormCostPrice(e.target.value)} 
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Chakana Sotish Narxi *</label>
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    placeholder="220000" 
+                    value={formPrice} 
+                    onChange={(e) => setFormPrice(e.target.value)} 
+                    required 
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Ulgurji (Optom) Narx</label>
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    placeholder="185000" 
+                    value={formWholesalePrice} 
+                    onChange={(e) => setFormWholesalePrice(e.target.value)} 
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 2fr', gap: '12px', marginBottom: '14px' }}>
+                <div>
+                  <label className="form-label">Ombordagi Soni *</label>
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    value={formStock} 
+                    onChange={(e) => setFormStock(e.target.value)} 
+                    required 
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Min Limit</label>
+                  <input 
+                    type="number" 
+                    className="form-input" 
+                    value={formMinStock} 
+                    onChange={(e) => setFormMinStock(e.target.value)} 
+                  />
+                </div>
+                <div>
+                  <label className="form-label">Rasm Havolasi (URL)</label>
+                  <input 
+                    type="text" 
+                    className="form-input" 
+                    placeholder="https://..." 
+                    value={formImage} 
+                    onChange={(e) => setFormImage(e.target.value)} 
+                  />
+                </div>
+              </div>
+
+              <div style={{ marginBottom: '18px' }}>
+                <label className="form-label">Izoh / Tavsif</label>
+                <textarea 
+                  className="form-input" 
+                  rows="2" 
+                  placeholder="Mahsulot haqida qo'shimcha ma'lumot..."
+                  value={formNotes}
+                  onChange={(e) => setFormNotes(e.target.value)}
+                />
+              </div>
+
+              {/* Actions */}
+              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
                 <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>
                   Bekor qilish
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  <CheckCircle2 size={16} /> Saqlash
+                <button type="submit" className="btn btn-primary" style={{ padding: '10px 20px' }}>
+                  <Check size={16} /> Saqlash
                 </button>
               </div>
             </form>

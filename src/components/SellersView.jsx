@@ -101,7 +101,7 @@ export default function SellersView({
             <div className="stat-icon"><TrendingUp size={20} color="var(--success)" /></div>
           </div>
           <div className="stat-value">{formatMoney(totalSellersSales)}</div>
-          <div className="stat-desc">Barcha sotilgan atirlar summasi</div>
+          <div className="stat-desc">Barcha sotilgan mahsulotlar summasi</div>
         </div>
 
         <div className="stat-card amber">

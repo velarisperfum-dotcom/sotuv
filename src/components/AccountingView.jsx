@@ -188,7 +188,7 @@ export default function AccountingView({
                 <tr>
                   <th>Mijoz F.I.Sh</th>
                   <th>Telefon</th>
-                  <th>Olingan Parfyum</th>
+                  <th>Olingan Tovarlar / Mahsulot</th>
                   <th>Umumiy Summa</th>
                   <th>To'langan</th>
                   <th>Qoldiq Qarz</th>

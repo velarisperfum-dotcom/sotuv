@@ -9,6 +9,8 @@ import ReceiptModal from './components/ReceiptModal';
 import MobileNav from './components/MobileNav';
 import SellersView from './components/SellersView';
 import CustomerReceiptView from './components/CustomerReceiptView';
+import StoreOnboardingAuth from './components/StoreOnboardingAuth';
+import { getSampleProductsForIndustry } from './data/industryProducts';
 
 import { 
   INITIAL_PRODUCTS, 
@@ -16,7 +18,8 @@ import {
   INITIAL_DEBTS, 
   INITIAL_SALES, 
   INITIAL_EXPENSES, 
-  INITIAL_BALANCES 
+  INITIAL_BALANCES,
+  INITIAL_CUSTOMERS
 } from './data/initialData';
 
 import { 
@@ -31,10 +34,55 @@ import {
 } from './services/api';
 
 export default function App() {
+  // Store Onboarding & Session Auth State
+  const [currentStoreSession, setCurrentStoreSession] = useState(() => {
+    try {
+      const saved = localStorage.getItem('savdo_current_session');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(() => {
+    // Agar foydalanuvchi birinchi marta kirayotgan bo'lsa (sessiya bo'lmasa), onboarding ochiladi!
+    try {
+      const saved = localStorage.getItem('savdo_current_session');
+      return !saved;
+    } catch {
+      return true;
+    }
+  });
+
+  // Store Mode (Savdo sohasi)
+  const [storeMode, setStoreMode] = useState(() => {
+    try {
+      const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
+      if (session?.industryId) return session.industryId;
+    } catch {}
+    const saved = localStorage.getItem('billz_store_mode');
+    return saved || 'universal';
+  });
+
   // Persistence with LocalStorage + Server sync
   const [products, setProducts] = useState(() => {
-    const saved = localStorage.getItem('blizz_products');
-    return saved ? JSON.parse(saved) : INITIAL_PRODUCTS;
+    try {
+      const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
+      const activeIndustry = session?.industryId || localStorage.getItem('billz_store_mode');
+      if (activeIndustry && activeIndustry !== 'universal') {
+        const savedInd = localStorage.getItem(`billz_products_${activeIndustry}`);
+        if (savedInd) return JSON.parse(savedInd);
+        return getSampleProductsForIndustry(activeIndustry);
+      }
+    } catch {}
+    const saved = localStorage.getItem('billz_products_v4');
+    if (saved) return JSON.parse(saved);
+    return INITIAL_PRODUCTS;
+  });
+
+  const [customers, setCustomers] = useState(() => {
+    const saved = localStorage.getItem('billz_customers');
+    return saved ? JSON.parse(saved) : INITIAL_CUSTOMERS;
   });
 
   const [sales, setSales] = useState(() => {
@@ -75,7 +123,27 @@ export default function App() {
     fetchAllServerData().then(serverData => {
       if (serverData) {
         setIsServerConnected(true);
-        if (serverData.products && serverData.products.length > 0) setProducts(serverData.products);
+        if (serverData.products && serverData.products.length > 0) {
+          try {
+            const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
+            const currentMode = session?.industryId || localStorage.getItem('billz_store_mode') || 'universal';
+            if (currentMode === 'perfume') {
+              setProducts(serverData.products);
+            } else if (currentMode === 'universal') {
+              const genericSamples = getSampleProductsForIndustry('universal');
+              setProducts([...genericSamples, ...serverData.products.slice(0, 4)]);
+            } else {
+              const matching = serverData.products.filter(p => p.productType === currentMode);
+              if (matching.length > 0) {
+                setProducts(matching);
+              } else {
+                setProducts(getSampleProductsForIndustry(currentMode));
+              }
+            }
+          } catch {
+            setProducts(serverData.products);
+          }
+        }
         if (serverData.sales && serverData.sales.length > 0) setSales(serverData.sales);
         if (serverData.balances) setBalances(serverData.balances);
         if (serverData.debts) setDebts(serverData.debts);
@@ -112,7 +180,7 @@ export default function App() {
               parsedItems = decodedStr.split('~').map(part => {
                 const [name, volume, quantity, price] = part.split('|');
                 return {
-                  name: name || 'Atir',
+                  name: name || 'Mahsulot',
                   volume: volume || '',
                   quantity: Number(quantity) || 1,
                   price: Number(price) || totalParam
@@ -122,10 +190,10 @@ export default function App() {
               parsedItems = JSON.parse(decodedStr);
             }
           } catch {
-            parsedItems = [{ name: 'Selektiv parfyumeriya', quantity: 1, price: totalParam }];
+            parsedItems = [{ name: 'Mahsulot', quantity: 1, price: totalParam }];
           }
         } else {
-          parsedItems = [{ name: 'Selektiv parfyumeriya', quantity: 1, price: totalParam }];
+          parsedItems = [{ name: 'Mahsulot', quantity: 1, price: totalParam }];
         }
 
         setCustomerReceiptSale({
@@ -146,8 +214,17 @@ export default function App() {
 
   // Sync to localStorage
   useEffect(() => {
+    localStorage.setItem('billz_products_v4', JSON.stringify(products));
     localStorage.setItem('blizz_products', JSON.stringify(products));
   }, [products]);
+
+  useEffect(() => {
+    localStorage.setItem('billz_customers', JSON.stringify(customers));
+  }, [customers]);
+
+  useEffect(() => {
+    localStorage.setItem('billz_store_mode', storeMode);
+  }, [storeMode]);
 
   useEffect(() => {
     localStorage.setItem('blizz_sales', JSON.stringify(sales));
@@ -324,6 +401,56 @@ export default function App() {
   const lowStockCount = products.filter(p => p.stock <= (p.minStock || 3)).length;
   const pendingDebtsCount = debts.filter(d => d.remainingAmount > 0).length;
 
+  // Onboarding & Login Handlers
+  const handleCompleteOnboarding = (sessionData) => {
+    setCurrentStoreSession(sessionData);
+    const indId = sessionData.industryId || 'universal';
+    setStoreMode(indId);
+    localStorage.setItem('billz_store_mode', indId);
+
+    // Yangi soha tanlanganda darhol o'sha sohaga xos tovarlar katalogi yuklanadi!
+    const sampleProds = getSampleProductsForIndustry(indId);
+    setProducts(sampleProds);
+    localStorage.setItem('billz_products_v4', JSON.stringify(sampleProds));
+    localStorage.setItem(`billz_products_${indId}`, JSON.stringify(sampleProds));
+
+    setIsAuthModalOpen(false);
+
+    // Agar rahbar ismi kiritilgan bo'lsa, xodimlar orasida Direktor ismini yangilaymiz
+    if (sessionData.directorName) {
+      setStaff(prev => prev.map(s => {
+        if (s.role === 'Direktor') {
+          return { ...s, name: sessionData.directorName, phone: sessionData.phone || s.phone };
+        }
+        return s;
+      }));
+    }
+  };
+
+  const handleLoginSuccess = (sessionData) => {
+    setCurrentStoreSession(sessionData);
+    const indId = sessionData.industryId || 'universal';
+    setStoreMode(indId);
+    localStorage.setItem('billz_store_mode', indId);
+
+    const sampleProds = getSampleProductsForIndustry(indId);
+    setProducts(sampleProds);
+    localStorage.setItem('billz_products_v4', JSON.stringify(sampleProds));
+    localStorage.setItem(`billz_products_${indId}`, JSON.stringify(sampleProds));
+
+    setIsAuthModalOpen(false);
+  };
+
+  // Do'kon sohasini almashtirish: katalog va tovarlar ham o'sha sohaga mos yangilanadi
+  const handleSelectStoreMode = (mode) => {
+    setStoreMode(mode);
+    localStorage.setItem('billz_store_mode', mode);
+    const sampleProds = getSampleProductsForIndustry(mode);
+    setProducts(sampleProds);
+    localStorage.setItem('billz_products_v4', JSON.stringify(sampleProds));
+    localStorage.setItem(`billz_products_${mode}`, JSON.stringify(sampleProds));
+  };
+
   // AGAR QR-KOD SKANERLANGAN BO'LSA, FAQAT CHEKNING O'ZI CHIQSIN!
   if (customerReceiptSale) {
     return (
@@ -348,6 +475,8 @@ export default function App() {
         onChangeView={(view) => setCurrentView(view)}
         lowStockCount={lowStockCount}
         pendingDebtsCount={pendingDebtsCount}
+        storeMode={storeMode}
+        currentStoreSession={currentStoreSession}
       />
 
       {/* Main App Content Area */}
@@ -361,6 +490,10 @@ export default function App() {
           lowStockCount={lowStockCount}
           pendingDebtsCount={pendingDebtsCount}
           isServerConnected={isServerConnected}
+          storeMode={storeMode}
+          onSelectStoreMode={handleSelectStoreMode}
+          currentStoreSession={currentStoreSession}
+          onOpenAuth={() => setIsAuthModalOpen(true)}
         />
 
         <main style={{ flex: 1, minHeight: 'calc(100vh - 70px)' }}>
@@ -371,6 +504,10 @@ export default function App() {
                 onCompleteSale={handleCompleteSale}
                 currentUser={currentUser}
                 onOpenSellers={() => setCurrentView('sellers')}
+                onAddProduct={handleAddProduct}
+                customers={customers}
+                storeMode={storeMode}
+                onSelectStoreMode={handleSelectStoreMode}
               />
             </div>
           )}
@@ -403,6 +540,8 @@ export default function App() {
               onAddProduct={handleAddProduct}
               onUpdateProduct={handleUpdateProduct}
               onDeleteProduct={handleDeleteProduct}
+              storeMode={storeMode}
+              onSelectStoreMode={handleSelectStoreMode}
             />
           )}
 
@@ -435,6 +574,17 @@ export default function App() {
         <ReceiptModal 
           sale={activeReceiptSale}
           onClose={() => setActiveReceiptSale(null)}
+          storeMode={storeMode}
+          currentStoreSession={currentStoreSession}
+        />
+      )}
+
+      {/* Onboarding & Store Authentication Modal (24+ Savdo Tizimi & Shaxsiy Login/Parol) */}
+      {isAuthModalOpen && (
+        <StoreOnboardingAuth 
+          onCompleteOnboarding={handleCompleteOnboarding}
+          onLoginSuccess={handleLoginSuccess}
+          existingSession={currentStoreSession}
         />
       )}
     </div>

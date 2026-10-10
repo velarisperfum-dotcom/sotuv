@@ -2,14 +2,19 @@ import React, { useEffect, useState } from 'react';
 import { Printer, X, CheckCircle, Share2, Download, Copy, ExternalLink, Sparkles } from 'lucide-react';
 import QRCode from 'qrcode';
 
-export default function ReceiptModal({ sale, onClose }) {
+import { STORE_MODES } from '../data/initialData';
+
+export default function ReceiptModal({ sale, onClose, storeMode = 'universal', currentStoreSession = null }) {
   const [qrCodeDataUrl, setQrCodeDataUrl] = useState('');
   const [copied, setCopied] = useState(false);
 
+  const activeStore = STORE_MODES.find(m => m.id === (sale?.storeMode || storeMode)) || STORE_MODES[0];
+  const displayBrandName = currentStoreSession?.storeName || activeStore.brandName;
+
   const itemsParam = encodeURIComponent(
-    (sale?.items || []).map(i => `${i.name}|${i.volume || ''}|${i.quantity}|${i.price}`).join('~')
+    (sale?.items || []).map(i => `${i.name}|${i.volume || i.variant || ''}|${i.quantity}|${i.price}`).join('~')
   );
-  const receiptUrl = `https://sotuv-three.vercel.app/?receipt=${sale?.id}&total=${sale?.total}&date=${encodeURIComponent(sale?.date || '')}&cashier=${encodeURIComponent(sale?.cashierName || '')}&method=${encodeURIComponent(sale?.paymentMethod || '')}&items=${itemsParam}`;
+  const receiptUrl = `https://sotuv-three.vercel.app/?receipt=${sale?.id}&total=${sale?.total}&date=${encodeURIComponent(sale?.date || '')}&cashier=${encodeURIComponent(sale?.cashierName || '')}&method=${encodeURIComponent(sale?.paymentMethod || '')}&items=${itemsParam}&store=${encodeURIComponent(activeStore.id)}`;
   const fallbackQrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(receiptUrl)}`;
 
   useEffect(() => {
@@ -37,7 +42,7 @@ export default function ReceiptModal({ sale, onClose }) {
   };
 
   const handleShareTelegram = () => {
-    const text = `🧾 *BLIZZ PARFUM CHEKI № ${sale.id}*\n📅 Sana: ${sale.date}\n👤 Kassir: ${sale.cashierName || 'Sotuvchi'}\n💰 Jami: ${Number(sale.total).toLocaleString()} so'm\n💳 To'lov: ${sale.paymentMethod}\n🔗 Elektron chek: https://sotuv-three.vercel.app/?receipt=${sale.id}`;
+    const text = `🧾 *${activeStore.brandName} CHEKI № ${sale.id}*\n📅 Sana: ${sale.date}\n👤 Kassir: ${sale.cashierName || 'Sotuvchi'}\n💰 Jami: ${Number(sale.total).toLocaleString()} so'm\n💳 To'lov: ${sale.paymentMethod}\n🔗 Elektron chek: https://sotuv-three.vercel.app/?receipt=${sale.id}`;
     window.open(`https://t.me/share/url?url=${encodeURIComponent('https://sotuv-three.vercel.app')}&text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -101,16 +106,13 @@ export default function ReceiptModal({ sale, onClose }) {
           {/* Store Brand & Info */}
           <div style={{ textAlign: 'center', borderBottom: '2px dashed #cbd5e1', paddingBottom: '16px', marginBottom: '16px' }}>
             <div style={{ fontSize: '1.45rem', fontWeight: 900, letterSpacing: '1px', color: '#090d16', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px' }}>
-              <span>✦</span> BLIZZ PARFUM <span>✦</span>
+              <span>{activeStore.emoji}</span> {displayBrandName}
             </div>
             <div style={{ fontSize: '0.75rem', fontWeight: 700, color: '#64748b', textTransform: 'uppercase', letterSpacing: '1px', marginTop: '3px' }}>
-              Lyuks Selektiv Atirlar Butigi
+              {activeStore.subTitle}
             </div>
             <div style={{ fontSize: '0.72rem', color: '#64748b', marginTop: '4px' }}>
-              Toshkent sh., Amir Temur shox ko'chasi 45
-            </div>
-            <div style={{ fontSize: '0.72rem', color: '#64748b' }}>
-              Tel: +998 71 200 88 99 | @blizzparfum
+              {currentStoreSession?.phone ? `Tel: ${currentStoreSession.phone}` : activeStore.contact}
             </div>
           </div>
 

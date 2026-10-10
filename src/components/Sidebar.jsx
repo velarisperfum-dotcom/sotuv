@@ -1,8 +1,9 @@
 import React from 'react';
 import { 
   Crown, Calculator, Package, ShoppingCart, 
-  BarChart3, Clock, Users, Sparkles, Building2, Layers
+  BarChart3, Users, Building2
 } from 'lucide-react';
+import { STORE_MODES } from '../data/initialData';
 
 export default function Sidebar({ 
   currentRole, 
@@ -10,8 +11,13 @@ export default function Sidebar({
   currentView, 
   onChangeView, 
   lowStockCount,
-  pendingDebtsCount 
+  pendingDebtsCount,
+  storeMode = 'universal',
+  currentStoreSession = null
 }) {
+  const activeStore = STORE_MODES.find(m => m.id === storeMode) || STORE_MODES[0];
+  const displayBrandName = currentStoreSession?.storeName || activeStore.brandName;
+
   const roles = [
     { id: 'director', name: 'Direktor', icon: Crown, desc: 'Barcha stat & hisoblar' },
     { id: 'accountant', name: 'Buxgalter', icon: Calculator, desc: 'Moliya & Oyliklar' },
@@ -23,19 +29,19 @@ export default function Sidebar({
     <aside className="sidebar">
       {/* Brand */}
       <div className="brand-section">
-        <div className="brand-logo">
-          <Sparkles size={24} color="#fff" />
+        <div className="brand-logo" style={{ background: activeStore.color }}>
+          <span style={{ fontSize: '1.4rem' }}>{activeStore.emoji}</span>
         </div>
         <div className="brand-info">
-          <h1>BLIZZ PARFUM</h1>
-          <span>Savdo & ERP Tizimi</span>
+          <h1>{displayBrandName}</h1>
+          <span style={{ color: activeStore.color, fontWeight: 700 }}>{activeStore.shortName} ERP</span>
         </div>
       </div>
 
-      {/* Role Switcher Box (Rasmda keltirilgan 4 ta asosiy rol) */}
+      {/* Role Switcher Box (4 ta asosiy rol) */}
       <div className="role-box">
         <div className="role-box-label">
-          <span>Faol Rol (Foydalanuvchi)</span>
+          <span>Faol Rol</span>
           <span style={{ color: 'var(--primary)', fontWeight: 800 }}>4 Rol</span>
         </div>
         <div className="role-chips">
@@ -97,7 +103,7 @@ export default function Sidebar({
           <Package size={18} />
           <span>Sklad & Tovarlar</span>
           {lowStockCount > 0 && (
-            <span className="nav-badge" title={`${lowStockCount} ta atir kam qolgan`}>
+            <span className="nav-badge" title={`${lowStockCount} ta tovar kam qolgan`}>
               {lowStockCount}
             </span>
           )}
@@ -120,8 +126,10 @@ export default function Sidebar({
       {/* Bottom Store Info */}
       <div style={{ padding: '16px 20px', borderTop: '1px solid var(--border-light)', background: 'rgba(0,0,0,0.1)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
-          <Building2 size={15} color="var(--text-sub)" />
-          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>Toshkent Markaziy Filial</span>
+          <Building2 size={15} color={activeStore.color} />
+          <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-main)' }}>
+            {activeStore.brandName}
+          </span>
         </div>
         <div style={{ fontSize: '0.72rem', color: 'var(--text-sub)' }}>
           Kassa holati: <span style={{ color: 'var(--success)', fontWeight: 600 }}>Ochiq ●</span>

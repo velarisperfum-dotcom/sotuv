@@ -5,9 +5,12 @@ import {
 } from 'lucide-react';
 import QRCode from 'qrcode';
 
-export default function CustomerReceiptView({ sale, onGoHome }) {
+import { STORE_MODES } from '../data/initialData';
+
+export default function CustomerReceiptView({ sale, onGoHome, storeMode = 'universal' }) {
   const [qrDataUrl, setQrDataUrl] = useState('');
 
+  const activeStore = STORE_MODES.find(m => m.id === (sale?.storeMode || storeMode)) || STORE_MODES[0];
   const formatMoney = (val) => Number(val || 0).toLocaleString('uz-UZ') + " so'm";
 
   const receiptUrl = window.location.href;
@@ -28,7 +31,7 @@ export default function CustomerReceiptView({ sale, onGoHome }) {
   };
 
   const handleShareTelegram = () => {
-    const text = `🧾 *BLIZZ PARFUM CHEKI № ${sale.id}*\n📅 Sana: ${sale.date}\n💰 Jami: ${Number(sale.total).toLocaleString()} so'm\n💳 To'lov: ${sale.paymentMethod}\n🔗 Elektron chek: ${receiptUrl}`;
+    const text = `🧾 *${activeStore.brandName} CHEKI № ${sale.id}*\n📅 Sana: ${sale.date}\n💰 Jami: ${Number(sale.total).toLocaleString()} so'm\n💳 To'lov: ${sale.paymentMethod}\n🔗 Elektron chek: ${receiptUrl}`;
     window.open(`https://t.me/share/url?url=${encodeURIComponent(receiptUrl)}&text=${encodeURIComponent(text)}`, '_blank');
   };
 
@@ -58,7 +61,7 @@ export default function CustomerReceiptView({ sale, onGoHome }) {
         <ShieldCheck size={20} color="#10b981" />
         <div>
           <strong>RASMIY TASDIQLANGAN ELEKTRON CHEK</strong>
-          <p>Ushbu xarid BLIZZ PARFUM savdo bazasida muvaffaqiyatli ro'yxatdan o'tgan</p>
+          <p>Ushbu xarid {activeStore.brandName} savdo bazasida muvaffaqiyatli ro'yxatdan o'tgan</p>
         </div>
       </div>
 
@@ -70,14 +73,13 @@ export default function CustomerReceiptView({ sale, onGoHome }) {
         {/* Brand Header */}
         <div className="receipt-brand-header">
           <div className="receipt-brand-title">
-            ✦ BLIZZ PARFUM ✦
+            <span>{activeStore.emoji}</span> {activeStore.brandName}
           </div>
           <div className="receipt-brand-sub">
-            Lyuks Selektiv Atirlar Butigi
+            {activeStore.subTitle}
           </div>
           <div className="receipt-brand-contact">
-            Toshkent sh., Amir Temur shox ko'chasi 45<br />
-            Tel: +998 71 200 88 99 | @blizzparfum
+            {activeStore.contact}
           </div>
         </div>
 
@@ -133,7 +135,7 @@ export default function CustomerReceiptView({ sale, onGoHome }) {
             ))
           ) : (
             <div className="receipt-item-row">
-              <div className="receipt-item-name">Selektiv parfyumeriya</div>
+              <div className="receipt-item-name">Mahsulot / Tovar</div>
               <div className="receipt-item-detail">
                 <span>1 dona</span>
                 <strong>{formatMoney(sale.total)}</strong>
@@ -187,15 +189,15 @@ export default function CustomerReceiptView({ sale, onGoHome }) {
             ||| | |||| || ||||| ||| || ||||
           </div>
           <div className="receipt-barcode-num">
-            {sale.id}-BLIZZ-ORIGINAL
+            {sale.id}-BILLZ-ORIGINAL
           </div>
         </div>
 
         {/* Thank You Note */}
         <div className="receipt-footer-note">
           <p><strong>Xaridingiz uchun tashakkur!</strong></p>
-          <p>Xushbo'y iforlar sizga a'lo kayfiyat baxsh etsin ✨</p>
-          <small>BLIZZ PARFUM — Asl frantsuz va arab atirlari uyi</small>
+          <p>{activeStore.receiptFooter}</p>
+          <small>{activeStore.brandName} — {activeStore.subTitle}</small>
         </div>
       </div>
 

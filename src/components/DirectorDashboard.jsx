@@ -95,6 +95,28 @@ export default function DirectorDashboard({
 
   const staffPerformance = Object.values(staffSalesMap);
 
+  // Industry / Category Sales breakdown (BILLZ Multi-Industry Analytics)
+  const industrySalesMap = {
+    clothing: { name: 'Kiyim & Poyabzal', emoji: '👕', revenue: 0, count: 0, color: '#818cf8' },
+    perfume: { name: 'Parfyumeriya & Go\'zallik', emoji: '💎', revenue: 0, count: 0, color: '#f59e0b' },
+    electronics: { name: 'Elektronika & Gadjetlar', emoji: '📱', revenue: 0, count: 0, color: '#38bdf8' },
+    grocery: { name: 'Oziq-ovqat & Supermarket', emoji: '🛒', revenue: 0, count: 0, color: '#34d399' },
+    general: { name: 'Umumiy Tovar & Aksessuar', emoji: '📦', revenue: 0, count: 0, color: '#a78bfa' }
+  };
+
+  filteredSales.forEach(sale => {
+    sale.items?.forEach(item => {
+      const prod = products.find(p => p.id === item.id);
+      let pType = item.productType || (prod?.productType) || (item.volume ? 'perfume' : 'general');
+      if (!industrySalesMap[pType]) pType = 'general';
+      const itemRev = (item.quantity || 1) * (item.price || 0);
+      industrySalesMap[pType].revenue += itemRev;
+      industrySalesMap[pType].count += (item.quantity || 1);
+    });
+  });
+
+  const industrySalesList = Object.values(industrySalesMap);
+
   return (
     <div className="page-container">
       {/* Page Header */}
@@ -102,9 +124,9 @@ export default function DirectorDashboard({
         <div className="page-title-group">
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
             <span style={{ fontSize: '1.4rem' }}>👑</span>
-            <h2>Direktor Nazorat Markazi</h2>
+            <h2>BILLZ Direktor Nazorat Markazi</h2>
           </div>
-          <p>Barcha savdo statistikasi, sof foyda va bo'limlararo umumiy hisob-kitoblar</p>
+          <p>Har qanday tovar turidagi savdolar, tushum, sof foyda va bo'limlararo tahlil</p>
         </div>
 
         <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
@@ -198,6 +220,47 @@ export default function DirectorDashboard({
         </div>
       </div>
 
+      {/* Tovar Turlari Bo'yicha Tushum (BILLZ Multi-Industry Analytics) */}
+      <div className="glass-panel">
+        <div className="panel-header">
+          <h3 className="panel-title">
+            <Layers size={20} color="var(--primary)" />
+            Tovar Turlari Bo'yicha Tushum Taqsimoti (BILLZ Retail)
+          </h3>
+          <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Kiyim, Gadjet, Parfyum, Oziq-ovqat</span>
+        </div>
+
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(190px, 1fr))', gap: '14px', marginBottom: '16px' }}>
+          {industrySalesList.map((ind, idx) => {
+            const share = totalRevenue > 0 ? Math.round((ind.revenue / totalRevenue) * 100) : 0;
+            return (
+              <div 
+                key={idx} 
+                style={{ 
+                  background: 'rgba(255,255,255,0.02)', 
+                  border: `1px solid ${ind.color}33`, 
+                  padding: '14px', 
+                  borderRadius: '12px' 
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '6px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px', fontWeight: 700, fontSize: '0.86rem', color: ind.color }}>
+                    <span style={{ fontSize: '1.1rem' }}>{ind.emoji}</span> {ind.name}
+                  </div>
+                  <span style={{ fontSize: '0.74rem', color: 'var(--text-sub)' }}>{ind.count} dona</span>
+                </div>
+                <div style={{ fontSize: '1.25rem', fontWeight: 800, color: '#fff' }}>
+                  {formatMoney(ind.revenue)}
+                </div>
+                <div style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: '4px' }}>
+                  Ulush: <strong style={{ color: ind.color }}>{share}%</strong>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
       {/* Payment Methods Breakdown (Rasmdagi: Oplata turlari) */}
       <div className="glass-panel">
         <div className="panel-header">
@@ -270,7 +333,7 @@ export default function DirectorDashboard({
           <div className="panel-header">
             <h3 className="panel-title">
               <Award size={20} color="var(--gold)" />
-              Eng Xaridorgir Atirlar (TOP-5)
+              Eng Xaridorgir Mahsulotlar (TOP-5)
             </h3>
           </div>
 
@@ -343,7 +406,7 @@ export default function DirectorDashboard({
                 <th>Chek ID</th>
                 <th>Sana va Vaqt</th>
                 <th>Sotuvchi (Kassir)</th>
-                <th>Sotilgan Atirlar</th>
+                <th>Sotilgan Mahsulotlar</th>
                 <th>To'lov Turi</th>
                 <th>Jami Summa</th>
                 <th style={{ textAlign: 'right' }}>Chekni ko'rish</th>
