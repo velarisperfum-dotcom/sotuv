@@ -200,3 +200,12 @@ export const INITIAL_SELLER_ORDERS = [
   }
 ];
 
+export const INITIAL_DEBTS = [];
+export const INITIAL_SALES = [];
+export const INITIAL_EXPENSES = [];
+export const INITIAL_BALANCES = {
+  cash: 12500000,
+  card: 8400000,
+  bank: 34500000
+};
+
