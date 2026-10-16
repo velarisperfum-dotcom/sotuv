@@ -1,7 +1,8 @@
 import React from 'react';
 import { 
   LogOut, Smartphone, User, Shield, 
-  ArrowLeftRight, CheckCircle2, Building2
+  ArrowLeftRight, CheckCircle2, Building2,
+  Box, Wallet, TrendingUp
 } from 'lucide-react';
 
 export default function Header({ 
@@ -13,11 +14,21 @@ export default function Header({
 }) {
   const formatMoney = (val) => Number(val || 0).toLocaleString('uz-UZ') + " so'm";
 
+  const getRoleIcon = (role) => {
+    switch (role) {
+      case 'director': return <TrendingUp size={19} color="#2563eb" />;
+      case 'accountant': return <Wallet size={19} color="#059669" />;
+      case 'warehouse': return <Box size={19} color="#0284c7" />;
+      case 'seller_mobile': return <Smartphone size={19} color="#4f46e5" />;
+      default: return <User size={19} color="#64748b" />;
+    }
+  };
+
   const roleLabels = {
-    director: { name: 'Direktor Kabineti', badge: 'Bosh Boshqaruv', color: '#f59e0b', avatar: '👑' },
-    accountant: { name: 'Buxgalteriya & Moliya', badge: 'Moliya & To\'lov', color: '#10b981', avatar: '📊' },
-    warehouse: { name: 'Sklad & Logistika', badge: 'Ombor Boshqaruvi', color: '#2563eb', avatar: '📦' },
-    seller_mobile: { name: 'Mobil Sotuvchi Profili', badge: 'Agent / APK', color: '#ec4899', avatar: '📱' },
+    director: { name: 'Direktor Kabineti', badge: 'Bosh Boshqaruv', color: '#2563eb' },
+    accountant: { name: 'Buxgalteriya & Moliya', badge: 'Moliya & To\'lov', color: '#059669' },
+    warehouse: { name: 'Sklad & Logistika', badge: 'Ombor Boshqaruvi', color: '#0284c7' },
+    seller_mobile: { name: 'Mobil Sotuvchi Profili', badge: 'Agent / Mobil', color: '#4f46e5' },
   };
 
   const roleInfo = roleLabels[currentRole] || roleLabels.director;
@@ -44,10 +55,9 @@ export default function Header({
           background: `${roleInfo.color}15`,
           display: 'flex',
           alignItems: 'center',
-          justifyContent: 'center',
-          fontSize: '20px'
+          justifyContent: 'center'
         }}>
-          {roleInfo.avatar}
+          {getRoleIcon(currentRole)}
         </div>
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
@@ -88,7 +98,7 @@ export default function Header({
           </div>
         )}
 
-        {/* APK Button */}
+        {/* Mobile App Button */}
         <button
           onClick={onOpenPwaModal}
           style={{
@@ -98,15 +108,15 @@ export default function Header({
             padding: '7px 12px',
             fontSize: '12px',
             fontWeight: 700,
-            color: '#475569',
+            color: '#334155',
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
             cursor: 'pointer'
           }}
-          title="Telefonga ilovani o'rnatish"
+          title="iPhone va Android telefonga ilovani o'rnatish"
         >
-          <Smartphone size={14} style={{ color: '#ec4899' }} /> APK O'rnatish
+          <Smartphone size={14} style={{ color: '#2563eb' }} /> Ilova (iOS / Android)
         </button>
 
         {/* Logout Button */}

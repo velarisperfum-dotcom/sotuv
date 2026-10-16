@@ -1,73 +1,78 @@
 import React, { useState } from 'react';
 import { 
-  Lock, User, ArrowRight, ShieldCheck, Crown, 
-  Calculator, Package, Smartphone, Check, Sparkles
+  Lock, User, ArrowRight, ShieldCheck, Building2, 
+  Smartphone, Eye, EyeOff, AlertCircle, Apple
 } from 'lucide-react';
-import { SYSTEM_USERS } from '../data/initialData';
 
-export default function AuthLoginView({ onLoginSuccess, onOpenPwaModal }) {
+export default function AuthLoginView({ users = [], onLoginSuccess, onOpenPwaModal }) {
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleFormLogin = (e) => {
     e.preventDefault();
     setErrorMsg('');
 
     const trimmedUser = username.trim().toLowerCase();
-    const found = SYSTEM_USERS.find(u => u.username.toLowerCase() === trimmedUser && u.password === password);
+    const found = users.find(u => 
+      (u.username && u.username.toLowerCase() === trimmedUser) && 
+      String(u.password) === String(password)
+    );
 
-    if (found) {
-      onLoginSuccess(found);
-    } else {
-      setErrorMsg('Login yoki parol noto\'g\'ri! Iltimos, qaytadan tekshiring.');
-    }
-  };
+    setIsSubmitting(true);
 
-  const handleQuickLogin = (user) => {
-    onLoginSuccess(user);
+    setTimeout(() => {
+      setIsSubmitting(false);
+      if (found) {
+        onLoginSuccess(found);
+      } else {
+        setErrorMsg('Foydalanuvchi logini yoki parol noto\'g\'ri kiritildi.');
+      }
+    }, 250);
   };
 
   return (
     <div style={{
       minHeight: '100vh',
-      background: 'linear-gradient(180deg, #f8fafc 0%, #e2e8f0 100%)',
+      background: '#f8fafc',
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
       padding: '24px 16px',
-      fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif"
+      fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif"
     }}>
       <div style={{
-        maxWidth: '460px',
+        maxWidth: '420px',
         width: '100%',
         background: '#ffffff',
-        borderRadius: '24px',
-        boxShadow: '0 20px 40px -15px rgba(15, 23, 42, 0.1), 0 0 0 1px #e2e8f0',
+        borderRadius: '20px',
+        border: '1px solid #e2e8f0',
+        boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.03)',
         padding: '36px 32px'
       }}>
-        {/* Brand Header */}
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+        {/* Company / ERP Header */}
+        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
           <div style={{
-            width: '56px',
-            height: '56px',
-            borderRadius: '16px',
+            width: '52px',
+            height: '52px',
+            borderRadius: '14px',
             background: '#2563eb',
             color: '#ffffff',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            fontSize: '26px',
-            margin: '0 auto 14px',
-            boxShadow: '0 8px 20px -4px rgba(37, 99, 235, 0.4)'
+            margin: '0 auto 16px',
+            boxShadow: '0 4px 14px rgba(37, 99, 235, 0.25)'
           }}>
-            📦
+            <Building2 size={26} strokeWidth={2.2} />
           </div>
-          <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.4px' }}>
-            SAVDO ERP TIZIMI
+          <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.3px' }}>
+            SAVDO & SKLAD ERP
           </h1>
           <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#64748b' }}>
-            Xizmat xodimlari uchun yagona korporativ kirish oynasi
+            Tizimga kirish uchun login va parolingizni kiriting
           </p>
         </div>
 
@@ -77,174 +82,157 @@ export default function AuthLoginView({ onLoginSuccess, onOpenPwaModal }) {
             background: '#fef2f2',
             border: '1px solid #fecaca',
             color: '#dc2626',
-            borderRadius: '12px',
+            borderRadius: '10px',
             padding: '10px 14px',
             fontSize: '13px',
             fontWeight: 600,
-            marginBottom: '16px',
-            textAlign: 'center'
+            marginBottom: '18px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
           }}>
-            {errorMsg}
+            <AlertCircle size={16} style={{ flexShrink: 0 }} />
+            <span>{errorMsg}</span>
           </div>
         )}
 
         {/* Login Form */}
-        <form onSubmit={handleFormLogin} style={{ display: 'flex', flexDirection: 'column', gap: '14px', marginBottom: '24px' }}>
+        <form onSubmit={handleFormLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
-            <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
-              Foydalanuvchi Logini
+            <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '6px' }}>
+              Foydalanuvchi logini
             </label>
             <div style={{ position: 'relative' }}>
-              <User size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <User size={17} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
               <input 
                 type="text" 
                 required
-                placeholder="direktor / buxgalter / sklad / sotuvchi"
+                autoComplete="username"
+                placeholder="Login (masalan: direktor)"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 style={{
                   width: '100%',
                   padding: '12px 14px 12px 42px',
-                  borderRadius: '12px',
+                  borderRadius: '10px',
                   border: '1px solid #cbd5e1',
                   fontSize: '14px',
                   outline: 'none',
                   color: '#0f172a',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  background: '#ffffff',
+                  transition: 'border-color 0.15s'
                 }}
+                onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+                onBlur={(e) => e.target.style.borderColor = '#cbd5e1'}
               />
             </div>
           </div>
 
           <div>
-            <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '6px' }}>
-              Maxfiy Parol
+            <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '6px' }}>
+              Parol
             </label>
             <div style={{ position: 'relative' }}>
-              <Lock size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <Lock size={17} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
               <input 
-                type="password" 
+                type={showPassword ? "text" : "password"} 
                 required
-                placeholder="Parolni kiriting (masalan: 123)"
+                autoComplete="current-password"
+                placeholder="Parolni kiriting"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 style={{
                   width: '100%',
-                  padding: '12px 14px 12px 42px',
-                  borderRadius: '12px',
+                  padding: '12px 42px 12px 42px',
+                  borderRadius: '10px',
                   border: '1px solid #cbd5e1',
                   fontSize: '14px',
                   outline: 'none',
                   color: '#0f172a',
-                  boxSizing: 'border-box'
+                  boxSizing: 'border-box',
+                  background: '#ffffff',
+                  transition: 'border-color 0.15s'
                 }}
+                onFocus={(e) => e.target.style.borderColor = '#2563eb'}
+                onBlur={(e) => e.target.style.borderColor = '#cbd5e1'}
               />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'none',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: '4px'
+                }}
+              >
+                {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+              </button>
             </div>
           </div>
 
           <button
             type="submit"
+            disabled={isSubmitting}
             style={{
               background: '#2563eb',
               color: '#ffffff',
               border: 'none',
-              borderRadius: '14px',
-              padding: '14px',
+              borderRadius: '10px',
+              padding: '13px',
               fontSize: '14px',
-              fontWeight: 800,
+              fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               gap: '8px',
-              cursor: 'pointer',
-              marginTop: '6px',
-              boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
+              cursor: isSubmitting ? 'not-allowed' : 'pointer',
+              marginTop: '8px',
+              transition: 'background 0.15s'
             }}
+            onMouseEnter={(e) => e.currentTarget.style.background = '#1d4ed8'}
+            onMouseLeave={(e) => e.currentTarget.style.background = '#2563eb'}
           >
-            Tizimga Kirish <ArrowRight size={16} />
+            {isSubmitting ? 'Kirilmoqda...' : 'Tizimga Kirish'}
+            {!isSubmitting && <ArrowRight size={16} />}
           </button>
         </form>
 
-        {/* Divider */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '18px' }}>
-          <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
-          <span style={{ fontSize: '11px', color: '#64748b', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.6px' }}>
-            Yoki Tezkor Rol Tanlang (1-Bosish bilan)
-          </span>
-          <div style={{ flex: 1, height: '1px', background: '#e2e8f0' }} />
-        </div>
+        {/* iPhone & Android App install banner */}
+        <div style={{ marginTop: '24px', paddingTop: '20px', borderTop: '1px solid #f1f5f9' }}>
+          <button
+            type="button"
+            onClick={onOpenPwaModal}
+            style={{
+              width: '100%',
+              background: '#f8fafc',
+              border: '1px solid #e2e8f0',
+              borderRadius: '10px',
+              padding: '10px 12px',
+              fontSize: '12px',
+              fontWeight: 600,
+              color: '#334155',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              cursor: 'pointer'
+            }}
+          >
+            <Smartphone size={15} style={{ color: '#2563eb' }} />
+            <span>iPhone va Android uchun o'rnatish</span>
+          </button>
 
-        {/* Quick Login Buttons (4 ta mustaqil rol) */}
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', marginBottom: '20px' }}>
-          {SYSTEM_USERS.map(user => (
-            <button
-              key={user.id}
-              onClick={() => handleQuickLogin(user)}
-              style={{
-                background: '#f8fafc',
-                border: '1px solid #e2e8f0',
-                borderRadius: '14px',
-                padding: '12px 10px',
-                textAlign: 'left',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px',
-                cursor: 'pointer',
-                transition: 'all 0.15s'
-              }}
-              onMouseEnter={(e) => { e.currentTarget.style.borderColor = user.color; e.currentTarget.style.background = '#ffffff'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.borderColor = '#e2e8f0'; e.currentTarget.style.background = '#f8fafc'; }}
-            >
-              <div style={{
-                width: '36px',
-                height: '36px',
-                borderRadius: '10px',
-                background: `${user.color}15`,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '18px',
-                flexShrink: 0
-              }}>
-                {user.avatar}
-              </div>
-              <div style={{ minWidth: 0, flex: 1 }}>
-                <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {user.badge}
-                </div>
-                <div style={{ fontSize: '11px', color: '#64748b', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                  {user.name}
-                </div>
-              </div>
-            </button>
-          ))}
-        </div>
-
-        {/* PWA / APK Button */}
-        <button
-          onClick={onOpenPwaModal}
-          style={{
-            width: '100%',
-            background: '#ffffff',
-            border: '1px dashed #cbd5e1',
-            borderRadius: '12px',
-            padding: '10px',
-            fontSize: '12px',
-            fontWeight: 700,
-            color: '#475569',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            gap: '6px',
-            cursor: 'pointer'
-          }}
-        >
-          <Smartphone size={15} style={{ color: '#ec4899' }} /> Sotuvchilar uchun APK o'rnatish qo'llanmasi
-        </button>
-
-        {/* Security badge */}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '18px', fontSize: '11px', color: '#94a3b8' }}>
-          <ShieldCheck size={14} style={{ color: '#16a34a' }} /> Barcha ma'lumotlar markaziy PostgreSQL bazasida himoyalangan
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '16px', fontSize: '11px', color: '#94a3b8' }}>
+            <ShieldCheck size={14} style={{ color: '#16a34a' }} />
+            <span>Xavfsiz korporativ ulanish</span>
+          </div>
         </div>
       </div>
     </div>

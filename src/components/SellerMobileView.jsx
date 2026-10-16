@@ -3,7 +3,8 @@ import {
   ShoppingBag, Search, Plus, Minus, Trash2, Send, CheckCircle2, 
   Clock, AlertCircle, Smartphone, User, Phone, DollarSign, 
   CreditCard, Building2, UserCheck, ChevronRight, Sparkles,
-  ArrowRight, ShieldCheck, Box, RefreshCw, X, FileText, Check
+  ArrowRight, ShieldCheck, Box, RefreshCw, X, FileText, Check,
+  Banknote
 } from 'lucide-react';
 import { PAYMENT_METHODS } from '../data/initialData';
 
@@ -14,6 +15,7 @@ export default function SellerMobileView({
   customers = [],
   onCreateOrder,
   onOpenReceipt,
+  onOpenInstallModal,
   storeMode = 'universal'
 }) {
   const safeProducts = Array.isArray(products) ? products : [];
@@ -217,23 +219,23 @@ export default function SellerMobileView({
     <div style={{ maxWidth: '600px', margin: '0 auto', background: '#f8fafc', minHeight: '100vh', paddingBottom: '90px', borderLeft: '1px solid #e2e8f0', borderRight: '1px solid #e2e8f0' }}>
       
       {/* Top Mobile Header (APK Style) */}
-      <div style={{ background: 'linear-gradient(135deg, #1e1b4b 0%, #312e81 100%)', color: '#ffffff', padding: '18px 20px', borderBottomLeftRadius: '24px', borderBottomRightRadius: '24px', boxShadow: '0 10px 25px -5px rgba(30, 27, 75, 0.25)' }}>
+      <div style={{ background: '#1e293b', color: '#ffffff', padding: '18px 20px', borderBottomLeftRadius: '20px', borderBottomRightRadius: '20px', boxShadow: '0 4px 15px rgba(15, 23, 42, 0.15)' }}>
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(255, 255, 255, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
-              📱
+            <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: 'rgba(255, 255, 255, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Smartphone size={22} color="#38bdf8" />
             </div>
             <div>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '1px', opacity: 0.8, fontWeight: 700 }}>Mobil Sotuvchi Profili (APK)</div>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.8px', opacity: 0.8, fontWeight: 700 }}>Mobil Sotuvchi Profili</div>
               <div style={{ fontSize: '16px', fontWeight: 800 }}>{selectedSeller.name}</div>
             </div>
           </div>
 
           <button 
-            onClick={() => setShowPwaModal(true)}
-            style={{ background: 'rgba(255,255,255,0.18)', border: '1px solid rgba(255,255,255,0.3)', color: '#ffffff', borderRadius: '12px', padding: '6px 12px', fontSize: '12px', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+            onClick={() => onOpenInstallModal ? onOpenInstallModal() : setShowPwaModal(true)}
+            style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', color: '#ffffff', borderRadius: '10px', padding: '6px 12px', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
           >
-            <Smartphone size={14} /> APK o'rnatish
+            <Smartphone size={14} /> Ilova (iOS / Android)
           </button>
         </div>
 
@@ -564,12 +566,12 @@ export default function SellerMobileView({
                           transition: 'all 0.15s'
                         }}
                       >
-                        <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: `${method.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '14px' }}>
-                          {method.id === 'cash' && '💵'}
-                          {method.id === 'card' && '💳'}
-                          {method.id === 'debt' && '📝'}
-                          {method.id === 'bank' && '🏦'}
-                          {method.id === 'salary_deduction' && '💼'}
+                        <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: `${method.color}18`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          {method.id === 'cash' && <Banknote size={15} color={method.color} />}
+                          {method.id === 'card' && <CreditCard size={15} color={method.color} />}
+                          {method.id === 'debt' && <Clock size={15} color={method.color} />}
+                          {method.id === 'bank' && <Building2 size={15} color={method.color} />}
+                          {method.id === 'salary_deduction' && <UserCheck size={15} color={method.color} />}
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: '12px', fontWeight: 700, color: isSelected ? method.color : '#1e293b' }}>
@@ -694,11 +696,11 @@ export default function SellerMobileView({
                     <div>
                       <div style={{ fontSize: '11px', color: '#64748b' }}>To'lov turi:</div>
                       <div style={{ fontSize: '12px', fontWeight: 700, color: '#1e293b' }}>
-                        {order.paymentMethod === 'cash' && '💵 Naqd pul'}
-                        {order.paymentMethod === 'card' && '💳 Karta'}
-                        {order.paymentMethod === 'debt' && '📝 Qarzga (Nasiya)'}
-                        {order.paymentMethod === 'bank' && '🏦 Bank perech'}
-                        {order.paymentMethod === 'salary_deduction' && '💼 Oyligidan oldi'}
+                        {order.paymentMethod === 'cash' && 'Naqd pul'}
+                        {order.paymentMethod === 'card' && 'Karta (Uzcard/Humo)'}
+                        {order.paymentMethod === 'debt' && 'Qarzga (Nasiya)'}
+                        {order.paymentMethod === 'bank' && 'Bank o\'tkazmasi'}
+                        {order.paymentMethod === 'salary_deduction' && 'Xodim maoshidan'}
                       </div>
                       {order.paymentDetails && (
                         <div style={{ fontSize: '10px', color: '#94a3b8' }}>{order.paymentDetails}</div>
@@ -713,10 +715,10 @@ export default function SellerMobileView({
 
                   {/* Workflow steps info */}
                   <div style={{ marginTop: '10px', background: '#f1f5f9', padding: '6px 10px', borderRadius: '8px', fontSize: '11px', color: '#475569' }}>
-                    {order.status === 'pending_accounting' && "⏳ Buxgalter to'lovni tekshirmoqda..."}
-                    {order.status === 'approved_accounting' && "📦 Buxgalter tasdiqladi! Skladchi tovarlarni javondan olib yuborishi kutilmoqda..."}
-                    {order.status === 'dispatched_warehouse' && "✅ Skladchi tovarlarni berdi va skladdan yechildi!"}
-                    {order.status === 'rejected_accounting' && `❌ Rad etildi: ${order.rejectionReason || "To'lov tasdiqlanmadi"}`}
+                    {order.status === 'pending_accounting' && "Buxgalter to'lovni tekshirmoqda..."}
+                    {order.status === 'approved_accounting' && "Buxgalter tasdiqladi! Skladchi tovarlarni berishi kutilmoqda..."}
+                    {order.status === 'dispatched_warehouse' && "Skladchi tovarlarni berdi va skladdan yechildi"}
+                    {order.status === 'rejected_accounting' && `Rad etildi: ${order.rejectionReason || "To'lov tasdiqlanmadi"}`}
                   </div>
                 </div>
               ))

@@ -1,11 +1,11 @@
 import React, { useState } from 'react';
 import { 
-  TrendingUp, DollarSign, ShoppingBag, Box, Award, 
-  ArrowUpRight, ArrowDownRight, CreditCard, Banknote, Building2, 
-  Clock, Eye, Sparkles, UserCheck, BarChart3, Layers, Plus, 
-  Send, CheckCircle2, AlertTriangle, Truck, Check, X
+  TrendingUp, DollarSign, Box, Award, 
+  ArrowUpRight, ArrowDownRight, CreditCard, Building2, 
+  Clock, Eye, UserCheck, BarChart3, Layers, Plus, 
+  Send, CheckCircle2, AlertTriangle, Truck, Check, X,
+  Users, UserPlus, Edit2, Trash2, Shield, Phone, Key
 } from 'lucide-react';
-import { getIndustryById } from '../data/industriesData';
 import { MEASURE_UNITS } from '../data/initialData';
 
 export default function DirectorDashboard({ 
@@ -18,15 +18,15 @@ export default function DirectorDashboard({
   stockTransfers = [],
   orders = [],
   onCreateTransfer,
-  storeMode = 'universal',
-  onViewReceipt,
-  onChangeView
+  onAddStaff,
+  onUpdateStaff,
+  onDeleteStaff,
+  onViewReceipt
 }) {
-  const currentIndustry = getIndustryById(storeMode);
-  const [filterPeriod, setFilterPeriod] = useState('all'); // 'all', 'month'
-  const [showTransferModal, setShowTransferModal] = useState(false);
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'transfers' | 'staff'
 
-  // Transfer form state
+  // Transfer modal
+  const [showTransferModal, setShowTransferModal] = useState(false);
   const [transferProductName, setTransferProductName] = useState('');
   const [transferCategory, setTransferCategory] = useState('');
   const [transferQuantity, setTransferQuantity] = useState('20');
@@ -35,6 +35,16 @@ export default function DirectorDashboard({
   const [transferSellingPrice, setTransferSellingPrice] = useState('');
   const [transferSupplier, setTransferSupplier] = useState('');
   const [transferNotes, setTransferNotes] = useState('');
+
+  // Staff modal
+  const [showStaffModal, setShowStaffModal] = useState(false);
+  const [editingStaff, setEditingStaff] = useState(null);
+  const [staffName, setStaffName] = useState('');
+  const [staffRole, setStaffRole] = useState('Sotuvchi');
+  const [staffPhone, setStaffPhone] = useState('+998 ');
+  const [staffUsername, setStaffUsername] = useState('');
+  const [staffPassword, setStaffPassword] = useState('1234');
+  const [staffSalary, setStaffSalary] = useState('');
 
   const safeSales = Array.isArray(sales) ? sales : [];
   const safeProducts = Array.isArray(products) ? products : [];
@@ -45,22 +55,10 @@ export default function DirectorDashboard({
 
   const formatMoney = (val) => Number(val || 0).toLocaleString('uz-UZ') + " so'm";
 
-  // Filter sales based on chosen period
-  const filteredSales = safeSales.filter(s => {
-    if (!s) return false;
-    if (filterPeriod === 'all') return true;
-    if (filterPeriod === 'month') {
-      const currentMonth = new Date().toISOString().slice(0, 7);
-      return s.date && String(s.date).startsWith(currentMonth);
-    }
-    return true;
-  });
-
-  // Calculations based on filtered sales
-  const totalRevenue = filteredSales.reduce((acc, s) => acc + Number(s?.total || 0), 0);
+  // Calculations
+  const totalRevenue = safeSales.reduce((acc, s) => acc + Number(s?.total || 0), 0);
   
-  // Cost of goods sold (COGS)
-  const totalCostOfGoodsSold = filteredSales.reduce((acc, s) => {
+  const totalCostOfGoodsSold = safeSales.reduce((acc, s) => {
     const saleCost = s?.items?.reduce((itemAcc, item) => {
       const prod = safeProducts.find(p => p?.id === item?.id);
       const cost = item?.costPrice || (prod ? prod.costPrice : 0) || 0;
@@ -73,20 +71,19 @@ export default function DirectorDashboard({
   const totalStaffSalaries = safeStaff.reduce((acc, s) => acc + Number(s?.paidThisMonth || 0), 0);
   const netProfit = totalRevenue - totalCostOfGoodsSold - totalExpenses - totalStaffSalaries;
 
-  // 1. SKLADDA QANCHA TOVAR BOR (MIJOZNING ENG ASOSIY SAVOLI)
+  // 1. Skladda qancha tovar bor
   const totalStockCount = safeProducts.reduce((acc, p) => acc + Number(p?.stock || 0), 0);
   const warehouseCost = safeProducts.reduce((acc, p) => acc + (Number(p?.costPrice || 0) * Number(p?.stock || 0)), 0);
   const warehouseRetail = safeProducts.reduce((acc, p) => acc + (Number(p?.price || 0) * Number(p?.stock || 0)), 0);
-  const lowStockCount = safeProducts.filter(p => (p.stock || 0) <= (p.minStock || 3)).length;
 
-  // 2. QANCHA TOVAR KIRIM BO'LDI (KIRIMLAR HISOBOTI)
+  // 2. Qancha tovar kirim bo'ldi
   const totalTransfersCount = safeTransfers.length;
   const totalTransferredQuantity = safeTransfers.reduce((acc, t) => acc + Number(t.quantity || 0), 0);
   const totalTransferredCost = safeTransfers.reduce((acc, t) => acc + (Number(t.costPrice || 0) * Number(t.quantity || 0)), 0);
 
-  // 3. NIMADAN QANCHA SOTILDI (TOP TOVARLAR SOTUVI)
+  // 3. Nimadan qancha sotildi
   const productSalesMap = {};
-  filteredSales.forEach(sale => {
+  safeSales.forEach(sale => {
     sale?.items?.forEach(item => {
       if (!item?.name) return;
       if (!productSalesMap[item.name]) {
@@ -97,15 +94,13 @@ export default function DirectorDashboard({
     });
   });
 
-  // Also include orders that were dispatched
   safeOrders.filter(o => o.status === 'dispatched_warehouse').forEach(o => {
     o.items?.forEach(item => {
       if (!item?.name) return;
       if (!productSalesMap[item.name]) {
         productSalesMap[item.name] = { name: item.name, quantity: 0, revenue: 0, unit: item.unit || 'dona' };
       }
-      // avoid double count if already in sales
-      if (!filteredSales.some(s => s.id === o.id)) {
+      if (!safeSales.some(s => s.id === o.id)) {
         productSalesMap[item.name].quantity += Number(item.quantity || 1);
         productSalesMap[item.name].revenue += Number(item.total || 0);
       }
@@ -114,16 +109,16 @@ export default function DirectorDashboard({
 
   const topProducts = Object.values(productSalesMap).sort((a, b) => b.quantity - a.quantity);
 
-  // 4. TO'LOV TURLARI TAHLILI
+  // 4. To'lov turlari
   const paymentStats = {
-    cash: filteredSales.filter(s => s?.paymentMethod === 'Naqd' || s?.paymentMethod === 'cash').reduce((a, s) => a + Number(s?.total || 0), 0),
-    card: filteredSales.filter(s => s?.paymentMethod === 'Karta' || s?.paymentMethod === 'card').reduce((a, s) => a + Number(s?.total || 0), 0),
-    bank: filteredSales.filter(s => s?.paymentMethod === 'Bank perech' || s?.paymentMethod === 'bank').reduce((a, s) => a + Number(s?.total || 0), 0),
-    debt: filteredSales.filter(s => s?.paymentMethod === 'Qarz' || s?.paymentMethod === 'debt').reduce((a, s) => a + Number(s?.total || 0), 0),
-    salary: filteredSales.filter(s => s?.paymentMethod === 'salary_deduction').reduce((a, s) => a + Number(s?.total || 0), 0)
+    cash: safeSales.filter(s => s?.paymentMethod === 'Naqd' || s?.paymentMethod === 'cash').reduce((a, s) => a + Number(s?.total || 0), 0),
+    card: safeSales.filter(s => s?.paymentMethod === 'Karta' || s?.paymentMethod === 'card').reduce((a, s) => a + Number(s?.total || 0), 0),
+    bank: safeSales.filter(s => s?.paymentMethod === 'Bank perech' || s?.paymentMethod === 'bank').reduce((a, s) => a + Number(s?.total || 0), 0),
+    debt: safeSales.filter(s => s?.paymentMethod === 'Qarz' || s?.paymentMethod === 'debt').reduce((a, s) => a + Number(s?.total || 0), 0),
+    salary: safeSales.filter(s => s?.paymentMethod === 'salary_deduction').reduce((a, s) => a + Number(s?.total || 0), 0)
   };
 
-  // Submit new transfer from Director to Warehouse
+  // Submit transfer
   const handleSendTransfer = (e) => {
     e.preventDefault();
     if (!transferProductName.trim() || !transferQuantity) return;
@@ -136,12 +131,12 @@ export default function DirectorDashboard({
       quantity: Number(transferQuantity),
       unit: transferUnit,
       costPrice: Number(transferCostPrice) || 0,
-      price: Number(transferSellingPrice) || Number(transferCostPrice) * 1.3,
-      supplier: transferSupplier.trim() || 'Import/Zavod',
-      notes: transferNotes.trim() || 'Direktor tomonidan skladga partiya yuborildi',
+      price: Number(transferSellingPrice) || (Number(transferCostPrice) * 1.3),
+      supplier: transferSupplier.trim() || 'Yetkazib beruvchi',
+      notes: transferNotes.trim() || 'Direktor tomonidan yuborilgan kirim',
       createdAt: new Date().toLocaleString('uz-UZ'),
-      createdBy: 'Direktor (Sardor Alimov)',
-      status: 'pending_warehouse' // Skladchi qabul qilishi kutilmoqda!
+      createdBy: 'Direktor',
+      status: 'pending_warehouse'
     };
 
     onCreateTransfer(newTrf);
@@ -154,289 +149,632 @@ export default function DirectorDashboard({
     setTransferNotes('');
   };
 
+  // Staff Submit
+  const handleSaveStaff = (e) => {
+    e.preventDefault();
+    if (!staffName.trim() || !staffUsername.trim()) return;
+
+    // Role mapping
+    let mappedRole = 'seller_mobile';
+    if (staffRole.toLowerCase().includes('direktor')) mappedRole = 'director';
+    else if (staffRole.toLowerCase().includes('buxgalter')) mappedRole = 'accountant';
+    else if (staffRole.toLowerCase().includes('sklad')) mappedRole = 'warehouse';
+
+    if (editingStaff) {
+      onUpdateStaff({
+        ...editingStaff,
+        name: staffName.trim(),
+        role: staffRole,
+        phone: staffPhone.trim(),
+        username: staffUsername.trim().toLowerCase(),
+        password: staffPassword.trim(),
+        baseSalary: Number(staffSalary) || 0,
+        systemRole: mappedRole
+      });
+    } else {
+      onAddStaff({
+        id: `emp-${Date.now()}`,
+        name: staffName.trim(),
+        role: staffRole,
+        phone: staffPhone.trim(),
+        username: staffUsername.trim().toLowerCase(),
+        password: staffPassword.trim() || '1234',
+        baseSalary: Number(staffSalary) || 0,
+        paidThisMonth: 0,
+        status: 'Faol',
+        systemRole: mappedRole
+      });
+    }
+
+    setShowStaffModal(false);
+    resetStaffForm();
+  };
+
+  const resetStaffForm = () => {
+    setStaffName('');
+    setStaffRole('Sotuvchi');
+    setStaffPhone('+998 ');
+    setStaffUsername('');
+    setStaffPassword('1234');
+    setStaffSalary('');
+    setEditingStaff(null);
+  };
+
+  const openEditStaff = (st) => {
+    setEditingStaff(st);
+    setStaffName(st.name || '');
+    setStaffRole(st.role || 'Sotuvchi');
+    setStaffPhone(st.phone || '+998 ');
+    setStaffUsername(st.username || '');
+    setStaffPassword(st.password || '1234');
+    setStaffSalary(st.baseSalary || '');
+    setShowStaffModal(true);
+  };
+
   return (
-    <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '24px 20px' }}>
+    <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '24px 20px', fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif" }}>
       
-      {/* Top Banner & Actions */}
+      {/* Top Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '46px', height: '46px', borderRadius: '14px', background: 'linear-gradient(135deg, #1e1b4b 0%, #4338ca 100%)', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '22px' }}>
-            👑
-          </div>
-          <div>
-            <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>Direktor Boshqaruv Paneli (Bosh Nazorat)</h2>
-            <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#64748b' }}>
-              Sklad qoldig'i, tovar kirimlari (perexodlar), sotuvlar reytingi va moliyaviy oqim
-            </p>
-          </div>
+        <div>
+          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
+            Direktor Boshqaruv Markazi
+          </h2>
+          <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>
+            Sklad zaxirasi, tovar kirimlari, sotuvlar tahlili va xodimlar boshqaruvi
+          </p>
         </div>
 
         <div style={{ display: 'flex', gap: '10px' }}>
           <button
-            onClick={() => setShowTransferModal(true)}
+            onClick={() => { resetStaffForm(); setShowStaffModal(true); }}
             style={{
-              background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
-              color: '#ffffff',
-              border: 'none',
-              borderRadius: '14px',
-              padding: '12px 20px',
+              background: '#ffffff',
+              border: '1px solid #cbd5e1',
+              borderRadius: '10px',
+              padding: '10px 16px',
               fontSize: '13px',
-              fontWeight: 800,
+              fontWeight: 700,
+              color: '#334155',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
-              cursor: 'pointer',
-              boxShadow: '0 4px 14px rgba(16, 185, 129, 0.3)'
+              gap: '6px',
+              cursor: 'pointer'
             }}
           >
-            <Plus size={16} /> Skladga Tovar Kirim (Perexod) Berish 📦
+            <UserPlus size={16} /> Yangi Xodim Qo'shish
+          </button>
+
+          <button
+            onClick={() => setShowTransferModal(true)}
+            style={{
+              background: '#2563eb',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '10px',
+              padding: '10px 18px',
+              fontSize: '13px',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: 'pointer'
+            }}
+          >
+            <Plus size={16} /> Skladga Tovar Yuborish (Kirim)
           </button>
         </div>
       </div>
 
-      {/* 3 ASOSIY MIJOZ TALABI (KPI KARTALAR) */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '24px' }}>
-        
-        {/* 1. SKLADDA QANCHA TOVAR BOR */}
-        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: '#4338ca' }}>1. Skladda Qancha Tovar Bor</span>
-              <div style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', margin: '8px 0 2px' }}>
-                {totalStockCount} <span style={{ fontSize: '16px', fontWeight: 600, color: '#64748b' }}>dona</span>
-              </div>
-            </div>
-            <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#e0e7ff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Box size={22} />
-            </div>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>
-            <span style={{ color: '#64748b' }}>Sklad Tannarxi:</span>
-            <span style={{ fontWeight: 700, color: '#0f172a' }}>{formatMoney(warehouseCost)}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '4px' }}>
-            <span style={{ color: '#64748b' }}>Sotuv Qiymati:</span>
-            <span style={{ fontWeight: 800, color: '#16a34a' }}>{formatMoney(warehouseRetail)}</span>
-          </div>
-        </div>
+      {/* Tabs */}
+      <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid #e2e8f0', marginBottom: '24px' }}>
+        <button
+          onClick={() => setActiveTab('overview')}
+          style={{
+            padding: '12px 16px',
+            border: 'none',
+            background: 'none',
+            borderBottom: activeTab === 'overview' ? '2px solid #2563eb' : '2px solid transparent',
+            color: activeTab === 'overview' ? '#2563eb' : '#64748b',
+            fontWeight: 700,
+            fontSize: '14px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          <BarChart3 size={17} /> Asosiy Ko'rsatkichlar
+        </button>
 
-        {/* 2. QANCHA TOVAR KIRIM BO'LDI */}
-        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: '#059669' }}>2. Qancha Tovar Kirim Bo'ldi</span>
-              <div style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', margin: '8px 0 2px' }}>
-                +{totalTransferredQuantity} <span style={{ fontSize: '16px', fontWeight: 600, color: '#64748b' }}>dona</span>
-              </div>
-            </div>
-            <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <Truck size={22} />
-            </div>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>
-            <span style={{ color: '#64748b' }}>Kirim Summasi:</span>
-            <span style={{ fontWeight: 700, color: '#0f172a' }}>{formatMoney(totalTransferredCost)}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '4px' }}>
-            <span style={{ color: '#64748b' }}>Partiyalar soni:</span>
-            <span style={{ fontWeight: 700, color: '#059669' }}>{totalTransfersCount} ta jo'natma</span>
-          </div>
-        </div>
+        <button
+          onClick={() => setActiveTab('transfers')}
+          style={{
+            padding: '12px 16px',
+            border: 'none',
+            background: 'none',
+            borderBottom: activeTab === 'transfers' ? '2px solid #2563eb' : '2px solid transparent',
+            color: activeTab === 'transfers' ? '#2563eb' : '#64748b',
+            fontWeight: 700,
+            fontSize: '14px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          <Truck size={17} /> Skladga Kirimlar ({safeTransfers.length})
+        </button>
 
-        {/* 3. UMUMIY TUSHUM VA SOF FOYDA */}
-        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-            <div>
-              <span style={{ fontSize: '13px', fontWeight: 700, color: '#2563eb' }}>Jami Savdo & Sof Foyda</span>
-              <div style={{ fontSize: '28px', fontWeight: 800, color: '#0f172a', margin: '8px 0 2px' }}>
-                {formatMoney(totalRevenue)}
-              </div>
-            </div>
-            <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#dbeafe', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-              <TrendingUp size={22} />
-            </div>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>
-            <span style={{ color: '#64748b' }}>Sof Foyda (Margin):</span>
-            <span style={{ fontWeight: 800, color: netProfit >= 0 ? '#16a34a' : '#dc2626' }}>{formatMoney(netProfit)}</span>
-          </div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '4px' }}>
-            <span style={{ color: '#64748b' }}>Chiqim & Oyliklar:</span>
-            <span style={{ fontWeight: 700, color: '#dc2626' }}>-{formatMoney(totalExpenses + totalStaffSalaries)}</span>
-          </div>
-        </div>
+        <button
+          onClick={() => setActiveTab('staff')}
+          style={{
+            padding: '12px 16px',
+            border: 'none',
+            background: 'none',
+            borderBottom: activeTab === 'staff' ? '2px solid #2563eb' : '2px solid transparent',
+            color: activeTab === 'staff' ? '#2563eb' : '#64748b',
+            fontWeight: 700,
+            fontSize: '14px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          <Users size={17} /> Xodimlar & Tizimga Kirish ({safeStaff.length})
+        </button>
       </div>
 
-      {/* 2-USTUN: NIMADAN QANCHA SOTILDI VA KIRIMLAR MONITORI */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(450px, 1fr))', gap: '20px', marginBottom: '24px' }}>
-        
-        {/* NIMADAN QANCHA SOTILDI */}
-        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Award size={18} style={{ color: '#f59e0b' }} />
-              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Nimadan Qancha Sotildi (Top Tovar Reytingi)</h3>
+      {/* TAB 1: ASOSIY KO'RSATKICHLAR */}
+      {activeTab === 'overview' && (
+        <div>
+          {/* Top 3 KPI Cards */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+            
+            {/* 1. Skladda Qancha Tovar Bor */}
+            <div style={{ background: '#ffffff', borderRadius: '14px', padding: '18px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Skladdagi Jami Tovar</span>
+                <Box size={20} style={{ color: '#2563eb' }} />
+              </div>
+              <div style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', margin: '8px 0 2px' }}>
+                {totalStockCount} <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>dona</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>
+                <span style={{ color: '#64748b' }}>Tannarx qiymati:</span>
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>{formatMoney(warehouseCost)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '4px' }}>
+                <span style={{ color: '#64748b' }}>Sotuv qiymati:</span>
+                <span style={{ fontWeight: 700, color: '#16a34a' }}>{formatMoney(warehouseRetail)}</span>
+              </div>
             </div>
-            <span style={{ fontSize: '12px', color: '#64748b' }}>Dona va tushum bo'yicha</span>
+
+            {/* 2. Qancha Tovar Kirim Bo'ldi */}
+            <div style={{ background: '#ffffff', borderRadius: '14px', padding: '18px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Kirim Bo'lgan Tovarlar</span>
+                <Truck size={20} style={{ color: '#16a34a' }} />
+              </div>
+              <div style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', margin: '8px 0 2px' }}>
+                +{totalTransferredQuantity} <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>dona</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>
+                <span style={{ color: '#64748b' }}>Kirim summasi:</span>
+                <span style={{ fontWeight: 700, color: '#0f172a' }}>{formatMoney(totalTransferredCost)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '4px' }}>
+                <span style={{ color: '#64748b' }}>Partiyalar soni:</span>
+                <span style={{ fontWeight: 700, color: '#2563eb' }}>{totalTransfersCount} ta</span>
+              </div>
+            </div>
+
+            {/* 3. Savdo & Sof Foyda */}
+            <div style={{ background: '#ffffff', borderRadius: '14px', padding: '18px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Jami Sotuv & Tushum</span>
+                <TrendingUp size={20} style={{ color: '#7c3aed' }} />
+              </div>
+              <div style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', margin: '8px 0 2px' }}>
+                {formatMoney(totalRevenue)}
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '10px', paddingTop: '10px', borderTop: '1px solid #f1f5f9' }}>
+                <span style={{ color: '#64748b' }}>Sof foyda:</span>
+                <span style={{ fontWeight: 700, color: netProfit >= 0 ? '#16a34a' : '#dc2626' }}>{formatMoney(netProfit)}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginTop: '4px' }}>
+                <span style={{ color: '#64748b' }}>Chiqimlar:</span>
+                <span style={{ fontWeight: 700, color: '#dc2626' }}>-{formatMoney(totalExpenses + totalStaffSalaries)}</span>
+              </div>
+            </div>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {topProducts.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '30px', color: '#64748b', fontSize: '13px' }}>
-                Hozircha sotilgan tovarlar mavjud emas
+          {/* Nimadan Qancha Sotildi & To'lovlar */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(420px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+            
+            {/* Top Sotilgan Tovarlar */}
+            <div style={{ background: '#ffffff', borderRadius: '14px', padding: '20px', border: '1px solid #e2e8f0' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>Nimadan Qancha Sotildi</div>
+                <span style={{ fontSize: '12px', color: '#64748b' }}>Sotilgan dona bo'yicha</span>
               </div>
-            ) : (
-              topProducts.slice(0, 7).map((prod, idx) => (
-                <div key={idx} style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: '12px' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ width: '22px', height: '22px', borderRadius: '6px', background: idx === 0 ? '#fef3c7' : '#e2e8f0', color: idx === 0 ? '#b45309' : '#475569', fontSize: '11px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        #{idx + 1}
-                      </span>
-                      <span style={{ fontWeight: 700, color: '#0f172a', fontSize: '13px' }}>{prod.name}</span>
-                    </div>
-                    <div style={{ textAlign: 'right' }}>
-                      <span style={{ fontSize: '13px', fontWeight: 800, color: '#4f46e5' }}>{prod.quantity} {prod.unit}</span>
-                      <span style={{ fontSize: '12px', color: '#64748b', marginLeft: '8px' }}>({formatMoney(prod.revenue)})</span>
-                    </div>
-                  </div>
-                  {/* Progress visual bar */}
-                  <div style={{ width: '100%', height: '6px', background: '#e2e8f0', borderRadius: '4px', overflow: 'hidden' }}>
-                    <div style={{ width: `${Math.min(100, (prod.quantity / (topProducts[0]?.quantity || 1)) * 100)}%`, height: '100%', background: 'linear-gradient(90deg, #4f46e5 0%, #06b6d4 100%)', borderRadius: '4px' }} />
-                  </div>
+
+              {topProducts.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '36px 16px', color: '#94a3b8', fontSize: '13px' }}>
+                  Hozircha sotuvlar amalga oshirilmagan
                 </div>
-              ))
-            )}
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                  {topProducts.slice(0, 6).map((prod, idx) => (
+                    <div key={idx} style={{ padding: '8px 10px', background: '#f8fafc', borderRadius: '8px' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', marginBottom: '4px' }}>
+                        <span style={{ fontWeight: 700, color: '#1e293b' }}>{idx + 1}. {prod.name}</span>
+                        <span style={{ fontWeight: 800, color: '#2563eb' }}>{prod.quantity} {prod.unit} ({formatMoney(prod.revenue)})</span>
+                      </div>
+                      <div style={{ width: '100%', height: '5px', background: '#e2e8f0', borderRadius: '3px', overflow: 'hidden' }}>
+                        <div style={{ width: `${Math.min(100, (prod.quantity / (topProducts[0]?.quantity || 1)) * 100)}%`, height: '100%', background: '#2563eb' }} />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* To'lov turlari oqimi */}
+            <div style={{ background: '#ffffff', borderRadius: '14px', padding: '20px', border: '1px solid #e2e8f0' }}>
+              <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginBottom: '16px' }}>
+                To'lov Turlari Bo'yicha Tushumlar
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', fontSize: '13px' }}>
+                  <span style={{ color: '#475569' }}>Naqd pul tushumi:</span>
+                  <strong style={{ color: '#16a34a' }}>{formatMoney(paymentStats.cash)}</strong>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', fontSize: '13px' }}>
+                  <span style={{ color: '#475569' }}>Plastik karta:</span>
+                  <strong style={{ color: '#2563eb' }}>{formatMoney(paymentStats.card)}</strong>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', fontSize: '13px' }}>
+                  <span style={{ color: '#475569' }}>Bank perechisleniye:</span>
+                  <strong style={{ color: '#7c3aed' }}>{formatMoney(paymentStats.bank)}</strong>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', fontSize: '13px' }}>
+                  <span style={{ color: '#475569' }}>Qarzga (Nasiyaga) berilgan:</span>
+                  <strong style={{ color: '#d97706' }}>{formatMoney(paymentStats.debt)}</strong>
+                </div>
+
+                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', fontSize: '13px' }}>
+                  <span style={{ color: '#475569' }}>Xodim maoshidan ushlangan:</span>
+                  <strong style={{ color: '#db2777' }}>{formatMoney(paymentStats.salary)}</strong>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
+      )}
 
-        {/* SKLADGA PEREHODLAR (KIRIMLAR) MONITORI */}
-        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+      {/* TAB 2: SKLADGA KIRIMLAR (PEREXODLAR) */}
+      {activeTab === 'transfers' && (
+        <div style={{ background: '#ffffff', borderRadius: '14px', padding: '20px', border: '1px solid #e2e8f0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-              <Truck size={18} style={{ color: '#10b981' }} />
-              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Skladga Perexodlar & Skladchi Qabuli</h3>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Skladga Jo'natilgan Tovar Partiyalari (Perexodlar)</h3>
+              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>Direktor yuborgan tovarlarni skladchi sanab oladi va sklad balansiga kiritadi</p>
             </div>
+
             <button
               onClick={() => setShowTransferModal(true)}
-              style={{ background: '#f0fdf4', color: '#16a34a', border: 'none', borderRadius: '8px', padding: '4px 10px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+              style={{ background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '8px 14px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              + Yangi Kirim
+              <Plus size={15} /> Yangi Partiya Yuborish
             </button>
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {safeTransfers.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '30px', color: '#64748b', fontSize: '13px' }}>
-                Hozircha kirimlar yuborilmagan
-              </div>
-            ) : (
-              safeTransfers.slice(0, 6).map(t => {
-                const isPending = t.status === 'pending_warehouse';
-                return (
-                  <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8fafc', borderRadius: '12px', fontSize: '13px' }}>
-                    <div>
-                      <div style={{ fontWeight: 700, color: '#0f172a' }}>{t.productName}</div>
-                      <div style={{ fontSize: '11px', color: '#64748b' }}>
-                        +{t.quantity} {t.unit} | Yetkazib beruvchi: {t.supplier} | {t.createdAt}
-                      </div>
-                    </div>
-                    <div>
-                      <span style={{ 
-                        background: isPending ? '#fef3c7' : '#dcfce7', 
-                        color: isPending ? '#b45309' : '#15803d', 
-                        padding: '4px 10px', 
-                        borderRadius: '8px', 
-                        fontSize: '11px', 
-                        fontWeight: 700,
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '4px'
-                      }}>
-                        {isPending ? "⏳ Skladchi qabuli kutilmoqda" : "✅ Skladchi qabul qildi"}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })
-            )}
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
+                  <th style={{ padding: '12px 14px' }}>Hujjat №</th>
+                  <th style={{ padding: '12px 14px' }}>Tovar Nomi</th>
+                  <th style={{ padding: '12px 14px' }}>Miqdor</th>
+                  <th style={{ padding: '12px 14px' }}>Tannarx</th>
+                  <th style={{ padding: '12px 14px' }}>Sotish Narxi</th>
+                  <th style={{ padding: '12px 14px' }}>Yetkazib beruvchi</th>
+                  <th style={{ padding: '12px 14px' }}>Sana</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'right' }}>Holat</th>
+                </tr>
+              </thead>
+              <tbody>
+                {safeTransfers.length === 0 ? (
+                  <tr>
+                    <td colSpan="8" style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>
+                      Hozircha skladga kirimlar jo'natilmagan
+                    </td>
+                  </tr>
+                ) : (
+                  safeTransfers.map(trf => (
+                    <tr key={trf.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '12px 14px', fontWeight: 700, color: '#2563eb' }}>{trf.transferNumber || trf.id}</td>
+                      <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{trf.productName}</td>
+                      <td style={{ padding: '12px 14px', fontWeight: 700, color: '#16a34a' }}>+{trf.quantity} {trf.unit}</td>
+                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{formatMoney(trf.costPrice)}</td>
+                      <td style={{ padding: '12px 14px', color: '#0f172a' }}>{formatMoney(trf.price)}</td>
+                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{trf.supplier}</td>
+                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{trf.createdAt}</td>
+                      <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                        <span style={{
+                          padding: '3px 8px',
+                          borderRadius: '6px',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          background: trf.status === 'received' ? '#dcfce7' : '#fef3c7',
+                          color: trf.status === 'received' ? '#15803d' : '#b45309'
+                        }}>
+                          {trf.status === 'received' ? "Qabul qilindi" : "Skladchi qabuli kutilmoqda"}
+                        </span>
+                      </td>
+                    </tr>
+                  ))
+                )}
+              </tbody>
+            </table>
           </div>
         </div>
-      </div>
+      )}
 
-      {/* TO'LOV TURLARI KESIMIDA MOLIYAVIY OQIM */}
-      <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
-        <h3 style={{ margin: '0 0 16px', fontSize: '16px', color: '#0f172a' }}>To'lov Turlari Bo'yicha Tushumlar Analitikasi</h3>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }}>
-          <div style={{ background: '#f0fdf4', padding: '14px', borderRadius: '14px', border: '1px solid #bbf7d0' }}>
-            <div style={{ fontSize: '12px', color: '#166534', fontWeight: 600 }}>💵 Naqd Pul Tushumi</div>
-            <div style={{ fontSize: '18px', fontWeight: 800, color: '#15803d', marginTop: '4px' }}>{formatMoney(paymentStats.cash)}</div>
-          </div>
-
-          <div style={{ background: '#eff6ff', padding: '14px', borderRadius: '14px', border: '1px solid #bfdbfe' }}>
-            <div style={{ fontSize: '12px', color: '#1e40af', fontWeight: 600 }}>💳 Plastik Karta Tushumi</div>
-            <div style={{ fontSize: '18px', fontWeight: 800, color: '#1d4ed8', marginTop: '4px' }}>{formatMoney(paymentStats.card)}</div>
-          </div>
-
-          <div style={{ background: '#f5f3ff', padding: '14px', borderRadius: '14px', border: '1px solid #ddd6fe' }}>
-            <div style={{ fontSize: '12px', color: '#5b21b6', fontWeight: 600 }}>🏦 Bank Perechisleniye</div>
-            <div style={{ fontSize: '18px', fontWeight: 800, color: '#6d28d9', marginTop: '4px' }}>{formatMoney(paymentStats.bank)}</div>
-          </div>
-
-          <div style={{ background: '#fffbeb', padding: '14px', borderRadius: '14px', border: '1px solid #fde68a' }}>
-            <div style={{ fontSize: '12px', color: '#92400e', fontWeight: 600 }}>📝 Qarzga (Nasiya) Berilgan</div>
-            <div style={{ fontSize: '18px', fontWeight: 800, color: '#b45309', marginTop: '4px' }}>{formatMoney(paymentStats.debt)}</div>
-          </div>
-
-          <div style={{ background: '#fdf2f8', padding: '14px', borderRadius: '14px', border: '1px solid #fbcfe8' }}>
-            <div style={{ fontSize: '12px', color: '#9d174d', fontWeight: 600 }}>💼 Oylikdan Ushlangan</div>
-            <div style={{ fontSize: '18px', fontWeight: 800, color: '#be185d', marginTop: '4px' }}>{formatMoney(paymentStats.salary)}</div>
-          </div>
-        </div>
-      </div>
-
-      {/* MODAL: DIREKTOR SKLADGA TOVAR PEREHODINI YUBORISH */}
-      {showTransferModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
-          <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '500px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Box size={22} style={{ color: '#10b981' }} />
-                <h3 style={{ margin: 0, fontSize: '17px', color: '#0f172a' }}>Skladga Tovar Kirim (Perexod) Yuborish</h3>
-              </div>
-              <button onClick={() => setShowTransferModal(false)} style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '18px' }}>✕</button>
+      {/* TAB 3: XODIMLAR VA FOYDALANUVCHILAR BOSHQARUVI */}
+      {activeTab === 'staff' && (
+        <div style={{ background: '#ffffff', borderRadius: '14px', padding: '20px', border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px', flexWrap: 'wrap', gap: '10px' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Xodimlar va Tizimga Kirish Huquqlari</h3>
+              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>Direktor bu yerdan yangi xodimlarni kiritadi, login va parollarini belgilaydi</p>
             </div>
 
-            <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#64748b' }}>
-              Direktor partiyani yuboradi. Tovar skladchining <strong>"Kutilayotgan kirimlar"</strong> bo'limiga tushadi va u "Qabul qildim" deb tasdiqlaganda sklad balansiga kiritiladi.
-            </p>
+            <button
+              onClick={() => { resetStaffForm(); setShowStaffModal(true); }}
+              style={{
+                background: '#2563eb',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '8px',
+                padding: '9px 16px',
+                fontSize: '13px',
+                fontWeight: 700,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer'
+              }}
+            >
+              <UserPlus size={16} /> Yangi Xodim Qo'shish
+            </button>
+          </div>
 
-            <form onSubmit={handleSendTransfer} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
+                  <th style={{ padding: '12px 14px' }}>F.I.Sh</th>
+                  <th style={{ padding: '12px 14px' }}>Lavozimi</th>
+                  <th style={{ padding: '12px 14px' }}>Telefon</th>
+                  <th style={{ padding: '12px 14px' }}>Tizim Logini</th>
+                  <th style={{ padding: '12px 14px' }}>Oylik Maoshi</th>
+                  <th style={{ padding: '12px 14px' }}>Holat</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'right' }}>Amal</th>
+                </tr>
+              </thead>
+              <tbody>
+                {safeStaff.map(st => (
+                  <tr key={st.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                    <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{st.name}</td>
+                    <td style={{ padding: '12px 14px' }}>
+                      <span style={{
+                        padding: '2px 8px',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        background: st.role.toLowerCase().includes('direktor') ? '#fef3c7' :
+                                    st.role.toLowerCase().includes('buxgalter') ? '#dcfce7' :
+                                    st.role.toLowerCase().includes('sklad') ? '#e0f2fe' : '#ede9fe',
+                        color: st.role.toLowerCase().includes('direktor') ? '#b45309' :
+                               st.role.toLowerCase().includes('buxgalter') ? '#15803d' :
+                               st.role.toLowerCase().includes('sklad') ? '#0369a1' : '#6d28d9'
+                      }}>
+                        {st.role}
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 14px', color: '#64748b' }}>{st.phone || '—'}</td>
+                    <td style={{ padding: '12px 14px', fontFamily: 'monospace', color: '#2563eb', fontWeight: 700 }}>
+                      {st.username || st.name.toLowerCase().replace(/\s+/g, '')}
+                    </td>
+                    <td style={{ padding: '12px 14px', color: '#0f172a', fontWeight: 600 }}>{formatMoney(st.baseSalary)}</td>
+                    <td style={{ padding: '12px 14px' }}>
+                      <span style={{ background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+                        Faol
+                      </span>
+                    </td>
+                    <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                      <div style={{ display: 'inline-flex', gap: '6px' }}>
+                        <button
+                          onClick={() => openEditStaff(st)}
+                          style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '5px 8px', cursor: 'pointer', color: '#475569' }}
+                          title="Tahrirlash"
+                        >
+                          <Edit2 size={13} />
+                        </button>
+                        <button
+                          onClick={() => {
+                            if (confirm(`Haqiqatan ham "${st.name}" xodimini o'chirmoqchimisiz?`)) {
+                              onDeleteStaff(st.id);
+                            }
+                          }}
+                          style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 8px', cursor: 'pointer', color: '#dc2626' }}
+                          title="O'chirish"
+                        >
+                          <Trash2 size={13} />
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: YANGI XODIM QO'SHISH / TAHRIRLASH */}
+      {showStaffModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '18px', maxWidth: '440px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <UserPlus size={18} style={{ color: '#2563eb' }} />
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>
+                  {editingStaff ? "Xodim Ma'lumotlarini Tahrirlash" : "Yangi Xodim Qo'shish"}
+                </h3>
+              </div>
+              <button onClick={() => setShowStaffModal(false)} style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleSaveStaff} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Tovar Nomi *</label>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Ism va Familiya *</label>
                 <input 
                   type="text" 
                   required
-                  placeholder="Masalan: Zara Slim Fit Klassik Ko'ylak"
-                  value={transferProductName}
-                  onChange={(e) => setTransferProductName(e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  placeholder="Masalan: Anvar Karimov"
+                  value={staffName}
+                  onChange={(e) => setStaffName(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Lavozimi / Roli *</label>
+                <select
+                  value={staffRole}
+                  onChange={(e) => setStaffRole(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box', background: '#ffffff' }}
+                >
+                  <option value="Sotuvchi">Sotuvchi (Mobil APK / Agent)</option>
+                  <option value="Sklad Mudiri">Sklad Mudiri (Ombor)</option>
+                  <option value="Bosh Buxgalter">Bosh Buxgalter (Moliya)</option>
+                  <option value="Direktor">Direktor (Boshqaruv)</option>
+                </select>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Telefon raqami</label>
+                <input 
+                  type="text" 
+                  placeholder="+998 90 123 45 67"
+                  value={staffPhone}
+                  onChange={(e) => setStaffPhone(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
                 />
               </div>
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Toifa / Kategoriya</label>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Tizim Logini *</label>
                   <input 
                     type="text" 
-                    placeholder="Masalan: Ko'ylaklar"
-                    value={transferCategory}
-                    onChange={(e) => setTransferCategory(e.target.value)}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                    required
+                    placeholder="login"
+                    value={staffUsername}
+                    onChange={(e) => setStaffUsername(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Miqdori va Birligi *</label>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Paroli *</label>
+                  <input 
+                    type="text" 
+                    required
+                    placeholder="1234"
+                    value={staffPassword}
+                    onChange={(e) => setStaffPassword(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Oylik Maoshi (so'm)</label>
+                <input 
+                  type="number" 
+                  placeholder="4000000"
+                  value={staffSalary}
+                  onChange={(e) => setStaffSalary(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowStaffModal(false)}
+                  style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#2563eb', color: '#ffffff', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Saqlash
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: DIREKTOR SKLADGA TOVAR YUBORISH */}
+      {showTransferModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '18px', maxWidth: '460px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Box size={18} style={{ color: '#2563eb' }} />
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Skladga Tovar Kirim (Perexod) Yuborish</h3>
+              </div>
+              <button onClick={() => setShowTransferModal(false)} style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer' }}>✕</button>
+            </div>
+
+            <form onSubmit={handleSendTransfer} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Tovar Nomi *</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="Tovar nomi"
+                  value={transferProductName}
+                  onChange={(e) => setTransferProductName(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Toifa</label>
+                  <input 
+                    type="text" 
+                    placeholder="Masalan: Kiyim"
+                    value={transferCategory}
+                    onChange={(e) => setTransferCategory(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Miqdor & Birlik *</label>
                   <div style={{ display: 'flex', gap: '6px' }}>
                     <input 
                       type="number" 
@@ -444,12 +782,12 @@ export default function DirectorDashboard({
                       placeholder="20"
                       value={transferQuantity}
                       onChange={(e) => setTransferQuantity(e.target.value)}
-                      style={{ flex: 1, padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                      style={{ flex: 1, padding: '9px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
                     />
                     <select
                       value={transferUnit}
                       onChange={(e) => setTransferUnit(e.target.value)}
-                      style={{ padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#ffffff' }}
+                      style={{ padding: '9px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '12px', background: '#ffffff' }}
                     >
                       {MEASURE_UNITS.map(u => <option key={u.id} value={u.id}>{u.label}</option>)}
                     </select>
@@ -459,46 +797,35 @@ export default function DirectorDashboard({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Sotib Olish Narxi (Tannarx)</label>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Tannarxi (so'm)</label>
                   <input 
                     type="number" 
                     placeholder="200000"
                     value={transferCostPrice}
                     onChange={(e) => setTransferCostPrice(e.target.value)}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Sotish Narxi (Do'konda)</label>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Sotish Narxi (so'm)</label>
                   <input 
                     type="number" 
-                    placeholder="320000"
+                    placeholder="300000"
                     value={transferSellingPrice}
                     onChange={(e) => setTransferSellingPrice(e.target.value)}
-                    style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
                   />
                 </div>
               </div>
 
               <div>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Yetkazib Beruvchi (Postavshik)</label>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Yetkazib Beruvchi</label>
                 <input 
                   type="text" 
-                  placeholder="Masalan: Turkiya Tekstil MCHJ"
+                  placeholder="Yetkazib beruvchi kompaniya"
                   value={transferSupplier}
                   onChange={(e) => setTransferSupplier(e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
-                />
-              </div>
-
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Izoh / Jo'natma hujjati raqami</label>
-                <input 
-                  type="text" 
-                  placeholder="Kirim partiyasi bo'yicha qo'shimcha ma'lumot"
-                  value={transferNotes}
-                  onChange={(e) => setTransferNotes(e.target.value)}
-                  style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
                 />
               </div>
 
@@ -506,15 +833,15 @@ export default function DirectorDashboard({
                 <button
                   type="button"
                   onClick={() => setShowTransferModal(false)}
-                  style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', fontWeight: 700, cursor: 'pointer' }}
+                  style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', fontWeight: 700, cursor: 'pointer' }}
                 >
                   Bekor qilish
                 </button>
                 <button
                   type="submit"
-                  style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: '#10b981', color: '#ffffff', fontWeight: 800, cursor: 'pointer' }}
+                  style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#2563eb', color: '#ffffff', fontWeight: 700, cursor: 'pointer' }}
                 >
-                  Skladga Yuborish 🚀
+                  Skladga Yuborish
                 </button>
               </div>
             </form>

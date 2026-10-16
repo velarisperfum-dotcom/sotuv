@@ -262,16 +262,16 @@ export default function AccountingView({
         </button>
       </div>
 
-      {/* TAB 1: ZAYAVKALAR VA APLATA NAZORATI (ENG ASOSIY TALAB!) */}
+      {/* TAB 1: ZAYAVKALAR VA APLATA NAZORATI */}
       {activeTab === 'orders_approval' && (
         <div>
           {/* Info Banner */}
-          <div style={{ background: '#e0e7ff', border: '1px solid #c7d2fe', borderRadius: '16px', padding: '14px 18px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#4f46e5', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-              💡
+          <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '16px', padding: '14px 18px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              <ShieldCheck size={20} />
             </div>
-            <div style={{ fontSize: '13px', color: '#312e81', lineHeight: '1.4' }}>
-              <strong>Buxgalter ish tartibi:</strong> Sotuvchi yuborgan zakazning to'lov turini tekshiring (Naqd, Karta, Nasiya, Bank o'tkazmasi, Oylikdan). Tasdiqlash tugmasini bosganingizda to'lov hisobga olinadi va zakaz zudlik bilan <strong>Skladchiga</strong> yuboriladi!
+            <div style={{ fontSize: '13px', color: '#1e293b', lineHeight: '1.4' }}>
+              <strong>Buxgalteriya nazorati:</strong> Sotuvchi yuborgan zakazning to'lov turini tekshiring (Naqd, Karta, Nasiya, Bank o'tkazmasi, Oylikdan). Tasdiqlash tugmasi bosilganda to'lov hisobga olinadi va zakaz darhol <strong>Skladchiga</strong> yuboriladi.
             </div>
           </div>
 
@@ -279,7 +279,7 @@ export default function AccountingView({
           <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', marginBottom: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>
-                ⏳ Tekshirish Kutilayotgan Zayavkalar ({pendingOrders.length})
+                Tekshirish Kutilayotgan Zayavkalar ({pendingOrders.length})
               </h3>
             </div>
 
@@ -296,16 +296,16 @@ export default function AccountingView({
                     key={order.id}
                     style={{
                       background: '#ffffff',
-                      border: '2px solid #fed7aa',
+                      border: '1px solid #fed7aa',
                       borderRadius: '18px',
                       padding: '18px',
-                      boxShadow: '0 4px 10px rgba(245, 158, 11, 0.08)'
+                      boxShadow: '0 2px 8px rgba(245, 158, 11, 0.06)'
                     }}
                   >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
                       <div>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: 800, color: '#ea580c', background: '#ffedd5', padding: '2px 10px', borderRadius: '8px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 800, color: '#c2410c', background: '#ffedd5', padding: '2px 10px', borderRadius: '8px' }}>
                             {order.orderNumber || order.id}
                           </span>
                           <span style={{ fontSize: '12px', color: '#64748b' }}>{order.createdAt}</span>
@@ -320,24 +320,24 @@ export default function AccountingView({
 
                       {/* To'lov turi badge & Summa */}
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '11px', color: '#64748b' }}>To'lov Usuli (Aplata):</div>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>To'lov Usuli:</div>
                         <div style={{ 
                           display: 'inline-flex', 
                           alignItems: 'center', 
                           gap: '6px', 
                           padding: '4px 12px', 
-                          borderRadius: '10px', 
-                          fontWeight: 800, 
-                          fontSize: '13px',
+                          borderRadius: '8px', 
+                          fontWeight: 700, 
+                          fontSize: '12px',
                           marginTop: '2px',
                           background: order.paymentMethod === 'bank' ? '#f5f3ff' : order.paymentMethod === 'debt' ? '#fffbeb' : order.paymentMethod === 'card' ? '#eff6ff' : '#f0fdf4',
                           color: order.paymentMethod === 'bank' ? '#7c3aed' : order.paymentMethod === 'debt' ? '#b45309' : order.paymentMethod === 'card' ? '#1d4ed8' : '#15803d'
                         }}>
-                          {order.paymentMethod === 'cash' && '💵 Naqd pul'}
-                          {order.paymentMethod === 'card' && '💳 Karta'}
-                          {order.paymentMethod === 'debt' && '📝 Qarzga (Nasiya)'}
-                          {order.paymentMethod === 'bank' && '🏦 Bank perech'}
-                          {order.paymentMethod === 'salary_deduction' && '💼 Oyligidan oldi'}
+                          {order.paymentMethod === 'cash' && 'Naqd pul'}
+                          {order.paymentMethod === 'card' && 'Karta (Uzcard/Humo)'}
+                          {order.paymentMethod === 'debt' && 'Qarzga (Nasiya)'}
+                          {order.paymentMethod === 'bank' && 'Bank o\'tkazmasi'}
+                          {order.paymentMethod === 'salary_deduction' && 'Xodim maoshidan'}
                         </div>
                         <div style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
                           {formatMoney(order.totalAmount)}
@@ -348,7 +348,7 @@ export default function AccountingView({
                     {/* Tovarlar va To'lov Izohi */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px', background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                       <div>
-                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>📦 Mahsulotlar:</div>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Mahsulotlar:</div>
                         {order.items?.map((item, idx) => (
                           <div key={idx} style={{ fontSize: '12px', color: '#1e293b' }}>
                             • {item.name} × {item.quantity} ({formatMoney(item.total)})
@@ -357,14 +357,14 @@ export default function AccountingView({
                       </div>
 
                       <div>
-                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>📝 To'lov Tafsiloti / Hujjat:</div>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>To'lov Tafsiloti / Hujjat:</div>
                         <div style={{ fontSize: '12px', color: '#0f172a', fontWeight: 600 }}>
                           {order.paymentDetails || "Izoh kiritilmagan"}
                         </div>
                         <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
-                          {order.paymentMethod === 'debt' && "⚠️ Qarz daftarga avtomatik yoziladi"}
-                          {order.paymentMethod === 'bank' && "🏦 Bank hisobiga tushum sifatida yoziladi"}
-                          {order.paymentMethod === 'salary_deduction' && `💼 Sotuvchi (${order.sellerName}) maoshidan chegiriladi`}
+                          {order.paymentMethod === 'debt' && "Qarz daftarga avtomatik kiritiladi"}
+                          {order.paymentMethod === 'bank' && "Bank hisobiga tushum sifatida yoziladi"}
+                          {order.paymentMethod === 'salary_deduction' && `Sotuvchi (${order.sellerName}) maoshidan chegiriladi`}
                         </div>
                       </div>
                     </div>
@@ -377,7 +377,7 @@ export default function AccountingView({
                           background: '#fee2e2',
                           color: '#dc2626',
                           border: 'none',
-                          borderRadius: '12px',
+                          borderRadius: '10px',
                           padding: '10px 18px',
                           fontSize: '13px',
                           fontWeight: 700,
@@ -393,21 +393,20 @@ export default function AccountingView({
                       <button
                         onClick={() => onApproveOrder(order.id)}
                         style={{
-                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          background: '#059669',
                           color: '#ffffff',
                           border: 'none',
-                          borderRadius: '12px',
+                          borderRadius: '10px',
                           padding: '10px 22px',
                           fontSize: '13px',
-                          fontWeight: 800,
+                          fontWeight: 700,
                           display: 'flex',
                           alignItems: 'center',
                           gap: '6px',
-                          cursor: 'pointer',
-                          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                          cursor: 'pointer'
                         }}
                       >
-                        <Check size={16} /> To'lovni Tasdiqlash & Skladga Yuborish 🚀
+                        <Check size={16} /> To'lovni Tasdiqlash & Skladga Yuborish
                       </button>
                     </div>
                   </div>
@@ -429,15 +428,15 @@ export default function AccountingView({
                 approvedOrders.map(order => (
                   <div key={order.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f8fafc', borderRadius: '12px', fontSize: '13px' }}>
                     <div>
-                      <span style={{ fontWeight: 800, color: '#4f46e5' }}>{order.orderNumber || order.id}</span>
+                      <span style={{ fontWeight: 800, color: '#2563eb' }}>{order.orderNumber || order.id}</span>
                       <span style={{ marginLeft: '10px', color: '#0f172a', fontWeight: 600 }}>{order.customerName}</span>
                       <span style={{ marginLeft: '10px', color: '#64748b' }}>({order.paymentMethod?.toUpperCase()})</span>
                     </div>
 
                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                       <span style={{ fontWeight: 800, color: '#0f172a' }}>{formatMoney(order.totalAmount)}</span>
-                      <span style={{ background: order.status === 'dispatched_warehouse' ? '#dcfce7' : '#e0e7ff', color: order.status === 'dispatched_warehouse' ? '#15803d' : '#4338ca', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
-                        {order.status === 'dispatched_warehouse' ? "Skladchi berdi ✅" : "Sklad yig'moqda 📦"}
+                      <span style={{ background: order.status === 'dispatched_warehouse' ? '#dcfce7' : '#eff6ff', color: order.status === 'dispatched_warehouse' ? '#15803d' : '#1d4ed8', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+                        {order.status === 'dispatched_warehouse' ? "Skladchi berdi" : "Sklad yig'moqda"}
                       </span>
                     </div>
                   </div>
