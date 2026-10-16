@@ -5,6 +5,7 @@ import {
   CreditCard, Check, Sparkles, Building2, PackageCheck, Layers, Eye
 } from 'lucide-react';
 import { MEASURE_UNITS } from '../data/initialData';
+import { useLang } from '../context/LanguageContext';
 
 export default function WarehouseView({ 
   products = [], 
@@ -16,6 +17,7 @@ export default function WarehouseView({
   onReceiveTransfer,
   onDispatchOrder
 }) {
+  const { t, lang } = useLang();
   const safeProducts = Array.isArray(products) ? products : [];
   const safeTransfers = Array.isArray(stockTransfers) ? stockTransfers : [];
   const safeOrders = Array.isArray(orders) ? orders : [];
@@ -25,7 +27,7 @@ export default function WarehouseView({
 
   // Search & Filter for Inventory
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('Hammasi');
+  const [selectedCategory, setSelectedCategory] = useState('all');
   const [onlyLowStock, setOnlyLowStock] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
@@ -40,7 +42,7 @@ export default function WarehouseView({
   const [formMinStock, setFormMinStock] = useState('3');
   const [formBarcode, setFormBarcode] = useState('');
 
-  const formatMoney = (val) => Number(val || 0).toLocaleString('uz-UZ') + " so'm";
+  const formatMoney = (val) => Number(val || 0).toLocaleString(lang === 'ru' ? 'ru-RU' : 'uz-UZ') + " " + t('currency');
 
   // Pending transfers waiting for warehousekeeper
   const pendingTransfers = safeTransfers.filter(t => t.status === 'pending_warehouse');
@@ -54,13 +56,13 @@ export default function WarehouseView({
   const lowStockProducts = safeProducts.filter(p => (p.stock || 0) <= (p.minStock || 3));
 
   // Categories
-  const categories = ['Hammasi', ...new Set(safeProducts.map(p => p.category).filter(Boolean))];
+  const categories = ['all', ...new Set(safeProducts.map(p => p.category).filter(Boolean))];
 
   // Filtered Products
   const filteredProducts = safeProducts.filter(p => {
     const matchesSearch = (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (p.barcode || '').includes(searchTerm);
-    const matchesCat = selectedCategory === 'Hammasi' || p.category === selectedCategory;
+    const matchesCat = selectedCategory === 'all' || p.category === selectedCategory;
     const matchesLow = !onlyLowStock || (p.stock || 0) <= (p.minStock || 3);
     return matchesSearch && matchesCat && matchesLow;
   });
@@ -74,7 +76,7 @@ export default function WarehouseView({
       onUpdateProduct({
         ...editingProduct,
         name: formName.trim(),
-        category: formCategory.trim() || 'Umumiy',
+        category: formCategory.trim() || (lang === 'ru' ? 'Общий' : 'Umumiy'),
         unit: formUnit,
         costPrice: Number(formCostPrice) || 0,
         price: Number(formPrice),
@@ -87,7 +89,7 @@ export default function WarehouseView({
       onAddProduct({
         id: `prd-${Date.now()}`,
         name: formName.trim(),
-        category: formCategory.trim() || 'Umumiy',
+        category: formCategory.trim() || (lang === 'ru' ? 'Общий' : 'Umumiy'),
         unit: formUnit,
         costPrice: Number(formCostPrice) || 0,
         price: Number(formPrice),
@@ -133,10 +135,12 @@ export default function WarehouseView({
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
         <div>
           <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
-            Sklad & Logistika Boshqaruvi
+            {t('warehouseCabinet')}
           </h2>
           <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>
-            Kirim tovarlarni qabul qilish, buxgalter tasdiqlagan zakazlarni berish va qoldiq nazorati
+            {lang === 'ru' 
+              ? 'Приемка товаров, выдача подтвержденных бухгалтером заказов и контроль остатков'
+              : 'Kirim tovarlarni qabul qilish, buxgalter tasdiqlagan zakazlarni berish va qoldiq nazorati'}
           </p>
         </div>
 
@@ -156,7 +160,7 @@ export default function WarehouseView({
             cursor: 'pointer'
           }}
         >
-          <Plus size={16} /> Yangi Tovar Kiritish
+          <Plus size={16} /> {t('addProductBtn')}
         </button>
       </div>
 
@@ -173,14 +177,16 @@ export default function WarehouseView({
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Kutilayotgan Kirimlar</span>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>
+              {lang === 'ru' ? 'Ожидаемые приходы' : 'Kutilayotgan Kirimlar'}
+            </span>
             <ArrowDownRight size={20} style={{ color: '#16a34a' }} />
           </div>
           <div style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', margin: '8px 0 2px' }}>
-            {pendingTransfers.length} <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>ta partiya</span>
+            {pendingTransfers.length} <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>{lang === 'ru' ? 'партий' : 'ta partiya'}</span>
           </div>
           <div style={{ fontSize: '12px', color: '#64748b' }}>
-            Jami: {pendingTransfers.reduce((acc, t) => acc + Number(t.quantity || 0), 0)} dona tovar qabul kutilmoqda
+            {lang === 'ru' ? 'Всего:' : 'Jami:'} {pendingTransfers.reduce((acc, t) => acc + Number(t.quantity || 0), 0)} {lang === 'ru' ? 'шт. ожидается' : 'dona tovar qabul kutilmoqda'}
           </div>
         </div>
 
@@ -195,14 +201,16 @@ export default function WarehouseView({
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Otgruzkaga Tayyor Zakazlar</span>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>
+              {lang === 'ru' ? 'Готовые к отгрузке' : 'Otgruzkaga Tayyor Zakazlar'}
+            </span>
             <Truck size={20} style={{ color: '#2563eb' }} />
           </div>
           <div style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', margin: '8px 0 2px' }}>
-            {readyToDispatchOrders.length} <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>ta buyurtma</span>
+            {readyToDispatchOrders.length} <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>{lang === 'ru' ? 'заказов' : 'ta buyurtma'}</span>
           </div>
           <div style={{ fontSize: '12px', color: '#64748b' }}>
-            Buxgalter tasdiqlagan, yuborilsa skladdan yechiladi
+            {lang === 'ru' ? 'Оплата подтверждена бухгалтером' : 'Buxgalter tasdiqlagan, yuborilsa skladdan yechiladi'}
           </div>
         </div>
 
@@ -217,19 +225,23 @@ export default function WarehouseView({
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>Sklad Zaxirasi</span>
+            <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>
+              {lang === 'ru' ? 'Складские остатки' : 'Sklad Zaxirasi'}
+            </span>
             <Box size={20} style={{ color: '#475569' }} />
           </div>
           <div style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', margin: '8px 0 2px' }}>
-            {safeProducts.reduce((acc, p) => acc + Number(p.stock || 0), 0)} <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>dona ({safeProducts.length} xil)</span>
+            {safeProducts.reduce((acc, p) => acc + Number(p.stock || 0), 0)} <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>{lang === 'ru' ? 'шт.' : 'dona'} ({safeProducts.length} {lang === 'ru' ? 'наим.' : 'xil'})</span>
           </div>
           <div style={{ fontSize: '12px', color: lowStockProducts.length > 0 ? '#dc2626' : '#64748b', fontWeight: lowStockProducts.length > 0 ? 700 : 400 }}>
-            {lowStockProducts.length > 0 ? `${lowStockProducts.length} ta tovar kam qolgan` : "Zaxira me'yorda"}
+            {lowStockProducts.length > 0 
+              ? (lang === 'ru' ? `Мало на складе: ${lowStockProducts.length} позиций` : `${lowStockProducts.length} ta tovar kam qolgan`) 
+              : (lang === 'ru' ? 'Остатки в норме' : "Zaxira me'yorda")}
           </div>
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs Navigation */}
       <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid #e2e8f0', marginBottom: '24px' }}>
         <button
           onClick={() => setActiveTab('receive_transfers')}
@@ -247,7 +259,7 @@ export default function WarehouseView({
             gap: '8px'
           }}
         >
-          <ArrowDownRight size={17} /> 1. Kutilayotgan Kirimlar ({pendingTransfers.length})
+          <ArrowDownRight size={17} /> 1. {t('tabWarehouseTransfers')} ({pendingTransfers.length})
         </button>
 
         <button
@@ -266,7 +278,7 @@ export default function WarehouseView({
             gap: '8px'
           }}
         >
-          <Truck size={17} /> 2. Otgruzka / Tovarlarni Berish ({readyToDispatchOrders.length})
+          <Truck size={17} /> 2. {t('tabWarehouseDispatch')} ({readyToDispatchOrders.length})
         </button>
 
         <button
@@ -285,7 +297,7 @@ export default function WarehouseView({
             gap: '8px'
           }}
         >
-          <Layers size={17} /> 3. Sklad Qoldiqlari
+          <Layers size={17} /> 3. {t('tabWarehouseStock')}
         </button>
       </div>
 
@@ -293,15 +305,19 @@ export default function WarehouseView({
       {activeTab === 'receive_transfers' && (
         <div style={{ background: '#ffffff', borderRadius: '14px', padding: '20px', border: '1px solid #e2e8f0' }}>
           <div style={{ marginBottom: '16px' }}>
-            <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Direktor Yuborgan Kirim Partiyalari</h3>
+            <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>
+              {lang === 'ru' ? 'Партии товаров, отправленные Директором' : 'Direktor Yuborgan Kirim Partiyalari'}
+            </h3>
             <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>
-              Tovarlar kelganda sanab olib "Qabul Qildim" tugmasini bosing, ular avtomatik sklad balansiga qo'shiladi
+              {lang === 'ru'
+                ? 'При поступлении товара пересчитайте его и нажмите «Принять товар». Он автоматически добавится в остатки склада'
+                : 'Tovarlar kelganda sanab olib "Qabul Qildim" tugmasini bosing, ular avtomatik sklad balansiga qo\'shiladi'}
             </p>
           </div>
 
           {pendingTransfers.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 16px', color: '#94a3b8', fontSize: '13px' }}>
-              Hozircha kutilayotgan yangi kirim partiyalari yo'q
+              {t('emptyList')}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
@@ -318,14 +334,14 @@ export default function WarehouseView({
                       {trf.productName}
                     </div>
                     <div style={{ fontSize: '12px', color: '#64748b' }}>
-                      Yetkazib beruvchi: {trf.supplier} | Tannarx: {formatMoney(trf.costPrice)}
+                      {t('categoryLabel')}: <strong>{trf.category}</strong> | {t('supplier')}: <strong>{trf.supplier}</strong>
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '18px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '11px', color: '#64748b' }}>Kirim miqdori:</div>
-                      <div style={{ fontSize: '18px', fontWeight: 800, color: '#16a34a' }}>
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>{t('quantity')}:</div>
+                      <div style={{ fontSize: '16px', fontWeight: 800, color: '#16a34a' }}>
                         +{trf.quantity} {trf.unit}
                       </div>
                     </div>
@@ -337,16 +353,16 @@ export default function WarehouseView({
                         color: '#ffffff',
                         border: 'none',
                         borderRadius: '8px',
-                        padding: '10px 18px',
+                        padding: '10px 16px',
                         fontSize: '13px',
                         fontWeight: 700,
+                        cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px',
-                        cursor: 'pointer'
+                        gap: '6px'
                       }}
                     >
-                      <Check size={16} /> Qabul Qildim
+                      <Check size={16} /> {t('receiveStockBtn')}
                     </button>
                   </div>
                 </div>
@@ -356,67 +372,64 @@ export default function WarehouseView({
         </div>
       )}
 
-      {/* TAB 2: BUXGALTER TASDIQLAGAN ZAKAZLAR (OTGRUZKA & SKLADDAN YECHISH) */}
+      {/* TAB 2: OTGRUZKA / SOTUVCHIGA BERISH */}
       {activeTab === 'dispatch_orders' && (
         <div style={{ background: '#ffffff', borderRadius: '14px', padding: '20px', border: '1px solid #e2e8f0' }}>
           <div style={{ marginBottom: '16px' }}>
-            <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Buxgalter Tasdiqlagan Zakazlar (Otgruzka)</h3>
+            <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>
+              {t('pendingDispatchOrders')}
+            </h3>
             <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>
-              Buxgalter to'lovini tasdiqlagan zakazlar. Tovar berilgach, <strong>"Sotuvchiga Berildi"</strong> tugmasini bosing — tovarlar skladdan yechiladi!
+              {t('pendingDispatchDesc')}
             </p>
           </div>
 
           {readyToDispatchOrders.length === 0 ? (
             <div style={{ textAlign: 'center', padding: '40px 16px', color: '#94a3b8', fontSize: '13px' }}>
-              Hozircha otgruzka qilinadigan tasdiqlangan zakazlar yo'q
+              {t('emptyList')}
             </div>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
               {readyToDispatchOrders.map(order => (
-                <div key={order.id} style={{ border: '1px solid #cbd5e1', borderRadius: '12px', padding: '16px', background: '#f8fafc' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                <div key={order.id} style={{ background: '#f8fafc', borderRadius: '12px', padding: '16px', border: '1px solid #e2e8f0' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px', marginBottom: '12px' }}>
                     <div>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ fontSize: '13px', fontWeight: 800, color: '#2563eb' }}>{order.orderNumber || order.id}</span>
-                        <span style={{ fontSize: '11px', background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '6px', fontWeight: 700 }}>
-                          To'lov tasdiqlangan
+                        <span style={{ fontSize: '12px', fontWeight: 800, color: '#2563eb', background: '#eff6ff', padding: '2px 8px', borderRadius: '6px' }}>
+                          {order.orderNumber || order.id}
                         </span>
+                        <span style={{ fontSize: '12px', color: '#64748b' }}>{order.createdAt}</span>
                       </div>
-                      <div style={{ fontSize: '15px', fontWeight: 700, color: '#0f172a', marginTop: '4px' }}>
-                        Mijoz: {order.customerName} ({order.customerPhone})
+                      <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
+                        {lang === 'ru' ? 'Клиент' : 'Mijoz'}: {order.customerName}
                       </div>
                       <div style={{ fontSize: '12px', color: '#64748b' }}>
-                        Sotuvchi: <strong>{order.sellerName}</strong> | Vaqt: {order.createdAt}
+                        {lang === 'ru' ? 'Продавец' : 'Sotuvchi'}: <strong>{order.sellerName}</strong>
                       </div>
                     </div>
 
                     <div style={{ textAlign: 'right' }}>
-                      <div style={{ fontSize: '11px', color: '#64748b' }}>Jami Summa:</div>
-                      <div style={{ fontSize: '17px', fontWeight: 800, color: '#0f172a' }}>{formatMoney(order.totalAmount)}</div>
-                      <div style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>
-                        To'lov: {order.paymentMethod?.toUpperCase()}
+                      <div style={{ fontSize: '11px', color: '#64748b' }}>{t('total')}:</div>
+                      <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
+                        {formatMoney(order.totalAmount)}
                       </div>
                     </div>
                   </div>
 
-                  {/* Items to pack */}
-                  <div style={{ background: '#ffffff', borderRadius: '8px', padding: '10px 12px', marginBottom: '12px', border: '1px solid #e2e8f0' }}>
-                    <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
-                      Berilishi kerak bo'lgan tovarlar:
+                  {/* Tovarlar ro'yxati */}
+                  <div style={{ background: '#ffffff', padding: '10px 12px', borderRadius: '8px', border: '1px solid #e2e8f0', marginBottom: '14px' }}>
+                    <div style={{ fontSize: '11px', fontWeight: 700, color: '#64748b', marginBottom: '6px' }}>
+                      {lang === 'ru' ? 'Товары к выдаче:' : 'Javondan olinadigan tovarlar:'}
                     </div>
                     {order.items?.map((item, idx) => (
-                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', padding: '2px 0' }}>
-                        <span>• {item.name}</span>
-                        <strong style={{ color: '#2563eb' }}>{item.quantity} {item.unit || 'dona'}</strong>
+                      <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', padding: '3px 0', borderBottom: idx < order.items.length - 1 ? '1px dashed #f1f5f9' : 'none' }}>
+                        <span style={{ color: '#0f172a', fontWeight: 600 }}>• {item.name}</span>
+                        <strong style={{ color: '#2563eb' }}>× {item.quantity} {item.unit || 'dona'}</strong>
                       </div>
                     ))}
                   </div>
 
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
-                    <span style={{ fontSize: '11px', color: '#b45309' }}>
-                      Tugma bosilgach, tovarlar sklad balansidan kamayadi
-                    </span>
-
+                  <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
                     <button
                       onClick={() => onDispatchOrder(order.id)}
                       style={{
@@ -424,16 +437,16 @@ export default function WarehouseView({
                         color: '#ffffff',
                         border: 'none',
                         borderRadius: '8px',
-                        padding: '9px 18px',
+                        padding: '10px 18px',
                         fontSize: '13px',
                         fontWeight: 700,
+                        cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px',
-                        cursor: 'pointer'
+                        gap: '6px'
                       }}
                     >
-                      <Truck size={16} /> Sotuvchiga Berildi (Skladdan Yechish)
+                      <PackageCheck size={16} /> {t('dispatchStockBtn')}
                     </button>
                   </div>
                 </div>
@@ -446,13 +459,14 @@ export default function WarehouseView({
       {/* TAB 3: SKLAD QOLDIQLARI */}
       {activeTab === 'inventory' && (
         <div style={{ background: '#ffffff', borderRadius: '14px', padding: '20px', border: '1px solid #e2e8f0' }}>
-          {/* Search bar */}
-          <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center' }}>
-            <div style={{ position: 'relative', flex: 1, minWidth: '240px' }}>
+          
+          {/* Filter Bar */}
+          <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
+            <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
               <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
               <input 
                 type="text" 
-                placeholder="Tovar nomi yoki barkod bo'yicha qidirish..."
+                placeholder={t('searchPlaceholder')}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 style={{ width: '100%', padding: '9px 12px 9px 36px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
@@ -462,26 +476,27 @@ export default function WarehouseView({
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              style={{ padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#ffffff' }}
+              style={{ padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#fff' }}
             >
-              {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              {categories.map(c => (
+                <option key={c} value={c}>{c === 'all' ? t('all') : c}</option>
+              ))}
             </select>
 
             <button
               onClick={() => setOnlyLowStock(!onlyLowStock)}
               style={{
-                padding: '9px 14px',
-                borderRadius: '8px',
-                border: '1px solid',
-                borderColor: onlyLowStock ? '#dc2626' : '#cbd5e1',
-                background: onlyLowStock ? '#fee2e2' : '#ffffff',
+                background: onlyLowStock ? '#fee2e2' : '#f8fafc',
                 color: onlyLowStock ? '#dc2626' : '#475569',
-                fontSize: '12px',
-                fontWeight: 700,
+                border: '1px solid #cbd5e1',
+                borderRadius: '8px',
+                padding: '9px 14px',
+                fontSize: '13px',
+                fontWeight: 600,
                 cursor: 'pointer'
               }}
             >
-              Kam qolganlar ({lowStockProducts.length})
+              {t('lowStock')} ({lowStockProducts.length})
             </button>
           </div>
 
@@ -489,46 +504,48 @@ export default function WarehouseView({
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
-                  <th style={{ padding: '12px 14px' }}>Tovar Nomi</th>
-                  <th style={{ padding: '12px 14px' }}>Toifa</th>
-                  <th style={{ padding: '12px 14px' }}>Tannarx</th>
-                  <th style={{ padding: '12px 14px' }}>Sotish Narxi</th>
-                  <th style={{ padding: '12px 14px' }}>Sklad Qoldig'i</th>
-                  <th style={{ padding: '12px 14px' }}>Holat</th>
-                  <th style={{ padding: '12px 14px', textAlign: 'right' }}>Amal</th>
+                  <th style={{ padding: '12px 14px' }}>{t('colProduct')}</th>
+                  <th style={{ padding: '12px 14px' }}>{t('colCategory')}</th>
+                  <th style={{ padding: '12px 14px' }}>{t('colBarcode')}</th>
+                  <th style={{ padding: '12px 14px' }}>{t('colCostPrice')}</th>
+                  <th style={{ padding: '12px 14px' }}>{t('colSellingPrice')}</th>
+                  <th style={{ padding: '12px 14px' }}>{t('colStock')}</th>
+                  <th style={{ padding: '12px 14px' }}>{t('colCondition')}</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t('actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {filteredProducts.length === 0 ? (
                   <tr>
-                    <td colSpan="7" style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>
-                      Skladda tovarlar mavjud emas
+                    <td colSpan="8" style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>
+                      {t('emptyList')}
                     </td>
                   </tr>
                 ) : (
                   filteredProducts.map(p => {
                     const isLow = (p.stock || 0) <= (p.minStock || 3);
+                    const isOut = (p.stock || 0) <= 0;
+
                     return (
                       <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                         <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{p.name}</td>
-                        <td style={{ padding: '12px 14px', color: '#64748b' }}>{p.category || 'Umumiy'}</td>
+                        <td style={{ padding: '12px 14px', color: '#64748b' }}>{p.category}</td>
+                        <td style={{ padding: '12px 14px', fontFamily: 'monospace', color: '#475569', fontSize: '11px' }}>{p.barcode || '—'}</td>
                         <td style={{ padding: '12px 14px', color: '#64748b' }}>{formatMoney(p.costPrice)}</td>
-                        <td style={{ padding: '12px 14px', fontWeight: 700, color: '#2563eb' }}>{formatMoney(p.price)}</td>
-                        <td style={{ padding: '12px 14px' }}>
-                          <span style={{ fontSize: '14px', fontWeight: 800, color: isLow ? '#dc2626' : '#0f172a' }}>
-                            {p.stock || 0} {p.unit || 'dona'}
-                          </span>
+                        <td style={{ padding: '12px 14px', color: '#0f172a', fontWeight: 700 }}>{formatMoney(p.price)}</td>
+                        <td style={{ padding: '12px 14px', fontWeight: 800, color: isOut ? '#dc2626' : isLow ? '#d97706' : '#16a34a' }}>
+                          {p.stock || 0} {p.unit || 'dona'}
                         </td>
                         <td style={{ padding: '12px 14px' }}>
                           <span style={{
-                            padding: '2px 8px',
+                            padding: '3px 8px',
                             borderRadius: '6px',
                             fontSize: '11px',
                             fontWeight: 700,
-                            background: isLow ? '#fee2e2' : '#dcfce7',
-                            color: isLow ? '#dc2626' : '#15803d'
+                            background: isOut ? '#fee2e2' : isLow ? '#fef3c7' : '#dcfce7',
+                            color: isOut ? '#dc2626' : isLow ? '#b45309' : '#15803d'
                           }}>
-                            {isLow ? "Kam qoldi" : "Yetarli"}
+                            {isOut ? t('outOfStock') : isLow ? t('lowStock') : t('inStock')}
                           </span>
                         </td>
                         <td style={{ padding: '12px 14px', textAlign: 'right' }}>
@@ -536,18 +553,18 @@ export default function WarehouseView({
                             <button
                               onClick={() => openEdit(p)}
                               style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '5px 8px', cursor: 'pointer', color: '#475569' }}
-                              title="Tahrirlash"
+                              title={t('edit')}
                             >
                               <Edit2 size={13} />
                             </button>
                             <button
                               onClick={() => {
-                                if (confirm(`"${p.name}" tovarini o'chirishni xohlaysizmi?`)) {
+                                if (confirm(`${p.name} - ${t('delete')}?`)) {
                                   onDeleteProduct(p.id);
                                 }
                               }}
                               style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 8px', cursor: 'pointer', color: '#dc2626' }}
-                              title="O'chirish"
+                              title={t('delete')}
                             >
                               <Trash2 size={13} />
                             </button>
@@ -569,18 +586,20 @@ export default function WarehouseView({
           <div style={{ background: '#ffffff', borderRadius: '18px', maxWidth: '440px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>
-                {editingProduct ? "Tovarni Tahrirlash" : "Yangi Tovar Kiritish"}
+                {editingProduct ? (lang === 'ru' ? 'Редактирование товара' : 'Tovarni Tahrirlash') : t('productModalTitle')}
               </h3>
               <button onClick={() => setShowAddModal(false)} style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer' }}>✕</button>
             </div>
 
             <form onSubmit={handleSaveProduct} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Tovar Nomi *</label>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                  {t('productNameLabel')} *
+                </label>
                 <input 
                   type="text" 
                   required
-                  placeholder="Tovar nomi"
+                  placeholder={lang === 'ru' ? 'Название товара' : 'Tovar nomi'}
                   value={formName}
                   onChange={(e) => setFormName(e.target.value)}
                   style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
@@ -589,17 +608,21 @@ export default function WarehouseView({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Toifa</label>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    {t('categoryLabel')}
+                  </label>
                   <input 
                     type="text" 
-                    placeholder="Masalan: Kiyim"
+                    placeholder={lang === 'ru' ? 'Категория' : 'Kategoriya'}
                     value={formCategory}
                     onChange={(e) => setFormCategory(e.target.value)}
                     style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>O'lchov Birligi</label>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    {t('unitLabel')}
+                  </label>
                   <select
                     value={formUnit}
                     onChange={(e) => setFormUnit(e.target.value)}
@@ -612,7 +635,9 @@ export default function WarehouseView({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Tannarx (so'm)</label>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    {t('costPrice')} ({t('currency')})
+                  </label>
                   <input 
                     type="number" 
                     placeholder="150000"
@@ -622,7 +647,9 @@ export default function WarehouseView({
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Sotish Narxi (so'm) *</label>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    {t('sellingPrice')} ({t('currency')}) *
+                  </label>
                   <input 
                     type="number" 
                     required
@@ -636,7 +663,9 @@ export default function WarehouseView({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Skladdagi Qoldiq</label>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    {t('initialStockLabel')}
+                  </label>
                   <input 
                     type="number" 
                     placeholder="10"
@@ -646,7 +675,9 @@ export default function WarehouseView({
                   />
                 </div>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>Min Qoldiq</label>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    {t('minStockLabel')}
+                  </label>
                   <input 
                     type="number" 
                     placeholder="3"
@@ -657,19 +688,32 @@ export default function WarehouseView({
                 </div>
               </div>
 
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                  {t('barcodeLabel')}
+                </label>
+                <input 
+                  type="text" 
+                  placeholder={lang === 'ru' ? 'Штрих-код' : 'Shtrix-kod'}
+                  value={formBarcode}
+                  onChange={(e) => setFormBarcode(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
                 <button
                   type="button"
                   onClick={() => setShowAddModal(false)}
                   style={{ flex: 1, padding: '10px', borderRadius: '8px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', fontWeight: 700, cursor: 'pointer' }}
                 >
-                  Bekor qilish
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   style={{ flex: 1, padding: '10px', borderRadius: '8px', border: 'none', background: '#2563eb', color: '#ffffff', fontWeight: 700, cursor: 'pointer' }}
                 >
-                  Saqlash
+                  {t('save')}
                 </button>
               </div>
             </form>

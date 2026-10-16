@@ -7,6 +7,8 @@ import {
   Banknote
 } from 'lucide-react';
 import { PAYMENT_METHODS } from '../data/initialData';
+import LanguageToggle from './LanguageToggle';
+import { useLang } from '../context/LanguageContext';
 
 export default function SellerMobileView({ 
   products = [], 
@@ -18,6 +20,7 @@ export default function SellerMobileView({
   onOpenInstallModal,
   storeMode = 'universal'
 }) {
+  const { t, lang } = useLang();
   const safeProducts = Array.isArray(products) ? products : [];
   const safeOrders = Array.isArray(orders) ? orders : [];
   const safeStaff = Array.isArray(staff) ? staff.filter(s => s?.role && s.role.toLowerCase().includes('sotuvchi')) : [];
@@ -46,16 +49,16 @@ export default function SellerMobileView({
   const [showPwaModal, setShowPwaModal] = useState(false);
   const [successOrder, setSuccessOrder] = useState(null);
 
-  const formatMoney = (val) => Number(val || 0).toLocaleString('uz-UZ') + " so'm";
+  const formatMoney = (val) => Number(val || 0).toLocaleString(lang === 'ru' ? 'ru-RU' : 'uz-UZ') + " " + t('currency');
 
   // Categories
-  const categories = ['Hammasi', ...new Set(safeProducts.map(p => p.category).filter(Boolean))];
+  const categories = ['all', ...new Set(safeProducts.map(p => p.category).filter(Boolean))];
 
   // Filtered Products
   const filteredProducts = safeProducts.filter(p => {
     const matchesSearch = (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
                           (p.barcode || '').includes(searchTerm);
-    const matchesCat = selectedCategory === 'Hammasi' || p.category === selectedCategory;
+    const matchesCat = selectedCategory === 'all' || p.category === selectedCategory;
     return matchesSearch && matchesCat;
   });
 
@@ -226,17 +229,20 @@ export default function SellerMobileView({
               <Smartphone size={22} color="#38bdf8" />
             </div>
             <div>
-              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.8px', opacity: 0.8, fontWeight: 700 }}>Mobil Sotuvchi Profili</div>
+              <div style={{ fontSize: '11px', textTransform: 'uppercase', letterSpacing: '0.8px', opacity: 0.8, fontWeight: 700 }}>{t('sellerMobileTitle')}</div>
               <div style={{ fontSize: '16px', fontWeight: 800 }}>{selectedSeller.name}</div>
             </div>
           </div>
 
-          <button 
-            onClick={() => onOpenInstallModal ? onOpenInstallModal() : setShowPwaModal(true)}
-            style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', color: '#ffffff', borderRadius: '10px', padding: '6px 12px', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
-          >
-            <Smartphone size={14} /> Ilova (iOS / Android)
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <LanguageToggle compact={true} />
+            <button 
+              onClick={() => onOpenInstallModal ? onOpenInstallModal() : setShowPwaModal(true)}
+              style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', color: '#ffffff', borderRadius: '10px', padding: '6px 10px', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+            >
+              <Smartphone size={14} /> {t('mobileApp')}
+            </button>
+          </div>
         </div>
 
         {/* Seller Switcher & Status Info */}
@@ -268,14 +274,14 @@ export default function SellerMobileView({
           onClick={() => setActiveTab('catalog')}
           style={{ flex: 1, padding: '10px 8px', borderRadius: '12px', border: 'none', background: activeTab === 'catalog' ? '#4f46e5' : 'transparent', color: activeTab === 'catalog' ? '#ffffff' : '#64748b', fontWeight: 700, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer', transition: 'all 0.2s' }}
         >
-          <ShoppingBag size={16} /> Katalog
+          <ShoppingBag size={16} /> {t('tabCatalog')}
         </button>
 
         <button
           onClick={() => setActiveTab('cart')}
           style={{ flex: 1, padding: '10px 8px', borderRadius: '12px', border: 'none', background: activeTab === 'cart' ? '#4f46e5' : 'transparent', color: activeTab === 'cart' ? '#ffffff' : '#64748b', fontWeight: 700, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer', position: 'relative', transition: 'all 0.2s' }}
         >
-          <Box size={16} /> Savat
+          <Box size={16} /> {t('tabCart')}
           {cartItemCount > 0 && (
             <span style={{ position: 'absolute', top: '4px', right: '8px', background: '#ef4444', color: '#fff', fontSize: '10px', fontWeight: 800, width: '18px', height: '18px', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
               {cartItemCount}
@@ -287,7 +293,7 @@ export default function SellerMobileView({
           onClick={() => setActiveTab('my_orders')}
           style={{ flex: 1, padding: '10px 8px', borderRadius: '12px', border: 'none', background: activeTab === 'my_orders' ? '#4f46e5' : 'transparent', color: activeTab === 'my_orders' ? '#ffffff' : '#64748b', fontWeight: 700, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer', position: 'relative', transition: 'all 0.2s' }}
         >
-          <Clock size={16} /> Zayavkalar
+          <Clock size={16} /> {t('tabMyOrders')}
           {myOrders.filter(o => o.status === 'pending_accounting').length > 0 && (
             <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: '#f59e0b' }} />
           )}
@@ -297,7 +303,7 @@ export default function SellerMobileView({
           onClick={() => setActiveTab('stats')}
           style={{ flex: 1, padding: '10px 8px', borderRadius: '12px', border: 'none', background: activeTab === 'stats' ? '#4f46e5' : 'transparent', color: activeTab === 'stats' ? '#ffffff' : '#64748b', fontWeight: 700, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', cursor: 'pointer', transition: 'all 0.2s' }}
         >
-          <Sparkles size={16} /> Rejam
+          <Sparkles size={16} /> {t('tabStats')}
         </button>
       </div>
 
@@ -308,8 +314,8 @@ export default function SellerMobileView({
           <div style={{ position: 'relative', marginBottom: '12px' }}>
             <Search size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
             <input 
-              type="text"
-              placeholder="Mahsulot nomi yoki barkod..."
+              type="text" 
+              placeholder={t('searchPlaceholder')}
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
               style={{ width: '100%', padding: '12px 14px 12px 42px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', background: '#ffffff', boxSizing: 'border-box' }}
@@ -335,7 +341,7 @@ export default function SellerMobileView({
                   cursor: 'pointer'
                 }}
               >
-                {cat}
+                {cat === 'all' ? t('all') : cat}
               </button>
             ))}
           </div>
@@ -507,16 +513,18 @@ export default function SellerMobileView({
               {/* Customer Information */}
               <div style={{ background: '#ffffff', borderRadius: '18px', padding: '14px', border: '1px solid #e2e8f0' }}>
                 <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <User size={16} style={{ color: '#4f46e5' }} /> Mijoz Ma'lumotlari
+                  <User size={16} style={{ color: '#4f46e5' }} /> {lang === 'ru' ? 'Данные Клиента' : "Mijoz Ma'lumotlari"}
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                   <div>
-                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Mijoz ismi va familiyasi *</label>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>
+                      {t('customerNameLabel')} *
+                    </label>
                     <input 
                       type="text" 
                       required
-                      placeholder="Masalan: Dilshod Ergashev"
+                      placeholder={lang === 'ru' ? 'Иван Иванов' : 'Dilshod Ergashev'}
                       value={customerName}
                       onChange={(e) => setCustomerName(e.target.value)}
                       style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
@@ -524,7 +532,9 @@ export default function SellerMobileView({
                   </div>
 
                   <div>
-                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Telefon raqami</label>
+                    <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>
+                      {t('customerPhoneLabel')}
+                    </label>
                     <input 
                       type="text" 
                       placeholder="+998 90 123 45 67"
@@ -536,18 +546,22 @@ export default function SellerMobileView({
                 </div>
               </div>
 
-              {/* PAYMENT METHOD SELECTION (ENG ASOSIY TALAB!) */}
+              {/* PAYMENT METHOD SELECTION */}
               <div style={{ background: '#ffffff', borderRadius: '18px', padding: '14px', border: '1px solid #e2e8f0' }}>
                 <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginBottom: '6px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                  <CreditCard size={16} style={{ color: '#4f46e5' }} /> To'lov Turi (Aplatani ko'rsatish) *
+                  <CreditCard size={16} style={{ color: '#4f46e5' }} /> {t('selectPaymentMethod')} *
                 </div>
                 <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '12px' }}>
-                  Buxgalter to'lov turiga qarab tekshiradi va tasdiqlaydi
+                  {lang === 'ru' ? 'Бухгалтер проверит оплату и передаст заказ на склад' : 'Buxgalter to\'lov turiga qarab tekshiradi va tasdiqlaydi'}
                 </div>
 
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px', marginBottom: '12px' }}>
                   {PAYMENT_METHODS.map(method => {
                     const isSelected = paymentMethod === method.id;
+                    const methodName = method.id === 'cash' ? t('paymentCash') :
+                                       method.id === 'card' ? t('paymentCard') :
+                                       method.id === 'debt' ? t('paymentDebt') :
+                                       method.id === 'bank' ? t('paymentBank') : t('paymentSalary');
                     return (
                       <button
                         key={method.id}
@@ -575,7 +589,7 @@ export default function SellerMobileView({
                         </div>
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <div style={{ fontSize: '12px', fontWeight: 700, color: isSelected ? method.color : '#1e293b' }}>
-                            {method.name}
+                            {methodName}
                           </div>
                         </div>
                       </button>
@@ -585,15 +599,15 @@ export default function SellerMobileView({
 
                 <div>
                   <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>
-                    To'lov izohi / Hujjat raqami / Tafsilotlar:
+                    {t('paymentNotesLabel')}
                   </label>
                   <input 
                     type="text" 
                     placeholder={
-                      paymentMethod === 'bank' ? "Masalan: To'lov topshirig'i №1498" :
-                      paymentMethod === 'debt' ? "Masalan: Qarz muddati 15 kun" :
-                      paymentMethod === 'salary_deduction' ? "Masalan: Sotuvchi Jasur maoshidan chegirish" :
-                      "Izoh yoki chek raqami (ixtiyoriy)"
+                      paymentMethod === 'bank' ? (lang === 'ru' ? "Например: Платежное поручение №1498" : "Masalan: To'lov topshirig'i №1498") :
+                      paymentMethod === 'debt' ? (lang === 'ru' ? "Например: Срок оплаты 15 дней" : "Masalan: Qarz muddati 15 kun") :
+                      paymentMethod === 'salary_deduction' ? (lang === 'ru' ? "Например: Удержание из зарплаты продавца" : "Masalan: Sotuvchi maoshidan chegirish") :
+                      (lang === 'ru' ? "Примечание или номер чека (необязательно)" : "Izoh yoki chek raqami (ixtiyoriy)")
                     }
                     value={paymentDetails}
                     onChange={(e) => setPaymentDetails(e.target.value)}
@@ -619,17 +633,14 @@ export default function SellerMobileView({
                   justifyContent: 'center',
                   gap: '8px',
                   cursor: isSubmitting ? 'not-allowed' : 'pointer',
-                  boxShadow: '0 10px 20px -5px rgba(79, 70, 229, 0.4)'
+                  boxShadow: '0 10px 20px -5px rgba(79, 70, 229, 0.4)',
+                  transition: 'all 0.2s'
                 }}
               >
-                {isSubmitting ? (
-                  <>Yuborilmoqda...</>
-                ) : (
-                  <>
-                    <Send size={18} /> Buxgalterga Zayavka Yuborish ({formatMoney(cartTotal)})
-                  </>
-                )}
+                <Send size={18} />
+                {isSubmitting ? (lang === 'ru' ? 'Отправка...' : 'Yuborilmoqda...') : t('submitOrderToAccountant')}
               </button>
+
             </form>
           )}
         </div>

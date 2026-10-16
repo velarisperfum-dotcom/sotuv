@@ -3,8 +3,10 @@ import {
   X, Smartphone, Apple, Share, PlusSquare, 
   Check, ArrowRight, ShieldCheck, Download
 } from 'lucide-react';
+import { useLang } from '../context/LanguageContext';
 
 export default function IosInstallModal({ isOpen, onClose }) {
+  const { t, lang } = useLang();
   const [deviceTab, setDeviceTab] = useState('ios'); // 'ios' | 'android'
 
   if (!isOpen) return null;
@@ -49,10 +51,10 @@ export default function IosInstallModal({ isOpen, onClose }) {
             </div>
             <div>
               <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
-                Telefonga Ilovani O'rnatish
+                {t('iosInstallTitle')}
               </h3>
               <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>
-                Xodimlar uchun to'liq ekranli mobil ilova
+                {t('iosInstallSubtitle')}
               </p>
             </div>
           </div>
@@ -86,7 +88,7 @@ export default function IosInstallModal({ isOpen, onClose }) {
               boxShadow: deviceTab === 'ios' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
             }}
           >
-            <Apple size={16} /> iPhone (iOS Safari)
+            <Apple size={16} /> {t('tabIos')}
           </button>
 
           <button
@@ -109,88 +111,113 @@ export default function IosInstallModal({ isOpen, onClose }) {
               boxShadow: deviceTab === 'android' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none'
             }}
           >
-            <Smartphone size={16} /> Android (Chrome)
+            <Smartphone size={16} /> {t('tabAndroid')}
           </button>
         </div>
 
-        {/* Tab 1: iPhone (iOS Safari) Steps */}
+        {/* Content: iOS (iPhone) Guide */}
         {deviceTab === 'ios' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', gap: '12px', background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', alignItems: 'flex-start' }}>
-              <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#2563eb', color: '#fff', fontSize: '12px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {/* Step 1 */}
+            <div style={{ display: 'flex', gap: '12px', background: '#f8fafc', padding: '12px 14px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#eff6ff', color: '#2563eb', fontWeight: 800, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 1
               </div>
-              <div style={{ fontSize: '13px', color: '#334155', lineHeight: '1.4' }}>
-                Saytni <strong>Safari</strong> brauzerida oching va ekranning pastki markazidagi <strong>Ulashish (Share)</strong> tugmasini bosing:
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#ffffff', border: '1px solid #cbd5e1', padding: '2px 8px', borderRadius: '6px', marginLeft: '6px', fontWeight: 700, fontSize: '11px', color: '#2563eb' }}>
-                  <Share size={12} /> Ulashish belgisi
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{t('iosStep1Title')}</div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                  {t('iosStep1Desc')}
                 </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', alignItems: 'flex-start' }}>
-              <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#2563eb', color: '#fff', fontSize: '12px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {/* Step 2 */}
+            <div style={{ display: 'flex', gap: '12px', background: '#f8fafc', padding: '12px 14px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#eff6ff', color: '#2563eb', fontWeight: 800, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 2
               </div>
-              <div style={{ fontSize: '13px', color: '#334155', lineHeight: '1.4' }}>
-                Ochilgan menyuni pastga surib, <strong>"Bosh ekranga qo'shish"</strong> (На экран «Домой» / Add to Home Screen) qatorini tanlang:
-                <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: '#ffffff', border: '1px solid #cbd5e1', padding: '2px 8px', borderRadius: '6px', marginLeft: '6px', fontWeight: 700, fontSize: '11px', color: '#0f172a' }}>
-                  <PlusSquare size={12} /> Bosh ekranga qo'shish
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>{t('iosStep2Title')}</span>
+                  <Share size={14} style={{ color: '#2563eb' }} />
+                </div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                  {t('iosStep2Desc')}
                 </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', alignItems: 'flex-start' }}>
-              <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#2563eb', color: '#fff', fontSize: '12px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {/* Step 3 */}
+            <div style={{ display: 'flex', gap: '12px', background: '#f8fafc', padding: '12px 14px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#eff6ff', color: '#2563eb', fontWeight: 800, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 3
               </div>
-              <div style={{ fontSize: '13px', color: '#334155', lineHeight: '1.4' }}>
-                Yuqori o'ng burchakdagi <strong>"Qo'shish" (Добавить / Add)</strong> tugmasini bosing. Ilova iPhone ish stolida alohida ilova sifatida paydo bo'ladi!
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>{t('iosStep3Title')}</span>
+                  <PlusSquare size={14} style={{ color: '#2563eb' }} />
+                </div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                  {t('iosStep3Desc')}
+                </div>
               </div>
+            </div>
+
+            <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '10px 12px', fontSize: '12px', color: '#166534', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <ShieldCheck size={16} style={{ flexShrink: 0 }} />
+              <span>{t('iosBenefitTitle')} {t('iosBenefitDesc')}</span>
             </div>
           </div>
         )}
 
-        {/* Tab 2: Android (Chrome) Steps */}
+        {/* Content: Android Guide */}
         {deviceTab === 'android' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '20px' }}>
-            <div style={{ display: 'flex', gap: '12px', background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', alignItems: 'flex-start' }}>
-              <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#16a34a', color: '#fff', fontSize: '12px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {/* Step 1 */}
+            <div style={{ display: 'flex', gap: '12px', background: '#f8fafc', padding: '12px 14px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#eff6ff', color: '#2563eb', fontWeight: 800, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 1
               </div>
-              <div style={{ fontSize: '13px', color: '#334155', lineHeight: '1.4' }}>
-                Saytni <strong>Google Chrome</strong> brauzerida oching.
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{t('androidStep1Title')}</div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                  {t('androidStep1Desc')}
+                </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', alignItems: 'flex-start' }}>
-              <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#16a34a', color: '#fff', fontSize: '12px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {/* Step 2 */}
+            <div style={{ display: 'flex', gap: '12px', background: '#f8fafc', padding: '12px 14px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#eff6ff', color: '#2563eb', fontWeight: 800, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 2
               </div>
-              <div style={{ fontSize: '13px', color: '#334155', lineHeight: '1.4' }}>
-                Yuqori o'ng burchakdagi <strong>uch nuqta (⋮)</strong> menyusini bosing va <strong>"Ilovani o'rnatish"</strong> (Установить приложение) tugmasini bosing.
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a' }}>{t('androidStep2Title')}</div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                  {t('androidStep2Desc')}
+                </div>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: '12px', background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0', alignItems: 'flex-start' }}>
-              <div style={{ width: '26px', height: '26px', borderRadius: '50%', background: '#16a34a', color: '#fff', fontSize: '12px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            {/* Step 3 */}
+            <div style={{ display: 'flex', gap: '12px', background: '#f8fafc', padding: '12px 14px', borderRadius: '14px', border: '1px solid #e2e8f0' }}>
+              <div style={{ width: '28px', height: '28px', borderRadius: '8px', background: '#eff6ff', color: '#2563eb', fontWeight: 800, fontSize: '13px', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                 3
               </div>
-              <div style={{ fontSize: '13px', color: '#334155', lineHeight: '1.4' }}>
-                Ilova APK kabi o'rnatiladi va to'liq ekranda brauzersiz ishlaydi!
+              <div>
+                <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                  <span>{t('androidStep3Title')}</span>
+                  <Download size={14} style={{ color: '#2563eb' }} />
+                </div>
+                <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                  {t('androidStep3Desc')}
+                </div>
               </div>
             </div>
           </div>
         )}
 
-        {/* Benefits notice */}
-        <div style={{ background: '#f0fdf4', border: '1px solid #bbf7d0', borderRadius: '12px', padding: '10px 14px', fontSize: '12px', color: '#166534', marginBottom: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <Check size={16} style={{ flexShrink: 0 }} />
-          <span>Ilovadan foydalanganda ma'lumotlar avtomatik sinxronlanadi va batareya tejaladi.</span>
-        </div>
-
         <button
-          type="button"
           onClick={onClose}
           style={{
             width: '100%',
@@ -204,7 +231,7 @@ export default function IosInstallModal({ isOpen, onClose }) {
             cursor: 'pointer'
           }}
         >
-          Tushunarli
+          {t('understandBtn')}
         </button>
       </div>
     </div>

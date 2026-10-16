@@ -1,15 +1,20 @@
 import React, { useState } from 'react';
 import { 
   Lock, User, ArrowRight, ShieldCheck, Building2, 
-  Smartphone, Eye, EyeOff, AlertCircle, Apple
+  Smartphone, Eye, EyeOff, AlertCircle, HelpCircle,
+  X, MessageSquare, Phone, Server, CheckCircle2
 } from 'lucide-react';
+import LanguageToggle from './LanguageToggle';
+import { useLang } from '../context/LanguageContext';
 
 export default function AuthLoginView({ users = [], onLoginSuccess, onOpenPwaModal }) {
+  const { t } = useLang();
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
 
   const handleFormLogin = (e) => {
     e.preventDefault();
@@ -28,9 +33,9 @@ export default function AuthLoginView({ users = [], onLoginSuccess, onOpenPwaMod
       if (found) {
         onLoginSuccess(found);
       } else {
-        setErrorMsg('Foydalanuvchi logini yoki parol noto\'g\'ri kiritildi.');
+        setErrorMsg(t('loginError'));
       }
-    }, 250);
+    }, 200);
   };
 
   return (
@@ -44,16 +49,22 @@ export default function AuthLoginView({ users = [], onLoginSuccess, onOpenPwaMod
       fontFamily: "'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif"
     }}>
       <div style={{
-        maxWidth: '420px',
+        maxWidth: '430px',
         width: '100%',
         background: '#ffffff',
         borderRadius: '20px',
         border: '1px solid #e2e8f0',
         boxShadow: '0 10px 25px -5px rgba(15, 23, 42, 0.05), 0 8px 10px -6px rgba(15, 23, 42, 0.03)',
-        padding: '36px 32px'
+        padding: '36px 32px',
+        position: 'relative'
       }}>
+        {/* Language Switcher in the top right of login card */}
+        <div style={{ position: 'absolute', top: '20px', right: '20px' }}>
+          <LanguageToggle compact={true} />
+        </div>
+
         {/* Company / ERP Header */}
-        <div style={{ textAlign: 'center', marginBottom: '32px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '28px', marginTop: '10px' }}>
           <div style={{
             width: '52px',
             height: '52px',
@@ -69,10 +80,10 @@ export default function AuthLoginView({ users = [], onLoginSuccess, onOpenPwaMod
             <Building2 size={26} strokeWidth={2.2} />
           </div>
           <h1 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#0f172a', letterSpacing: '-0.3px' }}>
-            SAVDO & SKLAD ERP
+            {t('loginTitle')}
           </h1>
           <p style={{ margin: '6px 0 0', fontSize: '13px', color: '#64748b' }}>
-            Tizimga kirish uchun login va parolingizni kiriting
+            {t('loginSubtitle')}
           </p>
         </div>
 
@@ -100,7 +111,7 @@ export default function AuthLoginView({ users = [], onLoginSuccess, onOpenPwaMod
         <form onSubmit={handleFormLogin} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           <div>
             <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '6px' }}>
-              Foydalanuvchi logini
+              {t('usernameLabel')}
             </label>
             <div style={{ position: 'relative' }}>
               <User size={17} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
@@ -108,7 +119,7 @@ export default function AuthLoginView({ users = [], onLoginSuccess, onOpenPwaMod
                 type="text" 
                 required
                 autoComplete="username"
-                placeholder="Login (masalan: direktor)"
+                placeholder={t('usernamePlaceholder')}
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 style={{
@@ -130,16 +141,34 @@ export default function AuthLoginView({ users = [], onLoginSuccess, onOpenPwaMod
           </div>
 
           <div>
-            <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b', display: 'block', marginBottom: '6px' }}>
-              Parol
-            </label>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+              <label style={{ fontSize: '13px', fontWeight: 700, color: '#1e293b' }}>
+                {t('passwordLabel')}
+              </label>
+              <button
+                type="button"
+                onClick={() => setShowForgotModal(true)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: '#2563eb',
+                  fontSize: '12px',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  padding: 0
+                }}
+              >
+                {t('forgotPassword')}
+              </button>
+            </div>
+
             <div style={{ position: 'relative' }}>
               <Lock size={17} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
               <input 
                 type={showPassword ? "text" : "password"} 
                 required
                 autoComplete="current-password"
-                placeholder="Parolni kiriting"
+                placeholder={t('passwordPlaceholder')}
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 style={{
@@ -199,7 +228,7 @@ export default function AuthLoginView({ users = [], onLoginSuccess, onOpenPwaMod
             onMouseEnter={(e) => e.currentTarget.style.background = '#1d4ed8'}
             onMouseLeave={(e) => e.currentTarget.style.background = '#2563eb'}
           >
-            {isSubmitting ? 'Kirilmoqda...' : 'Tizimga Kirish'}
+            {isSubmitting ? t('loggingIn') : t('loginButton')}
             {!isSubmitting && <ArrowRight size={16} />}
           </button>
         </form>
@@ -226,15 +255,103 @@ export default function AuthLoginView({ users = [], onLoginSuccess, onOpenPwaMod
             }}
           >
             <Smartphone size={15} style={{ color: '#2563eb' }} />
-            <span>iPhone va Android uchun o'rnatish</span>
+            <span>{t('appForIosAndroid')}</span>
           </button>
 
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', marginTop: '16px', fontSize: '11px', color: '#94a3b8' }}>
             <ShieldCheck size={14} style={{ color: '#16a34a' }} />
-            <span>Xavfsiz korporativ ulanish</span>
+            <span>{t('secureConnection')}</span>
           </div>
         </div>
       </div>
+
+      {/* Forgot Password Modal */}
+      {showForgotModal && (
+        <div style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(15, 23, 42, 0.65)',
+          backdropFilter: 'blur(4px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 99999,
+          padding: '20px'
+        }}>
+          <div style={{
+            background: '#ffffff',
+            borderRadius: '20px',
+            maxWidth: '460px',
+            width: '100%',
+            padding: '24px',
+            boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
+            border: '1px solid #e2e8f0'
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <HelpCircle size={20} />
+                </div>
+                <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800, color: '#0f172a' }}>
+                  {t('forgotPasswordTitle')}
+                </h3>
+              </div>
+              <button
+                onClick={() => setShowForgotModal(false)}
+                style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer', padding: '4px' }}
+              >
+                <X size={20} />
+              </button>
+            </div>
+
+            {/* Instruction for Employees */}
+            <div style={{ background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: '14px', padding: '14px', marginBottom: '14px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#0f172a', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <User size={15} style={{ color: '#2563eb' }} /> {t('forgotPasswordStaffHintTitle')}
+              </div>
+              <p style={{ margin: 0, fontSize: '12px', color: '#475569', lineHeight: '1.5' }}>
+                {t('forgotPasswordStaffHint')}
+              </p>
+            </div>
+
+            {/* Instruction for Director */}
+            <div style={{ background: '#eff6ff', border: '1px solid #bfdbfe', borderRadius: '14px', padding: '14px', marginBottom: '18px' }}>
+              <div style={{ fontSize: '13px', fontWeight: 800, color: '#1e40af', marginBottom: '4px', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Server size={15} style={{ color: '#2563eb' }} /> {t('forgotPasswordDirectorHintTitle')}
+              </div>
+              <p style={{ margin: 0, fontSize: '12px', color: '#1e3a8a', lineHeight: '1.5' }}>
+                {t('forgotPasswordDirectorHint')}
+              </p>
+
+              <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #93c5fd', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1e3a8a' }}>
+                  <MessageSquare size={14} /> Telegram: <strong>@antigravity_support</strong>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1e3a8a' }}>
+                  <Phone size={14} /> Telefon: <strong>+998 90 999 00 11</strong>
+                </div>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowForgotModal(false)}
+              style={{
+                width: '100%',
+                background: '#2563eb',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '10px',
+                padding: '11px',
+                fontSize: '13px',
+                fontWeight: 700,
+                cursor: 'pointer'
+              }}
+            >
+              {t('close')}
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

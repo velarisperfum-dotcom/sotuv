@@ -6,6 +6,7 @@ import {
   BadgePercent, ArrowRight, Wallet, History, Eye
 } from 'lucide-react';
 import { PAYMENT_METHODS } from '../data/initialData';
+import { useLang } from '../context/LanguageContext';
 
 export default function AccountingView({ 
   balances = { cash: 0, card: 0, bank: 0 }, 
@@ -21,6 +22,7 @@ export default function AccountingView({
   onPaySalary, 
   onAddExpense 
 }) {
+  const { t, lang } = useLang();
   const safeBalances = balances || { cash: 0, card: 0, bank: 0 };
   const safeDebts = Array.isArray(debts) ? debts : [];
   const safeStaff = Array.isArray(staff) ? staff : [];
@@ -53,7 +55,7 @@ export default function AccountingView({
   const [salaryAmount, setSalaryAmount] = useState('');
   const [salarySource, setSalarySource] = useState('Bank perech');
 
-  const formatMoney = (val) => Number(val || 0).toLocaleString('uz-UZ') + " so'm";
+  const formatMoney = (val) => Number(val || 0).toLocaleString(lang === 'ru' ? 'ru-RU' : 'uz-UZ') + " " + t('currency');
 
   // Orders Filter
   const pendingOrders = safeOrders.filter(o => o.status === 'pending_accounting');
@@ -118,9 +120,9 @@ export default function AccountingView({
             <Wallet size={24} />
           </div>
           <div>
-            <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>Buxgalteriya & Moliya Boshqaruvi</h2>
+            <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>{t('accountingCabinet')}</h2>
             <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#64748b' }}>
-              Sotuvchilar zayavkalarini tekshirish, aplatani tasdiqlash, skladga yuborish va hisob-kitoblar
+              {t('accountingNoticeDesc')}
             </p>
           </div>
         </div>
@@ -130,7 +132,7 @@ export default function AccountingView({
             onClick={() => setShowExpenseModal(true)}
             style={{ background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '10px 16px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            <Plus size={16} /> Yangi Chiqim
+            <Plus size={16} /> {t('newExpenseBtn')}
           </button>
         </div>
       </div>
@@ -140,41 +142,49 @@ export default function AccountingView({
         {/* Naqd Kassa */}
         <div style={{ background: '#ffffff', borderRadius: '18px', padding: '18px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#10b981', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 700 }}>Kassa (Naqd pul)</span>
+            <span style={{ fontSize: '13px', fontWeight: 700 }}>{t('cash')} ({lang === 'ru' ? 'Наличные' : 'Naqd pul'})</span>
             <DollarSign size={20} />
           </div>
           <div style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>{formatMoney(safeBalances.cash)}</div>
-          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Naqd savdo va tushumlar</div>
+          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+            {lang === 'ru' ? 'Наличная касса и выручка' : 'Naqd savdo va tushumlar'}
+          </div>
         </div>
 
         {/* Plastik Karta */}
         <div style={{ background: '#ffffff', borderRadius: '18px', padding: '18px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#3b82f6', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 700 }}>Plastik Karta (Terminal)</span>
+            <span style={{ fontSize: '13px', fontWeight: 700 }}>{t('card')} (Terminal)</span>
             <CreditCard size={20} />
           </div>
           <div style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>{formatMoney(safeBalances.card)}</div>
-          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Karta va Click/Payme</div>
+          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+            {lang === 'ru' ? 'Банковские карты, Click, Payme' : 'Karta va Click/Payme'}
+          </div>
         </div>
 
         {/* Bank Perechisleniye */}
         <div style={{ background: '#ffffff', borderRadius: '18px', padding: '18px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#8b5cf6', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 700 }}>Bank Hisob Raqami</span>
+            <span style={{ fontSize: '13px', fontWeight: 700 }}>{t('bank')} ({lang === 'ru' ? 'Расчетный счет' : 'Hisob raqam'})</span>
             <Building2 size={20} />
           </div>
           <div style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>{formatMoney(safeBalances.bank)}</div>
-          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Bank to'lov topshirig'i (Perech)</div>
+          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+            {lang === 'ru' ? 'Платежное поручение (Перечисление)' : 'Bank to\'lov topshirig\'i (Perech)'}
+          </div>
         </div>
 
         {/* Nasiyalar / Qarzlar */}
         <div style={{ background: '#ffffff', borderRadius: '18px', padding: '18px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', color: '#f59e0b', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 700 }}>Qarzlar (Nasiya)</span>
+            <span style={{ fontSize: '13px', fontWeight: 700 }}>{t('debt')} ({lang === 'ru' ? 'В долг / Дебиторка' : 'Nasiya'})</span>
             <Clock size={20} />
           </div>
           <div style={{ fontSize: '22px', fontWeight: 800, color: '#b45309' }}>{formatMoney(totalDebtsRemaining)}</div>
-          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Mijozlarning to'lanmagan qarzi</div>
+          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+            {lang === 'ru' ? 'Неоплаченные долги клиентов' : 'Mijozlarning to\'lanmagan qarzi'}
+          </div>
         </div>
       </div>
 
@@ -196,10 +206,10 @@ export default function AccountingView({
             gap: '8px'
           }}
         >
-          <ShieldCheck size={18} /> Zayavkalar va Aplata Nazorati
+          <ShieldCheck size={18} /> {t('tabOrderApproval')}
           {pendingOrders.length > 0 && (
             <span style={{ background: '#ef4444', color: '#ffffff', borderRadius: '10px', padding: '2px 8px', fontSize: '11px', fontWeight: 800 }}>
-              {pendingOrders.length} yangi
+              {pendingOrders.length} {lang === 'ru' ? 'новых' : 'yangi'}
             </span>
           )}
         </button>
@@ -220,7 +230,7 @@ export default function AccountingView({
             gap: '8px'
           }}
         >
-          <Clock size={18} /> Qarz Daftari ({safeDebts.length})
+          <Clock size={18} /> {t('tabDebts')} ({safeDebts.length})
         </button>
 
         <button
@@ -239,7 +249,7 @@ export default function AccountingView({
             gap: '8px'
           }}
         >
-          <Users size={18} /> Oylik Maoshlar ({safeStaff.length})
+          <Users size={18} /> {t('tabSalaries')} ({safeStaff.length})
         </button>
 
         <button
@@ -258,7 +268,7 @@ export default function AccountingView({
             gap: '8px'
           }}
         >
-          <FileText size={18} /> Chiqimlar & Xarajatlar
+          <FileText size={18} /> {t('tabExpenses')}
         </button>
       </div>
 
@@ -271,7 +281,7 @@ export default function AccountingView({
               <ShieldCheck size={20} />
             </div>
             <div style={{ fontSize: '13px', color: '#1e293b', lineHeight: '1.4' }}>
-              <strong>Buxgalteriya nazorati:</strong> Sotuvchi yuborgan zakazning to'lov turini tekshiring (Naqd, Karta, Nasiya, Bank o'tkazmasi, Oylikdan). Tasdiqlash tugmasi bosilganda to'lov hisobga olinadi va zakaz darhol <strong>Skladchiga</strong> yuboriladi.
+              <strong>{t('accountingNoticeTitle')}</strong> {t('accountingNoticeDesc')}
             </div>
           </div>
 
@@ -279,15 +289,17 @@ export default function AccountingView({
           <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', marginBottom: '24px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>
-                Tekshirish Kutilayotgan Zayavkalar ({pendingOrders.length})
+                {t('pendingOrdersTitle')} ({pendingOrders.length})
               </h3>
             </div>
 
             {pendingOrders.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
                 <CheckCircle2 size={36} style={{ color: '#10b981', margin: '0 auto 10px' }} />
-                <h4 style={{ margin: '0 0 4px', color: '#1e293b' }}>Hozirda barcha zayavkalar tekshirib bo'lingan</h4>
-                <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>Sotuvchilar yangi zayavka yuborganida shu yerda paydo bo'ladi</p>
+                <h4 style={{ margin: '0 0 4px', color: '#1e293b' }}>{t('allOrdersApproved')}</h4>
+                <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>
+                  {lang === 'ru' ? 'Когда продавцы отправят новую заявку, она появится здесь' : 'Sotuvchilar yangi zayavka yuborganida shu yerda paydo bo\'ladi'}
+                </p>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
@@ -311,16 +323,16 @@ export default function AccountingView({
                           <span style={{ fontSize: '12px', color: '#64748b' }}>{order.createdAt}</span>
                         </div>
                         <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
-                          Mijoz: {order.customerName}
+                          {lang === 'ru' ? 'Клиент:' : 'Mijoz:'} {order.customerName}
                         </div>
                         <div style={{ fontSize: '12px', color: '#64748b' }}>
-                          Tel: <strong>{order.customerPhone || 'Kiritilmagan'}</strong> | Sotuvchi: <strong>{order.sellerName}</strong>
+                          {lang === 'ru' ? 'Тел:' : 'Tel:'} <strong>{order.customerPhone || (lang === 'ru' ? 'Не указан' : 'Kiritilmagan')}</strong> | {lang === 'ru' ? 'Продавец:' : 'Sotuvchi:'} <strong>{order.sellerName}</strong>
                         </div>
                       </div>
 
                       {/* To'lov turi badge & Summa */}
                       <div style={{ textAlign: 'right' }}>
-                        <div style={{ fontSize: '11px', color: '#64748b' }}>To'lov Usuli:</div>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>{t('paymentMethodLabel')}</div>
                         <div style={{ 
                           display: 'inline-flex', 
                           alignItems: 'center', 
@@ -333,11 +345,11 @@ export default function AccountingView({
                           background: order.paymentMethod === 'bank' ? '#f5f3ff' : order.paymentMethod === 'debt' ? '#fffbeb' : order.paymentMethod === 'card' ? '#eff6ff' : '#f0fdf4',
                           color: order.paymentMethod === 'bank' ? '#7c3aed' : order.paymentMethod === 'debt' ? '#b45309' : order.paymentMethod === 'card' ? '#1d4ed8' : '#15803d'
                         }}>
-                          {order.paymentMethod === 'cash' && 'Naqd pul'}
-                          {order.paymentMethod === 'card' && 'Karta (Uzcard/Humo)'}
-                          {order.paymentMethod === 'debt' && 'Qarzga (Nasiya)'}
-                          {order.paymentMethod === 'bank' && 'Bank o\'tkazmasi'}
-                          {order.paymentMethod === 'salary_deduction' && 'Xodim maoshidan'}
+                          {order.paymentMethod === 'cash' && t('paymentCash')}
+                          {order.paymentMethod === 'card' && t('paymentCard')}
+                          {order.paymentMethod === 'debt' && t('paymentDebt')}
+                          {order.paymentMethod === 'bank' && t('paymentBank')}
+                          {order.paymentMethod === 'salary_deduction' && t('paymentSalary')}
                         </div>
                         <div style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
                           {formatMoney(order.totalAmount)}
@@ -348,7 +360,9 @@ export default function AccountingView({
                     {/* Tovarlar va To'lov Izohi */}
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px', background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                       <div>
-                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>Mahsulotlar:</div>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                          {lang === 'ru' ? 'Товары в заказе:' : 'Mahsulotlar:'}
+                        </div>
                         {order.items?.map((item, idx) => (
                           <div key={idx} style={{ fontSize: '12px', color: '#1e293b' }}>
                             • {item.name} × {item.quantity} ({formatMoney(item.total)})
@@ -357,14 +371,16 @@ export default function AccountingView({
                       </div>
 
                       <div>
-                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>To'lov Tafsiloti / Hujjat:</div>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
+                          {lang === 'ru' ? 'Детали оплаты / Документ:' : 'To\'lov Tafsiloti / Hujjat:'}
+                        </div>
                         <div style={{ fontSize: '12px', color: '#0f172a', fontWeight: 600 }}>
-                          {order.paymentDetails || "Izoh kiritilmagan"}
+                          {order.paymentDetails || (lang === 'ru' ? 'Без комментария' : 'Izoh kiritilmagan')}
                         </div>
                         <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
-                          {order.paymentMethod === 'debt' && "Qarz daftarga avtomatik kiritiladi"}
-                          {order.paymentMethod === 'bank' && "Bank hisobiga tushum sifatida yoziladi"}
-                          {order.paymentMethod === 'salary_deduction' && `Sotuvchi (${order.sellerName}) maoshidan chegiriladi`}
+                          {order.paymentMethod === 'debt' && (lang === 'ru' ? 'Автоматически вносится в книгу долгов' : 'Qarz daftarga avtomatik kiritiladi')}
+                          {order.paymentMethod === 'bank' && (lang === 'ru' ? 'Зачисляется на расчетный счет компании' : 'Bank hisobiga tushum sifatida yoziladi')}
+                          {order.paymentMethod === 'salary_deduction' && (lang === 'ru' ? `Удерживается из зарплаты продавца (${order.sellerName})` : `Sotuvchi (${order.sellerName}) maoshidan chegiriladi`)}
                         </div>
                       </div>
                     </div>
@@ -387,7 +403,7 @@ export default function AccountingView({
                           cursor: 'pointer'
                         }}
                       >
-                        <X size={16} /> Rad Etish
+                        <X size={16} /> {t('rejectOrderBtn')}
                       </button>
 
                       <button
@@ -406,7 +422,7 @@ export default function AccountingView({
                           cursor: 'pointer'
                         }}
                       >
-                        <Check size={16} /> To'lovni Tasdiqlash & Skladga Yuborish
+                        <Check size={16} /> {t('approveOrderBtn')}
                       </button>
                     </div>
                   </div>
@@ -418,12 +434,14 @@ export default function AccountingView({
           {/* Tasdiqlangan Zayavkalar Tarixi */}
           <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0' }}>
             <h3 style={{ margin: '0 0 14px', fontSize: '15px', color: '#0f172a' }}>
-              Tasdiqlangan va Skladga O'tkazilgan Zayavkalar Tarixi
+              {t('approvedOrdersHistory')}
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
               {approvedOrders.length === 0 ? (
-                <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontSize: '13px' }}>Hozircha tasdiqlangan zakazlar yo'q</div>
+                <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontSize: '13px' }}>
+                  {lang === 'ru' ? 'Пока нет подтвержденных заказов' : 'Hozircha tasdiqlangan zakazlar yo\'q'}
+                </div>
               ) : (
                 approvedOrders.map(order => (
                   <div key={order.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f8fafc', borderRadius: '12px', fontSize: '13px' }}>
@@ -436,7 +454,7 @@ export default function AccountingView({
                     <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                       <span style={{ fontWeight: 800, color: '#0f172a' }}>{formatMoney(order.totalAmount)}</span>
                       <span style={{ background: order.status === 'dispatched_warehouse' ? '#dcfce7' : '#eff6ff', color: order.status === 'dispatched_warehouse' ? '#15803d' : '#1d4ed8', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
-                        {order.status === 'dispatched_warehouse' ? "Skladchi berdi" : "Sklad yig'moqda"}
+                        {order.status === 'dispatched_warehouse' ? t('warehouseDispatched') : t('warehousePacking')}
                       </span>
                     </div>
                   </div>
@@ -452,8 +470,10 @@ export default function AccountingView({
         <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Mijozlar Nasiya & Qarz Daftari</h3>
-              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>Qarzga sotilgan tovarlar va ularning so'ndirilishi</p>
+              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>{t('tabDebts')}</h3>
+              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>
+                {lang === 'ru' ? 'Учет долгов клиентов и история их погашения' : 'Qarzga sotilgan tovarlar va ularning so\'ndirilishi'}
+              </p>
             </div>
           </div>
 
@@ -461,20 +481,20 @@ export default function AccountingView({
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
-                  <th style={{ padding: '12px 14px' }}>Mijoz</th>
-                  <th style={{ padding: '12px 14px' }}>Telefon</th>
-                  <th style={{ padding: '12px 14px' }}>Umumiy Qarz</th>
-                  <th style={{ padding: '12px 14px' }}>Qolgan Summa</th>
-                  <th style={{ padding: '12px 14px' }}>Muddat</th>
-                  <th style={{ padding: '12px 14px' }}>Holat</th>
-                  <th style={{ padding: '12px 14px', textAlign: 'right' }}>Amal</th>
+                  <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Клиент' : 'Mijoz'}</th>
+                  <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Телефон' : 'Telefon'}</th>
+                  <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Общий Долг' : 'Umumiy Qarz'}</th>
+                  <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Остаток Долга' : 'Qolgan Summa'}</th>
+                  <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Срок' : 'Muddat'}</th>
+                  <th style={{ padding: '12px 14px' }}>{t('status')}</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t('actions')}</th>
                 </tr>
               </thead>
               <tbody>
                 {safeDebts.length === 0 ? (
                   <tr>
                     <td colSpan="7" style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>
-                      Hozirda qarzdorliklar mavjud emas
+                      {lang === 'ru' ? 'На данный момент задолженностей нет' : 'Hozirda qarzdorliklar mavjud emas'}
                     </td>
                   </tr>
                 ) : (
@@ -487,7 +507,7 @@ export default function AccountingView({
                       <td style={{ padding: '12px 14px', color: '#64748b' }}>{debt.dueDate || debt.date || '—'}</td>
                       <td style={{ padding: '12px 14px' }}>
                         <span style={{ background: debt.remainingAmount === 0 ? '#dcfce7' : '#fee2e2', color: debt.remainingAmount === 0 ? '#15803d' : '#b91c1c', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
-                          {debt.remainingAmount === 0 ? "To'liq so'ndirilgan" : "To'lanmagan"}
+                          {debt.remainingAmount === 0 ? (lang === 'ru' ? 'Полностью погашен' : "To'liq so'ndirilgan") : (lang === 'ru' ? 'Не оплачен' : "To'lanmagan")}
                         </span>
                       </td>
                       <td style={{ padding: '12px 14px', textAlign: 'right' }}>
@@ -500,7 +520,7 @@ export default function AccountingView({
                             }}
                             style={{ background: '#10b981', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
                           >
-                            To'lov Qabul Qilish
+                            {t('payDebtBtn')}
                           </button>
                         )}
                       </td>
@@ -518,8 +538,10 @@ export default function AccountingView({
         <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Xodimlar Oylik Maoshlari</h3>
-              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>Oylik to'lash va savdodan "Oyligidan oldi" bo'lgan summalarni nazorat qilish</p>
+              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>{t('tabSalaries')}</h3>
+              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>
+                {lang === 'ru' ? 'Выплата заработной платы и учет удержаний из продаж' : 'Oylik to\'lash va savdodan "Oyligidan oldi" bo\'lgan summalarni nazorat qilish'}
+              </p>
             </div>
           </div>
 
@@ -527,13 +549,13 @@ export default function AccountingView({
             <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
                 <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
-                  <th style={{ padding: '12px 14px' }}>Xodim</th>
-                  <th style={{ padding: '12px 14px' }}>Lavozimi</th>
-                  <th style={{ padding: '12px 14px' }}>Asosiy Oylik</th>
-                  <th style={{ padding: '12px 14px' }}>To'langan Summa</th>
-                  <th style={{ padding: '12px 14px' }}>Qoldiq To'lov</th>
-                  <th style={{ padding: '12px 14px' }}>Holat</th>
-                  <th style={{ padding: '12px 14px', textAlign: 'right' }}>Amal</th>
+                  <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Сотрудник' : 'Xodim'}</th>
+                  <th style={{ padding: '12px 14px' }}>{t('colRole')}</th>
+                  <th style={{ padding: '12px 14px' }}>{t('colSalary')}</th>
+                  <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Выплачено' : "To'langan Summa"}</th>
+                  <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Остаток к выплате' : "Qoldiq To'lov"}</th>
+                  <th style={{ padding: '12px 14px' }}>{t('status')}</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t('actions')}</th>
                 </tr>
               </thead>
               <tbody>
@@ -550,7 +572,7 @@ export default function AccountingView({
                       </td>
                       <td style={{ padding: '12px 14px' }}>
                         <span style={{ background: remaining === 0 ? '#dcfce7' : '#fef3c7', color: remaining === 0 ? '#15803d' : '#b45309', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
-                          {remaining === 0 ? "To'liq to'langan" : "To'lanishi kerak"}
+                          {remaining === 0 ? (lang === 'ru' ? 'Выплачено полностью' : "To'liq to'langan") : (lang === 'ru' ? 'К выплате' : "To'lanishi kerak")}
                         </span>
                       </td>
                       <td style={{ padding: '12px 14px', textAlign: 'right' }}>
@@ -563,7 +585,7 @@ export default function AccountingView({
                             }}
                             style={{ background: '#4f46e5', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
                           >
-                            Oylik To'lash
+                            {t('paySalaryBtn')}
                           </button>
                         )}
                       </td>
@@ -581,20 +603,24 @@ export default function AccountingView({
         <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
             <div>
-              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Operatsion Chiqimlar & Xarajatlar</h3>
-              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>Do'kon ijarasi, kommunal, logistika va mayda chiqimlar</p>
+              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>{t('tabExpenses')}</h3>
+              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>
+                {lang === 'ru' ? 'Аренда, коммунальные услуги, логистика и мелкие расходы' : 'Do\'kon ijarasi, kommunal, logistika va mayda chiqimlar'}
+              </p>
             </div>
             <button
               onClick={() => setShowExpenseModal(true)}
               style={{ background: '#4f46e5', color: '#ffffff', border: 'none', borderRadius: '10px', padding: '8px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
             >
-              + Chiqim Qo'shish
+              + {t('newExpenseBtn')}
             </button>
           </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {safeExpenses.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>Hozircha chiqimlar mavjud emas</div>
+              <div style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
+                {lang === 'ru' ? 'Пока нет расходов' : 'Hozircha chiqimlar mavjud emas'}
+              </div>
             ) : (
               safeExpenses.map(exp => (
                 <div key={exp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: '#f8fafc', borderRadius: '12px', fontSize: '13px' }}>
@@ -616,16 +642,18 @@ export default function AccountingView({
       {rejectingOrder && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
           <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '420px', width: '100%', padding: '24px' }}>
-            <h3 style={{ margin: '0 0 10px', fontSize: '17px', color: '#0f172a' }}>Zayavkani Rad Etish</h3>
+            <h3 style={{ margin: '0 0 10px', fontSize: '17px', color: '#0f172a' }}>
+              {lang === 'ru' ? 'Отклонить заявку' : 'Zayavkani Rad Etish'}
+            </h3>
             <p style={{ margin: '0 0 14px', fontSize: '13px', color: '#64748b' }}>
-              Iltimos, nima sababdan rad etilayotganini yozing (bu xabar sotuvchining mobil ekranida ko'rinadi):
+              {lang === 'ru' ? 'Укажите причину отказа (будет отображена на экране продавца):' : 'Iltimos, nima sababdan rad etilayotganini yozing (bu xabar sotuvchining mobil ekranida ko\'rinadi):'}
             </p>
 
             <form onSubmit={handleConfirmReject} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <input 
                 type="text" 
                 required
-                placeholder="Masalan: Bank to'lov cheki soxta yoki yetarli emas"
+                placeholder={lang === 'ru' ? 'Например: Чек об оплате недействителен или сумма не поступила' : "Masalan: Bank to'lov cheki soxta yoki yetarli emas"}
                 value={rejectReason}
                 onChange={(e) => setRejectReason(e.target.value)}
                 style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
@@ -637,13 +665,13 @@ export default function AccountingView({
                   onClick={() => setRejectingOrder(null)}
                   style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', fontWeight: 700, cursor: 'pointer' }}
                 >
-                  Bekor qilish
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: '#dc2626', color: '#ffffff', fontWeight: 800, cursor: 'pointer' }}
                 >
-                  Rad Etishni Tasdiqlash
+                  {lang === 'ru' ? 'Подтвердить отказ' : 'Rad Etishni Tasdiqlash'}
                 </button>
               </div>
             </form>
@@ -655,14 +683,18 @@ export default function AccountingView({
       {showPayDebtModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
           <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '400px', width: '100%', padding: '24px' }}>
-            <h3 style={{ margin: '0 0 12px', fontSize: '17px', color: '#0f172a' }}>Qarzni Qabul Qilish</h3>
+            <h3 style={{ margin: '0 0 12px', fontSize: '17px', color: '#0f172a' }}>
+              {lang === 'ru' ? 'Принять оплату долга' : 'Qarzni Qabul Qilish'}
+            </h3>
             <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '14px' }}>
-              Mijoz: <strong>{selectedDebt?.customerName}</strong> | Jami qarz: {formatMoney(selectedDebt?.remainingAmount)}
+              {lang === 'ru' ? 'Клиент:' : 'Mijoz:'} <strong>{selectedDebt?.customerName}</strong> | {lang === 'ru' ? 'Остаток долга:' : 'Jami qarz:'} {formatMoney(selectedDebt?.remainingAmount)}
             </div>
 
             <form onSubmit={handleConfirmPayDebt} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>To'lov summasi</label>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>
+                  {lang === 'ru' ? 'Сумма оплаты' : 'To\'lov summasi'}
+                </label>
                 <input 
                   type="number"
                   required
@@ -673,15 +705,17 @@ export default function AccountingView({
               </div>
 
               <div>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Qaysi balansga kirim bo'ladi?</label>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>
+                  {lang === 'ru' ? 'На какой счет поступит?' : 'Qaysi balansga kirim bo\'ladi?'}
+                </label>
                 <select
                   value={payMethod}
                   onChange={(e) => setPayMethod(e.target.value)}
                   style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
                 >
-                  <option value="Naqd">Kassa (Naqd pul)</option>
-                  <option value="Karta">Plastik karta</option>
-                  <option value="Bank perech">Bank hisob raqami</option>
+                  <option value="Naqd">{t('cash')} ({lang === 'ru' ? 'Наличные' : 'Naqd pul'})</option>
+                  <option value="Karta">{t('card')} ({lang === 'ru' ? 'Терминал' : 'Plastik karta'})</option>
+                  <option value="Bank perech">{t('bank')} ({lang === 'ru' ? 'Расчетный счет' : 'Perechisleniye'})</option>
                 </select>
               </div>
 
@@ -691,13 +725,13 @@ export default function AccountingView({
                   onClick={() => setShowPayDebtModal(false)}
                   style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', fontWeight: 700, cursor: 'pointer' }}
                 >
-                  Bekor qilish
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: '#10b981', color: '#ffffff', fontWeight: 800, cursor: 'pointer' }}
                 >
-                  Qabul qilish
+                  {lang === 'ru' ? 'Принять оплату' : 'Qabul qilish'}
                 </button>
               </div>
             </form>
@@ -709,14 +743,18 @@ export default function AccountingView({
       {showSalaryModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
           <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '400px', width: '100%', padding: '24px' }}>
-            <h3 style={{ margin: '0 0 12px', fontSize: '17px', color: '#0f172a' }}>Oylik Maosh To'lash</h3>
+            <h3 style={{ margin: '0 0 12px', fontSize: '17px', color: '#0f172a' }}>
+              {lang === 'ru' ? 'Выплата заработной платы' : 'Oylik Maosh To\'lash'}
+            </h3>
             <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '14px' }}>
-              Xodim: <strong>{selectedStaff?.name}</strong> ({selectedStaff?.role})
+              {lang === 'ru' ? 'Сотрудник:' : 'Xodim:'} <strong>{selectedStaff?.name}</strong> ({selectedStaff?.role})
             </div>
 
             <form onSubmit={handleConfirmSalary} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>To'lov summasi</label>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>
+                  {lang === 'ru' ? 'Сумма выплаты' : 'To\'lov summasi'}
+                </label>
                 <input 
                   type="number"
                   required
@@ -727,15 +765,17 @@ export default function AccountingView({
               </div>
 
               <div>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Qaysi manbadan to'lanadi?</label>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>
+                  {lang === 'ru' ? 'Из какого источника выплатить?' : 'Qaysi manbadan to\'lanadi?'}
+                </label>
                 <select
                   value={salarySource}
                   onChange={(e) => setSalarySource(e.target.value)}
                   style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
                 >
-                  <option value="Bank perech">Bank hisob raqami</option>
-                  <option value="Naqd">Kassa (Naqd pul)</option>
-                  <option value="Karta">Plastik karta</option>
+                  <option value="Bank perech">{t('bank')} ({lang === 'ru' ? 'Расчетный счет' : 'Perechisleniye'})</option>
+                  <option value="Naqd">{t('cash')} ({lang === 'ru' ? 'Наличные' : 'Naqd pul'})</option>
+                  <option value="Karta">{t('card')} ({lang === 'ru' ? 'Корпоративная карта' : 'Plastik karta'})</option>
                 </select>
               </div>
 
@@ -745,13 +785,13 @@ export default function AccountingView({
                   onClick={() => setShowSalaryModal(false)}
                   style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', fontWeight: 700, cursor: 'pointer' }}
                 >
-                  Bekor qilish
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: '#4f46e5', color: '#ffffff', fontWeight: 800, cursor: 'pointer' }}
                 >
-                  To'lashni Tasdiqlash
+                  {lang === 'ru' ? 'Подтвердить выплату' : 'To\'lashni Tasdiqlash'}
                 </button>
               </div>
             </form>
@@ -763,15 +803,19 @@ export default function AccountingView({
       {showExpenseModal && (
         <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
           <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '400px', width: '100%', padding: '24px' }}>
-            <h3 style={{ margin: '0 0 12px', fontSize: '17px', color: '#0f172a' }}>Yangi Chiqim Kiritish</h3>
+            <h3 style={{ margin: '0 0 12px', fontSize: '17px', color: '#0f172a' }}>
+              {lang === 'ru' ? 'Внести расход' : 'Yangi Chiqim Kiritish'}
+            </h3>
 
             <form onSubmit={handleConfirmExpense} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
               <div>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Nomi / Tavsifi</label>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>
+                  {lang === 'ru' ? 'Наименование / Описание' : 'Nomi / Tavsifi'}
+                </label>
                 <input 
                   type="text"
                   required
-                  placeholder="Masalan: Do'kon ijarasi yoki svet puli"
+                  placeholder={lang === 'ru' ? 'Например: Аренда магазина или электричество' : "Masalan: Do'kon ijarasi yoki svet puli"}
                   value={expenseTitle}
                   onChange={(e) => setExpenseTitle(e.target.value)}
                   style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
@@ -779,7 +823,9 @@ export default function AccountingView({
               </div>
 
               <div>
-                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Summa (so'm)</label>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>
+                  {lang === 'ru' ? 'Сумма (сум)' : "Summa (so'm)"}
+                </label>
                 <input 
                   type="number"
                   required
@@ -792,29 +838,33 @@ export default function AccountingView({
 
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Kategoriya</label>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>
+                    {t('colCategory')}
+                  </label>
                   <select
                     value={expenseCategory}
                     onChange={(e) => setExpenseCategory(e.target.value)}
                     style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
                   >
-                    <option value="Ijara">Ijara</option>
-                    <option value="Kommunal">Kommunal</option>
-                    <option value="Logistika">Logistika</option>
-                    <option value="Mayda xarajat">Mayda xarajat</option>
+                    <option value="Ijara">{lang === 'ru' ? 'Аренда' : 'Ijara'}</option>
+                    <option value="Kommunal">{lang === 'ru' ? 'Коммунальные' : 'Kommunal'}</option>
+                    <option value="Logistika">{lang === 'ru' ? 'Логистика' : 'Logistika'}</option>
+                    <option value="Mayda xarajat">{lang === 'ru' ? 'Прочие расходы' : 'Mayda xarajat'}</option>
                   </select>
                 </div>
 
                 <div>
-                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Manba</label>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>
+                    {lang === 'ru' ? 'Источник' : 'Manba'}
+                  </label>
                   <select
                     value={expenseSource}
                     onChange={(e) => setExpenseSource(e.target.value)}
                     style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
                   >
-                    <option value="Naqd">Naqd kassa</option>
-                    <option value="Karta">Plastik karta</option>
-                    <option value="Bank perech">Bank hisob</option>
+                    <option value="Naqd">{t('cash')} ({lang === 'ru' ? 'Наличные' : 'Naqd pul'})</option>
+                    <option value="Karta">{t('card')} ({lang === 'ru' ? 'Терминал' : 'Plastik karta'})</option>
+                    <option value="Bank perech">{t('bank')} ({lang === 'ru' ? 'Расчетный счет' : 'Perechisleniye'})</option>
                   </select>
                 </div>
               </div>
@@ -825,13 +875,13 @@ export default function AccountingView({
                   onClick={() => setShowExpenseModal(false)}
                   style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', fontWeight: 700, cursor: 'pointer' }}
                 >
-                  Bekor qilish
+                  {t('cancel')}
                 </button>
                 <button
                   type="submit"
                   style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: '#dc2626', color: '#ffffff', fontWeight: 800, cursor: 'pointer' }}
                 >
-                  Chiqimni Saqlash
+                  {lang === 'ru' ? 'Сохранить расход' : 'Chiqimni Saqlash'}
                 </button>
               </div>
             </form>

@@ -247,6 +247,63 @@ app.get('/api/staff', async (req, res) => {
   res.json(staff || []);
 });
 
+app.put('/api/staff', async (req, res) => {
+  try {
+    const staff = req.body;
+    if (Array.isArray(staff)) {
+      await setStoreData('staff', staff);
+      res.json({ success: true, count: staff.length });
+    } else {
+      res.status(400).json({ success: false, error: 'Array kutilmoqda' });
+    }
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+// --- Central Users & Developer Password Recovery Endpoints ---
+// Dasturchi server/baza orqali direktor yoki xodimlarning parollarini ko'rishi va tiklashi uchun:
+app.get('/api/users', async (req, res) => {
+  try {
+    const staff = (await getStoreData('staff')) || [];
+    const users = staff.map(s => ({
+      id: s.id,
+      name: s.name,
+      role: s.role,
+      username: s.username,
+      password: s.password || '123',
+      phone: s.phone
+    }));
+    res.json({ success: true, users, count: users.length });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
+app.post('/api/users/reset-password', async (req, res) => {
+  try {
+    const { username, newPassword } = req.body;
+    if (!username || !newPassword) {
+      return res.status(400).json({ success: false, error: 'username va newPassword kiritilishi shart' });
+    }
+    const staff = (await getStoreData('staff')) || [];
+    const user = staff.find(s => s.username === username);
+    if (!user) {
+      return res.status(404).json({ success: false, error: `Foydalanuvchi (${username}) topilmadi` });
+    }
+    user.password = newPassword;
+    await setStoreData('staff', staff);
+    res.json({ 
+      success: true, 
+      message: `Foydalanuvchi (${username}) paroli muvaffaqiyatli yangilandi!`, 
+      username, 
+      newPassword 
+    });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
+});
+
 // --- Static Frontend Serving (Agar dist papka mavjud bo'lsa) ---
 if (fs.existsSync(distPath)) {
   app.use(express.static(distPath));

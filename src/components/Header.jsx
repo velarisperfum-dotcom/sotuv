@@ -4,6 +4,8 @@ import {
   ArrowLeftRight, CheckCircle2, Building2,
   Box, Wallet, TrendingUp
 } from 'lucide-react';
+import LanguageToggle from './LanguageToggle';
+import { useLang } from '../context/LanguageContext';
 
 export default function Header({ 
   currentUser, 
@@ -12,7 +14,8 @@ export default function Header({
   onOpenPwaModal,
   balances
 }) {
-  const formatMoney = (val) => Number(val || 0).toLocaleString('uz-UZ') + " so'm";
+  const { t, lang } = useLang();
+  const formatMoney = (val) => Number(val || 0).toLocaleString(lang === 'ru' ? 'ru-RU' : 'uz-UZ') + " " + t('currency');
 
   const getRoleIcon = (role) => {
     switch (role) {
@@ -25,10 +28,10 @@ export default function Header({
   };
 
   const roleLabels = {
-    director: { name: 'Direktor Kabineti', badge: 'Bosh Boshqaruv', color: '#2563eb' },
-    accountant: { name: 'Buxgalteriya & Moliya', badge: 'Moliya & To\'lov', color: '#059669' },
-    warehouse: { name: 'Sklad & Logistika', badge: 'Ombor Boshqaruvi', color: '#0284c7' },
-    seller_mobile: { name: 'Mobil Sotuvchi Profili', badge: 'Agent / Mobil', color: '#4f46e5' },
+    director: { name: t('directorCabinet'), badge: t('roleDirectorBadge'), color: '#2563eb' },
+    accountant: { name: t('accountingCabinet'), badge: t('roleAccountantBadge'), color: '#059669' },
+    warehouse: { name: t('warehouseCabinet'), badge: t('roleWarehouseBadge'), color: '#0284c7' },
+    seller_mobile: { name: t('sellerCabinet'), badge: t('roleSellerBadge'), color: '#4f46e5' },
   };
 
   const roleInfo = roleLabels[currentRole] || roleLabels.director;
@@ -76,23 +79,26 @@ export default function Header({
             </span>
           </div>
           <div style={{ fontSize: '12px', color: '#64748b' }}>
-            Foydalanuvchi: <strong>{currentUser?.name || 'Xodim'}</strong> ({currentUser?.position || 'Xodim'})
+            {t('user')}: <strong>{currentUser?.name || t('user')}</strong> ({currentUser?.position || t('user')})
           </div>
         </div>
       </div>
 
-      {/* Right: Quick Balances, APK button & Logout */}
-      <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+      {/* Right: Language Toggle, Quick Balances, APK button & Logout */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* Language Switcher */}
+        <LanguageToggle />
+
         {/* Balances (Faqat Direktor va Buxgalter uchun) */}
         {(currentRole === 'director' || currentRole === 'accountant') && (
           <div style={{ display: 'flex', gap: '12px', background: '#f8fafc', padding: '6px 12px', borderRadius: '10px', border: '1px solid #e2e8f0', fontSize: '12px' }}>
             <div>
-              <span style={{ color: '#64748b' }}>Kassa: </span>
+              <span style={{ color: '#64748b' }}>{t('cash')}: </span>
               <strong style={{ color: '#16a34a' }}>{formatMoney(balances?.cash || 0)}</strong>
             </div>
             <div style={{ color: '#cbd5e1' }}>|</div>
             <div>
-              <span style={{ color: '#64748b' }}>Bank: </span>
+              <span style={{ color: '#64748b' }}>{t('bank')}: </span>
               <strong style={{ color: '#2563eb' }}>{formatMoney(balances?.bank || 0)}</strong>
             </div>
           </div>
@@ -114,9 +120,9 @@ export default function Header({
             gap: '6px',
             cursor: 'pointer'
           }}
-          title="iPhone va Android telefonga ilovani o'rnatish"
+          title={t('installApp')}
         >
-          <Smartphone size={14} style={{ color: '#2563eb' }} /> Ilova (iOS / Android)
+          <Smartphone size={14} style={{ color: '#2563eb' }} /> {t('mobileApp')}
         </button>
 
         {/* Logout Button */}
@@ -135,9 +141,9 @@ export default function Header({
             gap: '6px',
             cursor: 'pointer'
           }}
-          title="Tizimdan chiqish va boshqa hisobga kirish"
+          title={t('logout')}
         >
-          <LogOut size={14} /> Chiqish
+          <LogOut size={14} /> {t('logout')}
         </button>
       </div>
     </header>
