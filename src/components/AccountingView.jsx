@@ -1,22 +1,39 @@
 import React, { useState } from 'react';
 import { 
   DollarSign, CreditCard, Building2, Clock, Users, Plus, 
-  ArrowDownCircle, ArrowUpCircle, CheckCircle2, AlertCircle, FileText
+  ArrowDownCircle, ArrowUpCircle, CheckCircle2, AlertCircle, 
+  FileText, Check, X, ShieldCheck, UserCheck, AlertTriangle, 
+  BadgePercent, ArrowRight, Wallet, History, Eye
 } from 'lucide-react';
+import { PAYMENT_METHODS } from '../data/initialData';
 
 export default function AccountingView({ 
-  balances, 
-  debts, 
-  staff, 
-  expenses, 
-  sales,
+  balances = { cash: 0, card: 0, bank: 0 }, 
+  debts = [], 
+  staff = [], 
+  expenses = [], 
+  orders = [],
+  sales = [],
+  onApproveOrder,
+  onRejectOrder,
   onPayDebt, 
   onAddDebt, 
   onPaySalary, 
   onAddExpense 
 }) {
-  const [activeTab, setActiveTab] = useState('debts'); // 'debts', 'salary', 'bank', 'expenses'
+  const safeBalances = balances || { cash: 0, card: 0, bank: 0 };
+  const safeDebts = Array.isArray(debts) ? debts : [];
+  const safeStaff = Array.isArray(staff) ? staff : [];
+  const safeExpenses = Array.isArray(expenses) ? expenses : [];
+  const safeOrders = Array.isArray(orders) ? orders : [];
+
+  // Active Tab: 'orders_approval' | 'balances' | 'debts' | 'salaries' | 'expenses'
+  const [activeTab, setActiveTab] = useState('orders_approval');
   
+  // Reject order modal
+  const [rejectingOrder, setRejectingOrder] = useState(null);
+  const [rejectReason, setRejectReason] = useState('');
+
   // Pay debt modal
   const [showPayDebtModal, setShowPayDebtModal] = useState(false);
   const [selectedDebt, setSelectedDebt] = useState(null);
@@ -38,17 +55,18 @@ export default function AccountingView({
 
   const formatMoney = (val) => Number(val || 0).toLocaleString('uz-UZ') + " so'm";
 
-  const totalDebtsRemaining = debts.reduce((acc, d) => acc + (d.remainingAmount || 0), 0);
-  const totalSalaries = staff.reduce((acc, s) => acc + (s.baseSalary || 0), 0);
-  const totalPaidSalaries = staff.reduce((acc, s) => acc + (s.paidThisMonth || 0), 0);
-  const totalExpenses = expenses.reduce((acc, e) => acc + (e.amount || 0), 0);
+  // Orders Filter
+  const pendingOrders = safeOrders.filter(o => o.status === 'pending_accounting');
+  const approvedOrders = safeOrders.filter(o => o.status === 'approved_accounting' || o.status === 'dispatched_warehouse');
+  const rejectedOrders = safeOrders.filter(o => o.status === 'rejected_accounting');
 
-  const handleOpenPayDebt = (debt) => {
-    setSelectedDebt(debt);
-    setPayAmount(debt.remainingAmount);
-    setPayMethod('Naqd');
-    setShowPayDebtModal(true);
-  };
+  const totalDebtsRemaining = safeDebts.reduce((acc, d) => acc + (d.remainingAmount || 0), 0);
+  const totalSalaries = safeStaff.reduce((acc, s) => acc + (s.baseSalary || 0), 0);
+  const totalPaidSalaries = safeStaff.reduce((acc, s) => acc + (s.paidThisMonth || 0), 0);
+  const totalExpenses = safeExpenses.reduce((acc, e) => acc + (e.amount || 0), 0);
+
+  // Total Liquid Assets
+  const totalLiquid = (safeBalances.cash || 0) + (safeBalances.card || 0) + (safeBalances.bank || 0);
 
   const handleConfirmPayDebt = (e) => {
     e.preventDefault();
@@ -74,14 +92,6 @@ export default function AccountingView({
     setExpenseAmount('');
   };
 
-  const handleOpenSalary = (st) => {
-    setSelectedStaff(st);
-    const remainingToPay = Math.max(0, st.baseSalary - (st.paidThisMonth || 0));
-    setSalaryAmount(remainingToPay);
-    setSalarySource('Bank perech');
-    setShowSalaryModal(true);
-  };
-
   const handleConfirmSalary = (e) => {
     e.preventDefault();
     if (!salaryAmount || Number(salaryAmount) <= 0) return;
@@ -90,209 +100,472 @@ export default function AccountingView({
     setSelectedStaff(null);
   };
 
+  const handleConfirmReject = (e) => {
+    e.preventDefault();
+    if (!rejectingOrder) return;
+    onRejectOrder(rejectingOrder.id, rejectReason || "To'lov tasdiqlanmadi");
+    setRejectingOrder(null);
+    setRejectReason('');
+  };
+
   return (
-    <div className="page-container">
-      {/* Header */}
-      <div className="page-header">
-        <div className="page-title-group">
-          <h2>Buxgalteriya & Moliya Nazorati</h2>
-          <p>Oplata turlari, qarz daftari, xodimlar oyligi va bank hisob-kitoblari</p>
+    <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '24px 20px' }}>
+      
+      {/* Top Header */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+          <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Wallet size={24} />
+          </div>
+          <div>
+            <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>Buxgalteriya & Moliya Boshqaruvi</h2>
+            <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#64748b' }}>
+              Sotuvchilar zayavkalarini tekshirish, aplatani tasdiqlash, skladga yuborish va hisob-kitoblar
+            </p>
+          </div>
         </div>
+
         <div style={{ display: 'flex', gap: '10px' }}>
-          <button className="btn btn-secondary" onClick={() => setShowExpenseModal(true)}>
-            <Plus size={16} /> Chiqim / Xarajat kiritish
+          <button
+            onClick={() => setShowExpenseModal(true)}
+            style={{ background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '10px 16px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+          >
+            <Plus size={16} /> Yangi Chiqim
           </button>
         </div>
       </div>
 
-      {/* Balances Cards */}
-      <div className="stats-grid">
-        <div className="stat-card emerald">
-          <div className="stat-header">
-            <span className="stat-title">Naqd Pul Kassasi</span>
-            <div className="stat-icon"><DollarSign size={20} color="var(--success)" /></div>
+      {/* Main KPI Balances Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '24px' }}>
+        {/* Naqd Kassa */}
+        <div style={{ background: '#ffffff', borderRadius: '18px', padding: '18px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#10b981', marginBottom: '8px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700 }}>Kassa (Naqd pul)</span>
+            <DollarSign size={20} />
           </div>
-          <div className="stat-value">{formatMoney(balances.cash)}</div>
-          <div className="stat-desc">Kassada mavjud real naqd mablag'</div>
+          <div style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>{formatMoney(safeBalances.cash)}</div>
+          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Naqd savdo va tushumlar</div>
         </div>
 
-        <div className="stat-card" style={{ borderColor: 'rgba(99,102,241,0.3)' }}>
-          <div className="stat-header">
-            <span className="stat-title">Terminal / Karta</span>
-            <div className="stat-icon"><CreditCard size={20} color="var(--primary)" /></div>
+        {/* Plastik Karta */}
+        <div style={{ background: '#ffffff', borderRadius: '18px', padding: '18px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#3b82f6', marginBottom: '8px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700 }}>Plastik Karta (Terminal)</span>
+            <CreditCard size={20} />
           </div>
-          <div className="stat-value">{formatMoney(balances.card)}</div>
-          <div className="stat-desc">Uzcard & Humo tushumlari</div>
+          <div style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>{formatMoney(safeBalances.card)}</div>
+          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Karta va Click/Payme</div>
         </div>
 
-        <div className="stat-card cyan">
-          <div className="stat-header">
-            <span className="stat-title">Bank Perechisleniye</span>
-            <div className="stat-icon"><Building2 size={20} color="var(--info)" /></div>
+        {/* Bank Perechisleniye */}
+        <div style={{ background: '#ffffff', borderRadius: '18px', padding: '18px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#8b5cf6', marginBottom: '8px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700 }}>Bank Hisob Raqami</span>
+            <Building2 size={20} />
           </div>
-          <div className="stat-value">{formatMoney(balances.bank)}</div>
-          <div className="stat-desc">Korxona hisob raqamidagi balans</div>
+          <div style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>{formatMoney(safeBalances.bank)}</div>
+          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Bank to'lov topshirig'i (Perech)</div>
         </div>
 
-        <div className="stat-card amber">
-          <div className="stat-header">
-            <span className="stat-title">Kutilayotgan Qarzlar</span>
-            <div className="stat-icon"><Clock size={20} color="var(--gold)" /></div>
+        {/* Nasiyalar / Qarzlar */}
+        <div style={{ background: '#ffffff', borderRadius: '18px', padding: '18px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#f59e0b', marginBottom: '8px' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700 }}>Qarzlar (Nasiya)</span>
+            <Clock size={20} />
           </div>
-          <div className="stat-value">{formatMoney(totalDebtsRemaining)}</div>
-          <div className="stat-desc">{debts.length} ta faol nasiya kelishuvi</div>
+          <div style={{ fontSize: '22px', fontWeight: 800, color: '#b45309' }}>{formatMoney(totalDebtsRemaining)}</div>
+          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>Mijozlarning to'lanmagan qarzi</div>
         </div>
       </div>
 
-      {/* Tabs */}
-      <div style={{ display: 'flex', gap: '8px', borderBottom: '1px solid var(--border-light)', marginBottom: '20px' }}>
-        <button 
-          className={`pos-filter-btn ${activeTab === 'debts' ? 'active' : ''}`}
+      {/* Tabs Bar */}
+      <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid #e2e8f0', marginBottom: '20px', overflowX: 'auto', paddingBottom: '2px' }}>
+        <button
+          onClick={() => setActiveTab('orders_approval')}
+          style={{
+            padding: '12px 18px',
+            border: 'none',
+            background: 'none',
+            borderBottom: activeTab === 'orders_approval' ? '3px solid #4f46e5' : '3px solid transparent',
+            color: activeTab === 'orders_approval' ? '#4f46e5' : '#64748b',
+            fontWeight: 800,
+            fontSize: '14px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          <ShieldCheck size={18} /> Zayavkalar va Aplata Nazorati
+          {pendingOrders.length > 0 && (
+            <span style={{ background: '#ef4444', color: '#ffffff', borderRadius: '10px', padding: '2px 8px', fontSize: '11px', fontWeight: 800 }}>
+              {pendingOrders.length} yangi
+            </span>
+          )}
+        </button>
+
+        <button
           onClick={() => setActiveTab('debts')}
+          style={{
+            padding: '12px 18px',
+            border: 'none',
+            background: 'none',
+            borderBottom: activeTab === 'debts' ? '3px solid #f59e0b' : '3px solid transparent',
+            color: activeTab === 'debts' ? '#f59e0b' : '#64748b',
+            fontWeight: 800,
+            fontSize: '14px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
         >
-          📋 Qarz daftari (Nasiyalar) ({debts.length})
+          <Clock size={18} /> Qarz Daftari ({safeDebts.length})
         </button>
-        <button 
-          className={`pos-filter-btn ${activeTab === 'salary' ? 'active' : ''}`}
-          onClick={() => setActiveTab('salary')}
+
+        <button
+          onClick={() => setActiveTab('salaries')}
+          style={{
+            padding: '12px 18px',
+            border: 'none',
+            background: 'none',
+            borderBottom: activeTab === 'salaries' ? '3px solid #10b981' : '3px solid transparent',
+            color: activeTab === 'salaries' ? '#10b981' : '#64748b',
+            fontWeight: 800,
+            fontSize: '14px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
         >
-          💼 Xodimlar Oyligi ({staff.length})
+          <Users size={18} /> Oylik Maoshlar ({safeStaff.length})
         </button>
-        <button 
-          className={`pos-filter-btn ${activeTab === 'bank' ? 'active' : ''}`}
-          onClick={() => setActiveTab('bank')}
-        >
-          🏦 Bank Perechisleniye
-        </button>
-        <button 
-          className={`pos-filter-btn ${activeTab === 'expenses' ? 'active' : ''}`}
+
+        <button
           onClick={() => setActiveTab('expenses')}
+          style={{
+            padding: '12px 18px',
+            border: 'none',
+            background: 'none',
+            borderBottom: activeTab === 'expenses' ? '3px solid #64748b' : '3px solid transparent',
+            color: activeTab === 'expenses' ? '#0f172a' : '#64748b',
+            fontWeight: 800,
+            fontSize: '14px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
         >
-          📉 Xarajatlar & Chiqimlar ({expenses.length})
+          <FileText size={18} /> Chiqimlar & Xarajatlar
         </button>
       </div>
 
-      {/* Tab 1: Qarz Daftari */}
-      {activeTab === 'debts' && (
-        <div className="glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
-          <div className="panel-header" style={{ padding: '20px 24px', margin: 0, borderBottom: '1px solid var(--border-light)' }}>
-            <h3 className="panel-title">
-              <Clock size={20} color="var(--gold)" />
-              Mijozlar Nasiya & Qarz Daftari
-            </h3>
+      {/* TAB 1: ZAYAVKALAR VA APLATA NAZORATI (ENG ASOSIY TALAB!) */}
+      {activeTab === 'orders_approval' && (
+        <div>
+          {/* Info Banner */}
+          <div style={{ background: '#e0e7ff', border: '1px solid #c7d2fe', borderRadius: '16px', padding: '14px 18px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '12px' }}>
+            <div style={{ width: '36px', height: '36px', borderRadius: '10px', background: '#4f46e5', color: '#ffffff', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+              💡
+            </div>
+            <div style={{ fontSize: '13px', color: '#312e81', lineHeight: '1.4' }}>
+              <strong>Buxgalter ish tartibi:</strong> Sotuvchi yuborgan zakazning to'lov turini tekshiring (Naqd, Karta, Nasiya, Bank o'tkazmasi, Oylikdan). Tasdiqlash tugmasini bosganingizda to'lov hisobga olinadi va zakaz zudlik bilan <strong>Skladchiga</strong> yuboriladi!
+            </div>
           </div>
 
-          <div className="table-responsive">
-            <table className="data-table">
+          {/* Kutilayotgan Zayavkalar */}
+          <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>
+                ⏳ Tekshirish Kutilayotgan Zayavkalar ({pendingOrders.length})
+              </h3>
+            </div>
+
+            {pendingOrders.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+                <CheckCircle2 size={36} style={{ color: '#10b981', margin: '0 auto 10px' }} />
+                <h4 style={{ margin: '0 0 4px', color: '#1e293b' }}>Hozirda barcha zayavkalar tekshirib bo'lingan</h4>
+                <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>Sotuvchilar yangi zayavka yuborganida shu yerda paydo bo'ladi</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {pendingOrders.map(order => (
+                  <div 
+                    key={order.id}
+                    style={{
+                      background: '#ffffff',
+                      border: '2px solid #fed7aa',
+                      borderRadius: '18px',
+                      padding: '18px',
+                      boxShadow: '0 4px 10px rgba(245, 158, 11, 0.08)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '10px', marginBottom: '14px' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 800, color: '#ea580c', background: '#ffedd5', padding: '2px 10px', borderRadius: '8px' }}>
+                            {order.orderNumber || order.id}
+                          </span>
+                          <span style={{ fontSize: '12px', color: '#64748b' }}>{order.createdAt}</span>
+                        </div>
+                        <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
+                          Mijoz: {order.customerName}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#64748b' }}>
+                          Tel: <strong>{order.customerPhone || 'Kiritilmagan'}</strong> | Sotuvchi: <strong>{order.sellerName}</strong>
+                        </div>
+                      </div>
+
+                      {/* To'lov turi badge & Summa */}
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>To'lov Usuli (Aplata):</div>
+                        <div style={{ 
+                          display: 'inline-flex', 
+                          alignItems: 'center', 
+                          gap: '6px', 
+                          padding: '4px 12px', 
+                          borderRadius: '10px', 
+                          fontWeight: 800, 
+                          fontSize: '13px',
+                          marginTop: '2px',
+                          background: order.paymentMethod === 'bank' ? '#f5f3ff' : order.paymentMethod === 'debt' ? '#fffbeb' : order.paymentMethod === 'card' ? '#eff6ff' : '#f0fdf4',
+                          color: order.paymentMethod === 'bank' ? '#7c3aed' : order.paymentMethod === 'debt' ? '#b45309' : order.paymentMethod === 'card' ? '#1d4ed8' : '#15803d'
+                        }}>
+                          {order.paymentMethod === 'cash' && '💵 Naqd pul'}
+                          {order.paymentMethod === 'card' && '💳 Karta'}
+                          {order.paymentMethod === 'debt' && '📝 Qarzga (Nasiya)'}
+                          {order.paymentMethod === 'bank' && '🏦 Bank perech'}
+                          {order.paymentMethod === 'salary_deduction' && '💼 Oyligidan oldi'}
+                        </div>
+                        <div style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
+                          {formatMoney(order.totalAmount)}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tovarlar va To'lov Izohi */}
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px', background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                      <div>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>📦 Mahsulotlar:</div>
+                        {order.items?.map((item, idx) => (
+                          <div key={idx} style={{ fontSize: '12px', color: '#1e293b' }}>
+                            • {item.name} × {item.quantity} ({formatMoney(item.total)})
+                          </div>
+                        ))}
+                      </div>
+
+                      <div>
+                        <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>📝 To'lov Tafsiloti / Hujjat:</div>
+                        <div style={{ fontSize: '12px', color: '#0f172a', fontWeight: 600 }}>
+                          {order.paymentDetails || "Izoh kiritilmagan"}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+                          {order.paymentMethod === 'debt' && "⚠️ Qarz daftarga avtomatik yoziladi"}
+                          {order.paymentMethod === 'bank' && "🏦 Bank hisobiga tushum sifatida yoziladi"}
+                          {order.paymentMethod === 'salary_deduction' && `💼 Sotuvchi (${order.sellerName}) maoshidan chegiriladi`}
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tasdiqlash / Rad etish tugmalari */}
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                      <button
+                        onClick={() => { setRejectingOrder(order); setRejectReason(''); }}
+                        style={{
+                          background: '#fee2e2',
+                          color: '#dc2626',
+                          border: 'none',
+                          borderRadius: '12px',
+                          padding: '10px 18px',
+                          fontSize: '13px',
+                          fontWeight: 700,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <X size={16} /> Rad Etish
+                      </button>
+
+                      <button
+                        onClick={() => onApproveOrder(order.id)}
+                        style={{
+                          background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '12px',
+                          padding: '10px 22px',
+                          fontSize: '13px',
+                          fontWeight: 800,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(16, 185, 129, 0.3)'
+                        }}
+                      >
+                        <Check size={16} /> To'lovni Tasdiqlash & Skladga Yuborish 🚀
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Tasdiqlangan Zayavkalar Tarixi */}
+          <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0' }}>
+            <h3 style={{ margin: '0 0 14px', fontSize: '15px', color: '#0f172a' }}>
+              Tasdiqlangan va Skladga O'tkazilgan Zayavkalar Tarixi
+            </h3>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {approvedOrders.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '20px', color: '#64748b', fontSize: '13px' }}>Hozircha tasdiqlangan zakazlar yo'q</div>
+              ) : (
+                approvedOrders.map(order => (
+                  <div key={order.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 14px', background: '#f8fafc', borderRadius: '12px', fontSize: '13px' }}>
+                    <div>
+                      <span style={{ fontWeight: 800, color: '#4f46e5' }}>{order.orderNumber || order.id}</span>
+                      <span style={{ marginLeft: '10px', color: '#0f172a', fontWeight: 600 }}>{order.customerName}</span>
+                      <span style={{ marginLeft: '10px', color: '#64748b' }}>({order.paymentMethod?.toUpperCase()})</span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <span style={{ fontWeight: 800, color: '#0f172a' }}>{formatMoney(order.totalAmount)}</span>
+                      <span style={{ background: order.status === 'dispatched_warehouse' ? '#dcfce7' : '#e0e7ff', color: order.status === 'dispatched_warehouse' ? '#15803d' : '#4338ca', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+                        {order.status === 'dispatched_warehouse' ? "Skladchi berdi ✅" : "Sklad yig'moqda 📦"}
+                      </span>
+                    </div>
+                  </div>
+                ))
+              )}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* TAB 2: QARZLAR (NASIYA) DAFTARI */}
+      {activeTab === 'debts' && (
+        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Mijozlar Nasiya & Qarz Daftari</h3>
+              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>Qarzga sotilgan tovarlar va ularning so'ndirilishi</p>
+            </div>
+          </div>
+
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
-                <tr>
-                  <th>Mijoz F.I.Sh</th>
-                  <th>Telefon</th>
-                  <th>Olingan Tovarlar / Mahsulot</th>
-                  <th>Umumiy Summa</th>
-                  <th>To'langan</th>
-                  <th>Qoldiq Qarz</th>
-                  <th>To'lov Muddati</th>
-                  <th>Holati</th>
-                  <th style={{ textAlign: 'right' }}>Amal</th>
+                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
+                  <th style={{ padding: '12px 14px' }}>Mijoz</th>
+                  <th style={{ padding: '12px 14px' }}>Telefon</th>
+                  <th style={{ padding: '12px 14px' }}>Umumiy Qarz</th>
+                  <th style={{ padding: '12px 14px' }}>Qolgan Summa</th>
+                  <th style={{ padding: '12px 14px' }}>Muddat</th>
+                  <th style={{ padding: '12px 14px' }}>Holat</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'right' }}>Amal</th>
                 </tr>
               </thead>
               <tbody>
-                {debts.map(d => (
-                  <tr key={d.id}>
-                    <td style={{ fontWeight: 700, color: '#fff' }}>{d.customerName}</td>
-                    <td style={{ color: 'var(--text-muted)' }}>{d.phone}</td>
-                    <td>{d.productSummary}</td>
-                    <td>{formatMoney(d.totalAmount)}</td>
-                    <td style={{ color: 'var(--success)', fontWeight: 600 }}>{formatMoney(d.paidAmount)}</td>
-                    <td style={{ color: 'var(--gold)', fontWeight: 800 }}>{formatMoney(d.remainingAmount)}</td>
-                    <td>{d.dueDate}</td>
-                    <td>
-                      <span className={`badge ${d.remainingAmount === 0 ? 'badge-cash' : 'badge-debt'}`}>
-                        {d.remainingAmount === 0 ? 'Yopilgan' : d.status}
-                      </span>
-                    </td>
-                    <td style={{ textAlign: 'right' }}>
-                      {d.remainingAmount > 0 ? (
-                        <button 
-                          className="btn btn-sm btn-primary"
-                          onClick={() => handleOpenPayDebt(d)}
-                        >
-                          Qarzni to'lash
-                        </button>
-                      ) : (
-                        <span style={{ fontSize: '0.78rem', color: 'var(--success)' }}>To'liq to'langan</span>
-                      )}
+                {safeDebts.length === 0 ? (
+                  <tr>
+                    <td colSpan="7" style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>
+                      Hozirda qarzdorliklar mavjud emas
                     </td>
                   </tr>
-                ))}
+                ) : (
+                  safeDebts.map(debt => (
+                    <tr key={debt.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{debt.customerName}</td>
+                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{debt.customerPhone || '—'}</td>
+                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{formatMoney(debt.totalDebt)}</td>
+                      <td style={{ padding: '12px 14px', fontWeight: 800, color: '#dc2626' }}>{formatMoney(debt.remainingAmount)}</td>
+                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{debt.dueDate || debt.date || '—'}</td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <span style={{ background: debt.remainingAmount === 0 ? '#dcfce7' : '#fee2e2', color: debt.remainingAmount === 0 ? '#15803d' : '#b91c1c', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+                          {debt.remainingAmount === 0 ? "To'liq so'ndirilgan" : "To'lanmagan"}
+                        </span>
+                      </td>
+                      <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                        {debt.remainingAmount > 0 && (
+                          <button
+                            onClick={() => {
+                              setSelectedDebt(debt);
+                              setPayAmount(debt.remainingAmount);
+                              setShowPayDebtModal(true);
+                            }}
+                            style={{ background: '#10b981', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                          >
+                            To'lov Qabul Qilish
+                          </button>
+                        )}
+                      </td>
+                    </tr>
+                  ))
+                )}
               </tbody>
             </table>
           </div>
         </div>
       )}
 
-      {/* Tab 2: Xodimlar Oyligi */}
-      {activeTab === 'salary' && (
-        <div className="glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
-          <div className="panel-header" style={{ padding: '20px 24px', margin: 0, borderBottom: '1px solid var(--border-light)' }}>
-            <h3 className="panel-title">
-              <Users size={20} color="var(--primary)" />
-              Xodimlar Maoshi va Ish Haqi ("Oylik")
-            </h3>
-            <div style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>
-              Jami oylik fondi: <strong>{formatMoney(totalSalaries)}</strong> | To'landi: <strong style={{ color: 'var(--success)' }}>{formatMoney(totalPaidSalaries)}</strong>
+      {/* TAB 3: OYLIK MAOSHLAR VA OYLIKDAN CHEGIRISH */}
+      {activeTab === 'salaries' && (
+        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Xodimlar Oylik Maoshlari</h3>
+              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>Oylik to'lash va savdodan "Oyligidan oldi" bo'lgan summalarni nazorat qilish</p>
             </div>
           </div>
 
-          <div className="table-responsive">
-            <table className="data-table">
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
               <thead>
-                <tr>
-                  <th>Xodim F.I.Sh</th>
-                  <th>Lavozim (Rol)</th>
-                  <th>Telefon</th>
-                  <th>Asosiy Oylik</th>
-                  <th>Savdo Bonusi</th>
-                  <th>Shu oy to'landi</th>
-                  <th>Holati</th>
-                  <th style={{ textAlign: 'right' }}>Oylik to'lash</th>
+                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
+                  <th style={{ padding: '12px 14px' }}>Xodim</th>
+                  <th style={{ padding: '12px 14px' }}>Lavozimi</th>
+                  <th style={{ padding: '12px 14px' }}>Asosiy Oylik</th>
+                  <th style={{ padding: '12px 14px' }}>To'langan Summa</th>
+                  <th style={{ padding: '12px 14px' }}>Qoldiq To'lov</th>
+                  <th style={{ padding: '12px 14px' }}>Holat</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'right' }}>Amal</th>
                 </tr>
               </thead>
               <tbody>
-                {staff.map(s => {
-                  const remaining = Math.max(0, s.baseSalary - (s.paidThisMonth || 0));
+                {safeStaff.map(st => {
+                  const remaining = Math.max(0, (st.baseSalary || 0) - (st.paidThisMonth || 0));
                   return (
-                    <tr key={s.id}>
-                      <td style={{ fontWeight: 700, color: '#fff' }}>{s.name}</td>
-                      <td>
-                        <span className="badge badge-card">{s.role}</span>
+                    <tr key={st.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{st.name}</td>
+                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{st.role}</td>
+                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{formatMoney(st.baseSalary)}</td>
+                      <td style={{ padding: '12px 14px', color: '#10b981', fontWeight: 700 }}>{formatMoney(st.paidThisMonth)}</td>
+                      <td style={{ padding: '12px 14px', color: remaining > 0 ? '#b45309' : '#64748b', fontWeight: 700 }}>
+                        {formatMoney(remaining)}
                       </td>
-                      <td style={{ color: 'var(--text-sub)' }}>{s.phone}</td>
-                      <td style={{ fontWeight: 600 }}>{formatMoney(s.baseSalary)}</td>
-                      <td style={{ color: 'var(--gold)' }}>
-                        {s.bonusRate ? `${s.bonusRate}% (Savdodan)` : '—'}
-                      </td>
-                      <td style={{ color: 'var(--success)', fontWeight: 700 }}>
-                        {formatMoney(s.paidThisMonth)}
-                      </td>
-                      <td>
-                        <span className={`badge ${s.status === "To'langan" ? 'badge-cash' : 'badge-debt'}`}>
-                          {s.status}
+                      <td style={{ padding: '12px 14px' }}>
+                        <span style={{ background: remaining === 0 ? '#dcfce7' : '#fef3c7', color: remaining === 0 ? '#15803d' : '#b45309', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+                          {remaining === 0 ? "To'liq to'langan" : "To'lanishi kerak"}
                         </span>
                       </td>
-                      <td style={{ textAlign: 'right' }}>
-                        {remaining > 0 ? (
-                          <button 
-                            className="btn btn-sm btn-success"
-                            onClick={() => handleOpenSalary(s)}
+                      <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                        {remaining > 0 && (
+                          <button
+                            onClick={() => {
+                              setSelectedStaff(st);
+                              setSalaryAmount(remaining);
+                              setShowSalaryModal(true);
+                            }}
+                            style={{ background: '#4f46e5', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
                           >
-                            To'lash ({formatMoney(remaining)})
+                            Oylik To'lash
                           </button>
-                        ) : (
-                          <span style={{ fontSize: '0.8rem', color: 'var(--success)', fontWeight: 600 }}>
-                            To'liq berildi ✓
-                          </span>
                         )}
                       </td>
                     </tr>
@@ -304,144 +577,74 @@ export default function AccountingView({
         </div>
       )}
 
-      {/* Tab 3: Bank Perechisleniye */}
-      {activeTab === 'bank' && (
-        <div className="glass-panel">
-          <div className="panel-header">
-            <h3 className="panel-title">
-              <Building2 size={20} color="var(--info)" />
-              Bank Perechisleniye & Hisob-Faktura Tarixi
-            </h3>
-            <span className="badge badge-bank">Hisob raqam balansi: {formatMoney(balances.bank)}</span>
-          </div>
-
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginBottom: '16px' }}>
-            Korxona va tashkilotlar bilan tuzilgan shartnomalar, hisob-fakturalar hamda bank o'tkazmalari orqali amalga oshirilgan savdolar:
-          </p>
-
-          <div className="table-responsive">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Chek / Hujjat №</th>
-                  <th>Sana</th>
-                  <th>Kontragent / Mijoz</th>
-                  <th>Mahsulotlar</th>
-                  <th>Summa</th>
-                  <th>Turi</th>
-                  <th>Holati</th>
-                </tr>
-              </thead>
-              <tbody>
-                {sales.filter(s => s.paymentMethod === 'Bank perech').map(s => (
-                  <tr key={s.id}>
-                    <td style={{ fontFamily: 'monospace', fontWeight: 700 }}>{s.id}</td>
-                    <td>{s.date}</td>
-                    <td style={{ fontWeight: 600 }}>{s.customer || 'Korporativ mijoz'}</td>
-                    <td>{s.items?.map(i => i.name).join(', ')}</td>
-                    <td style={{ fontWeight: 800, color: '#fff' }}>{formatMoney(s.total)}</td>
-                    <td><span className="badge badge-bank">Bank perech</span></td>
-                    <td><span className="badge badge-cash">Tasdiqlangan</span></td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      )}
-
-      {/* Tab 4: Xarajatlar */}
+      {/* TAB 4: CHIQIMLAR VA XARAJATLAR */}
       {activeTab === 'expenses' && (
-        <div className="glass-panel" style={{ padding: 0, overflow: 'hidden' }}>
-          <div className="panel-header" style={{ padding: '20px 24px', margin: 0, borderBottom: '1px solid var(--border-light)' }}>
-            <h3 className="panel-title">
-              <ArrowDownCircle size={20} color="var(--danger)" />
-              Do'kon Xarajatlari & Chiqimlari
-            </h3>
-            <div style={{ fontWeight: 700, color: 'var(--danger)' }}>
-              Jami xarajat: {formatMoney(totalExpenses)}
+        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+            <div>
+              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Operatsion Chiqimlar & Xarajatlar</h3>
+              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>Do'kon ijarasi, kommunal, logistika va mayda chiqimlar</p>
             </div>
+            <button
+              onClick={() => setShowExpenseModal(true)}
+              style={{ background: '#4f46e5', color: '#ffffff', border: 'none', borderRadius: '10px', padding: '8px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+            >
+              + Chiqim Qo'shish
+            </button>
           </div>
 
-          <div className="table-responsive">
-            <table className="data-table">
-              <thead>
-                <tr>
-                  <th>Xarajat Nomi</th>
-                  <th>Kategoriya</th>
-                  <th>Sana</th>
-                  <th>To'lov Manbai</th>
-                  <th style={{ textAlign: 'right' }}>Chiqim Summasi</th>
-                </tr>
-              </thead>
-              <tbody>
-                {expenses.map(e => (
-                  <tr key={e.id}>
-                    <td style={{ fontWeight: 700, color: '#fff' }}>{e.title}</td>
-                    <td><span className="badge badge-card">{e.category}</span></td>
-                    <td style={{ color: 'var(--text-sub)' }}>{e.date}</td>
-                    <td>{e.source || 'Naqd kassa'}</td>
-                    <td style={{ textAlign: 'right', fontWeight: 800, color: 'var(--danger)' }}>
-                      -{formatMoney(e.amount)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {safeExpenses.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>Hozircha chiqimlar mavjud emas</div>
+            ) : (
+              safeExpenses.map(exp => (
+                <div key={exp.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 14px', background: '#f8fafc', borderRadius: '12px', fontSize: '13px' }}>
+                  <div>
+                    <div style={{ fontWeight: 700, color: '#0f172a' }}>{exp.title}</div>
+                    <div style={{ fontSize: '11px', color: '#64748b' }}>{exp.category} | Manba: {exp.source} | Sana: {exp.date}</div>
+                  </div>
+                  <div style={{ fontSize: '15px', fontWeight: 800, color: '#dc2626' }}>
+                    -{formatMoney(exp.amount)}
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
 
-      {/* Pay Debt Modal */}
-      {showPayDebtModal && selectedDebt && (
-        <div className="modal-backdrop" onClick={() => setShowPayDebtModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Qarz To'lovini Qabul Qilish</h3>
-              <button className="cart-qty-btn" onClick={() => setShowPayDebtModal(false)}>✕</button>
-            </div>
-            <form onSubmit={handleConfirmPayDebt}>
-              <div className="modal-body">
-                <div style={{ marginBottom: '14px', background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px' }}>
-                  <div style={{ fontWeight: 700, color: '#fff' }}>{selectedDebt.customerName}</div>
-                  <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>{selectedDebt.phone}</div>
-                  <div style={{ marginTop: '6px', fontSize: '0.85rem' }}>
-                    Qoldiq qarz summasi: <strong style={{ color: 'var(--gold)' }}>{formatMoney(selectedDebt.remainingAmount)}</strong>
-                  </div>
-                </div>
+      {/* MODAL: RAD ETISH */}
+      {rejectingOrder && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '420px', width: '100%', padding: '24px' }}>
+            <h3 style={{ margin: '0 0 10px', fontSize: '17px', color: '#0f172a' }}>Zayavkani Rad Etish</h3>
+            <p style={{ margin: '0 0 14px', fontSize: '13px', color: '#64748b' }}>
+              Iltimos, nima sababdan rad etilayotganini yozing (bu xabar sotuvchining mobil ekranida ko'rinadi):
+            </p>
 
-                <div className="form-group">
-                  <label className="form-label">To'lanayotgan summa (so'm) *</label>
-                  <input 
-                    type="number" 
-                    className="form-control" 
-                    value={payAmount} 
-                    onChange={(e) => setPayAmount(e.target.value)} 
-                    max={selectedDebt.remainingAmount}
-                    required 
-                  />
-                </div>
+            <form onSubmit={handleConfirmReject} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <input 
+                type="text" 
+                required
+                placeholder="Masalan: Bank to'lov cheki soxta yoki yetarli emas"
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+              />
 
-                <div className="form-group">
-                  <label className="form-label">Qaysi hisobga kirim qilinsin?</label>
-                  <select 
-                    className="form-control"
-                    value={payMethod}
-                    onChange={(e) => setPayMethod(e.target.value)}
-                  >
-                    <option value="Naqd">💵 Naqd pul kassa</option>
-                    <option value="Karta">💳 Terminal (Karta)</option>
-                    <option value="Bank perech">🏦 Bank perechisleniye</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowPayDebtModal(false)}>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setRejectingOrder(null)}
+                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', fontWeight: 700, cursor: 'pointer' }}
+                >
                   Bekor qilish
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  <CheckCircle2 size={16} /> To'lovni tasdiqlash
+                <button
+                  type="submit"
+                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: '#dc2626', color: '#ffffff', fontWeight: 800, cursor: 'pointer' }}
+                >
+                  Rad Etishni Tasdiqlash
                 </button>
               </div>
             </form>
@@ -449,53 +652,53 @@ export default function AccountingView({
         </div>
       )}
 
-      {/* Pay Salary Modal */}
-      {showSalaryModal && selectedStaff && (
-        <div className="modal-backdrop" onClick={() => setShowSalaryModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Oylik Maosh To'lash</h3>
-              <button className="cart-qty-btn" onClick={() => setShowSalaryModal(false)}>✕</button>
+      {/* MODAL: QARZ SO'NDIRISH */}
+      {showPayDebtModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '400px', width: '100%', padding: '24px' }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: '17px', color: '#0f172a' }}>Qarzni Qabul Qilish</h3>
+            <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '14px' }}>
+              Mijoz: <strong>{selectedDebt?.customerName}</strong> | Jami qarz: {formatMoney(selectedDebt?.remainingAmount)}
             </div>
-            <form onSubmit={handleConfirmSalary}>
-              <div className="modal-body">
-                <div style={{ marginBottom: '14px', background: 'rgba(255,255,255,0.03)', padding: '12px', borderRadius: '8px' }}>
-                  <div style={{ fontWeight: 700, color: '#fff' }}>{selectedStaff.name} ({selectedStaff.role})</div>
-                  <div style={{ fontSize: '0.85rem', marginTop: '4px' }}>
-                    Belgilangan oylik: <strong>{formatMoney(selectedStaff.baseSalary)}</strong>
-                  </div>
-                </div>
 
-                <div className="form-group">
-                  <label className="form-label">To'lanadigan summa (so'm) *</label>
-                  <input 
-                    type="number" 
-                    className="form-control" 
-                    value={salaryAmount} 
-                    onChange={(e) => setSalaryAmount(e.target.value)} 
-                    required 
-                  />
-                </div>
-
-                <div className="form-group">
-                  <label className="form-label">To'lov manbai (Qaysi hisobdan chiqim bo'lsin?)</label>
-                  <select 
-                    className="form-control"
-                    value={salarySource}
-                    onChange={(e) => setSalarySource(e.target.value)}
-                  >
-                    <option value="Naqd">💵 Naqd kassa</option>
-                    <option value="Bank perech">🏦 Bank hisob raqami</option>
-                  </select>
-                </div>
+            <form onSubmit={handleConfirmPayDebt} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>To'lov summasi</label>
+                <input 
+                  type="number"
+                  required
+                  value={payAmount}
+                  onChange={(e) => setPayAmount(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                />
               </div>
 
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowSalaryModal(false)}>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Qaysi balansga kirim bo'ladi?</label>
+                <select
+                  value={payMethod}
+                  onChange={(e) => setPayMethod(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                >
+                  <option value="Naqd">Kassa (Naqd pul)</option>
+                  <option value="Karta">Plastik karta</option>
+                  <option value="Bank perech">Bank hisob raqami</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowPayDebtModal(false)}
+                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', fontWeight: 700, cursor: 'pointer' }}
+                >
                   Bekor qilish
                 </button>
-                <button type="submit" className="btn btn-success">
-                  To'lashni tasdiqlash
+                <button
+                  type="submit"
+                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: '#10b981', color: '#ffffff', fontWeight: 800, cursor: 'pointer' }}
+                >
+                  Qabul qilish
                 </button>
               </div>
             </form>
@@ -503,82 +706,140 @@ export default function AccountingView({
         </div>
       )}
 
-      {/* Add Expense Modal */}
+      {/* MODAL: OYLIK TO'LASH */}
+      {showSalaryModal && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '400px', width: '100%', padding: '24px' }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: '17px', color: '#0f172a' }}>Oylik Maosh To'lash</h3>
+            <div style={{ fontSize: '13px', color: '#64748b', marginBottom: '14px' }}>
+              Xodim: <strong>{selectedStaff?.name}</strong> ({selectedStaff?.role})
+            </div>
+
+            <form onSubmit={handleConfirmSalary} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>To'lov summasi</label>
+                <input 
+                  type="number"
+                  required
+                  value={salaryAmount}
+                  onChange={(e) => setSalaryAmount(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Qaysi manbadan to'lanadi?</label>
+                <select
+                  value={salarySource}
+                  onChange={(e) => setSalarySource(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                >
+                  <option value="Bank perech">Bank hisob raqami</option>
+                  <option value="Naqd">Kassa (Naqd pul)</option>
+                  <option value="Karta">Plastik karta</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowSalaryModal(false)}
+                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', fontWeight: 700, cursor: 'pointer' }}
+                >
+                  Bekor qilish
+                </button>
+                <button
+                  type="submit"
+                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: '#4f46e5', color: '#ffffff', fontWeight: 800, cursor: 'pointer' }}
+                >
+                  To'lashni Tasdiqlash
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* MODAL: YANGI CHIQIM */}
       {showExpenseModal && (
-        <div className="modal-backdrop" onClick={() => setShowExpenseModal(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h3 style={{ fontSize: '1.15rem', fontWeight: 800 }}>Xarajat / Chiqim Kiritish</h3>
-              <button className="cart-qty-btn" onClick={() => setShowExpenseModal(false)}>✕</button>
-            </div>
-            <form onSubmit={handleConfirmExpense}>
-              <div className="modal-body">
-                <div className="form-group">
-                  <label className="form-label">Xarajat maqsadi *</label>
-                  <input 
-                    type="text" 
-                    className="form-control" 
-                    placeholder="Masalan: Do'kon ijarasi, marketing, tozalik mollari"
-                    value={expenseTitle} 
-                    onChange={(e) => setExpenseTitle(e.target.value)} 
-                    required 
-                  />
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '400px', width: '100%', padding: '24px' }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: '17px', color: '#0f172a' }}>Yangi Chiqim Kiritish</h3>
+
+            <form onSubmit={handleConfirmExpense} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Nomi / Tavsifi</label>
+                <input 
+                  type="text"
+                  required
+                  placeholder="Masalan: Do'kon ijarasi yoki svet puli"
+                  value={expenseTitle}
+                  onChange={(e) => setExpenseTitle(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Summa (so'm)</label>
+                <input 
+                  type="number"
+                  required
+                  placeholder="1500000"
+                  value={expenseAmount}
+                  onChange={(e) => setExpenseAmount(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Kategoriya</label>
+                  <select
+                    value={expenseCategory}
+                    onChange={(e) => setExpenseCategory(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  >
+                    <option value="Ijara">Ijara</option>
+                    <option value="Kommunal">Kommunal</option>
+                    <option value="Logistika">Logistika</option>
+                    <option value="Mayda xarajat">Mayda xarajat</option>
+                  </select>
                 </div>
 
-                <div className="form-group">
-                  <label className="form-label">Summa (so'm) *</label>
-                  <input 
-                    type="number" 
-                    className="form-control" 
-                    placeholder="1500000"
-                    value={expenseAmount} 
-                    onChange={(e) => setExpenseAmount(e.target.value)} 
-                    required 
-                  />
-                </div>
-
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
-                  <div className="form-group">
-                    <label className="form-label">Kategoriya</label>
-                    <select 
-                      className="form-control"
-                      value={expenseCategory}
-                      onChange={(e) => setExpenseCategory(e.target.value)}
-                    >
-                      <option value="Ijara">Ijara</option>
-                      <option value="Marketing">Marketing & Reklama</option>
-                      <option value="Kommunal">Kommunal</option>
-                      <option value="Qadoqlash">Qadoqlash & Paketlar</option>
-                      <option value="Boshqa">Boshqa operatsion</option>
-                    </select>
-                  </div>
-
-                  <div className="form-group">
-                    <label className="form-label">To'lov manbai</label>
-                    <select 
-                      className="form-control"
-                      value={expenseSource}
-                      onChange={(e) => setExpenseSource(e.target.value)}
-                    >
-                      <option value="Naqd">Naqd kassa</option>
-                      <option value="Bank perech">Bank hisob raqami</option>
-                    </select>
-                  </div>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Manba</label>
+                  <select
+                    value={expenseSource}
+                    onChange={(e) => setExpenseSource(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  >
+                    <option value="Naqd">Naqd kassa</option>
+                    <option value="Karta">Plastik karta</option>
+                    <option value="Bank perech">Bank hisob</option>
+                  </select>
                 </div>
               </div>
 
-              <div className="modal-footer">
-                <button type="button" className="btn btn-secondary" onClick={() => setShowExpenseModal(false)}>
+              <div style={{ display: 'flex', gap: '10px', marginTop: '6px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowExpenseModal(false)}
+                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', fontWeight: 700, cursor: 'pointer' }}
+                >
                   Bekor qilish
                 </button>
-                <button type="submit" className="btn btn-primary">
-                  Saqlash
+                <button
+                  type="submit"
+                  style={{ flex: 1, padding: '10px', borderRadius: '10px', border: 'none', background: '#dc2626', color: '#ffffff', fontWeight: 800, cursor: 'pointer' }}
+                >
+                  Chiqimni Saqlash
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
     </div>
   );
 }

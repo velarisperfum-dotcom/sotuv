@@ -100,12 +100,103 @@ export const INITIAL_STAFF = [
   }
 ];
 
-export const INITIAL_DEBTS = [];
-export const INITIAL_SALES = [];
-export const INITIAL_EXPENSES = [];
-export const INITIAL_BALANCES = {
-  cash: 0,
-  card: 0,
-  bank: 0
-};
+export const PAYMENT_METHODS = [
+  { id: 'cash', name: 'Naqd pul', icon: 'Banknote', color: '#10b981', badge: '💵 Naqd' },
+  { id: 'card', name: 'Plastik karta', icon: 'CreditCard', color: '#3b82f6', badge: '💳 Karta' },
+  { id: 'debt', name: 'Qarzga (Nasiya)', icon: 'Clock', color: '#f59e0b', badge: '📝 Qarzga' },
+  { id: 'bank', name: 'Bank o\'tkazmasi (Perech)', icon: 'Building2', color: '#8b5cf6', badge: '🏦 Bank perech' },
+  { id: 'salary_deduction', name: 'Oyligidan oldi (Xodim)', icon: 'UserCheck', color: '#ec4899', badge: '💼 Oyligidan' }
+];
+
+export const INITIAL_STOCK_TRANSFERS = [
+  {
+    id: 'trf-101',
+    transferNumber: 'KRM-00101',
+    productName: "Zara Slim Fit Klassik Ko'ylak",
+    category: "Ko'ylaklar",
+    quantity: 20,
+    unit: 'dona',
+    costPrice: 210000,
+    price: 320000,
+    supplier: 'Turkiya Tekstil MCHJ',
+    notes: 'Direktor tomonidan skladga partiya yuborildi',
+    createdAt: new Date(Date.now() - 3600000 * 5).toLocaleString('uz-UZ'),
+    createdBy: 'Direktor (Sardor Alimov)',
+    status: 'pending_warehouse' // Skladchi qabul qilishi kutilmoqda
+  },
+  {
+    id: 'trf-100',
+    transferNumber: 'KRM-00100',
+    productName: "Levi's 501 Original Jinsi Shim",
+    category: "Shim & Jinsi",
+    quantity: 15,
+    unit: 'dona',
+    costPrice: 390000,
+    price: 580000,
+    supplier: 'Denim Global Import',
+    notes: 'Yangi fasl kirimi',
+    createdAt: new Date(Date.now() - 3600000 * 24).toLocaleString('uz-UZ'),
+    createdBy: 'Direktor (Sardor Alimov)',
+    status: 'received', // Skladchi qabul qilib bo'lgan
+    receivedAt: new Date(Date.now() - 3600000 * 20).toLocaleString('uz-UZ'),
+    receivedBy: 'Bobur Rahimov (Sklad Mudiri)'
+  }
+];
+
+export const INITIAL_SELLER_ORDERS = [
+  {
+    id: 'ZAY-2001',
+    orderNumber: 'ZY-2001',
+    sellerId: 'emp-4',
+    sellerName: 'Jasur Qodirov',
+    sellerPhone: '+998 99 888 77 66',
+    customerName: 'Dilshod Ergashev',
+    customerPhone: '+998 90 123 45 67',
+    paymentMethod: 'bank', // Bank prislaniya
+    paymentDetails: 'Bank orqali to\'lov topshirig\'i (№4481)',
+    totalAmount: 960000,
+    items: [
+      { id: 'prd-clt-1', name: "Zara Slim Fit Klassik Ko'ylak", price: 320000, quantity: 3, unit: 'dona', total: 960000 }
+    ],
+    status: 'pending_accounting', // 1-bosqich: Buxgalter tekshiruvida
+    createdAt: new Date(Date.now() - 3600000 * 2).toLocaleString('uz-UZ')
+  },
+  {
+    id: 'ZAY-2002',
+    orderNumber: 'ZY-2002',
+    sellerId: 'emp-5',
+    sellerName: 'Nilufar Karimova',
+    sellerPhone: '+998 91 222 33 44',
+    customerName: 'Shaxzoda Usmanova',
+    customerPhone: '+998 97 765 43 21',
+    paymentMethod: 'card', // Karta
+    paymentDetails: 'Terminal orqali to\'liq to\'landi',
+    totalAmount: 1160000,
+    items: [
+      { id: 'prd-clt-2', name: "Levi's 501 Original Jinsi Shim", price: 580000, quantity: 2, unit: 'dona', total: 1160000 }
+    ],
+    status: 'approved_accounting', // 2-bosqich: Buxgalter tasdiqlagan, Skladchida otgruzka kutilmoqda!
+    createdAt: new Date(Date.now() - 3600000 * 4).toLocaleString('uz-UZ'),
+    accountingApprovedAt: new Date(Date.now() - 3600000 * 3).toLocaleString('uz-UZ')
+  },
+  {
+    id: 'ZAY-2003',
+    orderNumber: 'ZY-2003',
+    sellerId: 'emp-4',
+    sellerName: 'Jasur Qodirov',
+    sellerPhone: '+998 99 888 77 66',
+    customerName: 'Akmal Zokirov',
+    customerPhone: '+998 99 876 54 32',
+    paymentMethod: 'debt', // Qarzga / Nasiya
+    paymentDetails: '15 kunga nasiyaga berildi, buxgalter tasdiqlagan',
+    totalAmount: 640000,
+    items: [
+      { id: 'prd-clt-1', name: "Zara Slim Fit Klassik Ko'ylak", price: 320000, quantity: 2, unit: 'dona', total: 640000 }
+    ],
+    status: 'dispatched_warehouse', // 3-bosqich: Skladchi tovarlarni bergan va skladdan yechilgan!
+    createdAt: new Date(Date.now() - 3600000 * 10).toLocaleString('uz-UZ'),
+    accountingApprovedAt: new Date(Date.now() - 3600000 * 9).toLocaleString('uz-UZ'),
+    dispatchedAt: new Date(Date.now() - 3600000 * 8).toLocaleString('uz-UZ')
+  }
+];
 

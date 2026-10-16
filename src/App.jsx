@@ -5,12 +5,15 @@ import POSCashier from './components/POSCashier';
 import WarehouseView from './components/WarehouseView';
 import AccountingView from './components/AccountingView';
 import DirectorDashboard from './components/DirectorDashboard';
+import SellerMobileView from './components/SellerMobileView';
 import ReceiptModal from './components/ReceiptModal';
 import MobileNav from './components/MobileNav';
 import SellersView from './components/SellersView';
 import CustomerReceiptView from './components/CustomerReceiptView';
 import StoreOnboardingAuth from './components/StoreOnboardingAuth';
 import StoreSettingsModal from './components/StoreSettingsModal';
+import { Smartphone, X, CheckCircle2 } from 'lucide-react';
+
 import { getSampleProductsForIndustry } from './data/industryProducts';
 import { getIndustryById } from './data/industriesData';
 
@@ -21,7 +24,9 @@ import {
   INITIAL_SALES, 
   INITIAL_EXPENSES, 
   INITIAL_BALANCES,
-  INITIAL_CUSTOMERS
+  INITIAL_CUSTOMERS,
+  INITIAL_STOCK_TRANSFERS,
+  INITIAL_SELLER_ORDERS
 } from './data/initialData';
 
 import { 
@@ -46,17 +51,9 @@ export default function App() {
     }
   });
 
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(() => {
-    // Agar foydalanuvchi birinchi marta kirayotgan bo'lsa (sessiya bo'lmasa), onboarding ochiladi!
-    try {
-      const saved = localStorage.getItem('savdo_current_session');
-      return !saved;
-    } catch {
-      return true;
-    }
-  });
-
+  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
   const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
+  const [isPwaModalOpen, setIsPwaModalOpen] = useState(false);
 
   // Store Mode (Savdo sohasi)
   const [storeMode, setStoreMode] = useState(() => {
@@ -65,98 +62,115 @@ export default function App() {
       if (session?.industryId) return session.industryId;
     } catch {}
     const saved = localStorage.getItem('billz_store_mode');
-    return saved || 'universal';
+    return saved || 'clothing';
   });
 
-  // Persistence with LocalStorage + Server sync
+  // 1. PRODUCTS (Sklad Qoldiqlari)
   const [products, setProducts] = useState(() => {
     try {
-      // Bir martalik tozalash: agar eski aralashgan parfyum tovarlari qolib ketgan bo'lsa
-      if (!localStorage.getItem('billz_store_cleaned_v2')) {
-        localStorage.removeItem('billz_products_v4');
-        localStorage.removeItem('blizz_products');
-        localStorage.removeItem('billz_products_electronics');
-        localStorage.removeItem('billz_products_clothing');
-        localStorage.removeItem('billz_products_universal');
-        localStorage.setItem('billz_store_cleaned_v2', 'true');
-        return [];
-      }
-
       const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
-      const activeIndustry = session?.industryId || localStorage.getItem('billz_store_mode') || 'universal';
+      const activeIndustry = session?.industryId || localStorage.getItem('billz_store_mode') || 'clothing';
       const savedInd = localStorage.getItem(`billz_products_${activeIndustry}`);
       if (savedInd) {
         const parsed = JSON.parse(savedInd);
-        // Agar bu parfyum bo'lmagan soha bo'lsa, ichida parfyum tovarlari aralashib qolgan bo'lsa tozalaymiz
-        if (activeIndustry !== 'perfume') {
-          return parsed.filter(p => !p.id?.startsWith('prd-') || p.productType === activeIndustry);
-        }
-        return parsed;
+        if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-      return [];
+      return getSampleProductsForIndustry(activeIndustry);
+    } catch {
+      return getSampleProductsForIndustry('clothing');
+    }
+  });
+
+  // 2. STOCK TRANSFERS (Direktor skladga yuborgan perexodlar / kirimlar)
+  const [stockTransfers, setStockTransfers] = useState(() => {
+    try {
+      const saved = localStorage.getItem('savdo_stock_transfers');
+      return saved ? JSON.parse(saved) : INITIAL_STOCK_TRANSFERS;
+    } catch {
+      return INITIAL_STOCK_TRANSFERS;
+    }
+  });
+
+  // 3. SELLER ORDERS (Sotuvchilar telefondan yuborgan zayavkalar)
+  const [orders, setOrders] = useState(() => {
+    try {
+      const saved = localStorage.getItem('savdo_seller_orders');
+      return saved ? JSON.parse(saved) : INITIAL_SELLER_ORDERS;
+    } catch {
+      return INITIAL_SELLER_ORDERS;
+    }
+  });
+
+  // 4. BALANCES (Kassa, Karta, Bank)
+  const [balances, setBalances] = useState(() => {
+    try {
+      const saved = localStorage.getItem('billz_balances');
+      return saved ? JSON.parse(saved) : { cash: 12500000, card: 8400000, bank: 34500000 };
+    } catch {
+      return { cash: 12500000, card: 8400000, bank: 34500000 };
+    }
+  });
+
+  // 5. DEBTS (Nasiyalar daftari)
+  const [debts, setDebts] = useState(() => {
+    try {
+      const saved = localStorage.getItem('billz_debts');
+      return saved ? JSON.parse(saved) : [
+        {
+          id: 'd-1',
+          customerName: 'Akmal Zokirov',
+          customerPhone: '+998 99 876 54 32',
+          totalDebt: 640000,
+          remainingAmount: 640000,
+          dueDate: '2026-10-30',
+          date: '2026-10-16',
+          status: 'pending'
+        }
+      ];
     } catch {
       return [];
     }
   });
 
+  // 6. CUSTOMERS
   const [customers, setCustomers] = useState(() => {
     const saved = localStorage.getItem('billz_customers');
     return saved ? JSON.parse(saved) : INITIAL_CUSTOMERS;
   });
 
-  const [sales, setSales] = useState(() => {
-    try {
-      // Bir martalik tozalash: agar eski parfyum savdolari qolgan bo'lsa
-      if (!localStorage.getItem('billz_sales_isolated_v3')) {
-        localStorage.removeItem('blizz_sales');
-        localStorage.removeItem('blizz_balances');
-        localStorage.removeItem('blizz_debts');
-        localStorage.removeItem('blizz_expenses');
-        localStorage.setItem('billz_sales_isolated_v3', 'true');
-        return [];
-      }
-      const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
-      const activeIndustry = session?.industryId || localStorage.getItem('billz_store_mode') || 'universal';
-      const saved = localStorage.getItem(`billz_sales_${activeIndustry}`);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
-  const [balances, setBalances] = useState(() => {
-    try {
-      const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
-      const activeIndustry = session?.industryId || localStorage.getItem('billz_store_mode') || 'universal';
-      const saved = localStorage.getItem(`billz_balances_${activeIndustry}`);
-      return saved ? JSON.parse(saved) : { cash: 0, card: 0, bank: 0 };
-    } catch {
-      return { cash: 0, card: 0, bank: 0 };
-    }
-  });
-
-  const [debts, setDebts] = useState(() => {
-    try {
-      const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
-      const activeIndustry = session?.industryId || localStorage.getItem('billz_store_mode') || 'universal';
-      const saved = localStorage.getItem(`billz_debts_${activeIndustry}`);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
-
+  // 7. STAFF (Xodimlar)
   const [staff, setStaff] = useState(() => {
     const saved = localStorage.getItem('blizz_staff');
     return saved ? JSON.parse(saved) : INITIAL_STAFF;
   });
 
+  // 8. EXPENSES (Xarajatlar)
   const [expenses, setExpenses] = useState(() => {
     try {
-      const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
-      const activeIndustry = session?.industryId || localStorage.getItem('billz_store_mode') || 'universal';
-      const saved = localStorage.getItem(`billz_expenses_${activeIndustry}`);
-      return saved ? JSON.parse(saved) : [];
+      const saved = localStorage.getItem('billz_expenses');
+      return saved ? JSON.parse(saved) : [
+        { id: 'exp-1', title: 'Do\'kon oylik ijarasi', amount: 3500000, category: 'Ijara', source: 'Bank perech', date: '2026-10-01' }
+      ];
+    } catch {
+      return [];
+    }
+  });
+
+  // 9. SALES (Tarix va cheklar)
+  const [sales, setSales] = useState(() => {
+    try {
+      const saved = localStorage.getItem('billz_sales');
+      return saved ? JSON.parse(saved) : [
+        {
+          id: 'SL-1001',
+          date: '2026-10-16 09:30:00',
+          cashierName: 'Jasur Qodirov',
+          customer: 'Akmal Zokirov',
+          paymentMethod: 'Qarz',
+          total: 640000,
+          items: [{ id: 'prd-clt-1', name: "Zara Slim Fit Klassik Ko'ylak", quantity: 2, price: 320000 }]
+        }
+      ];
     } catch {
       return [];
     }
@@ -164,70 +178,67 @@ export default function App() {
 
   const [isServerConnected, setIsServerConnected] = useState(false);
 
-  // UI Navigation & Roles (Boshlang'ich sahifa - Sotuvchi Kassa POS)
-  const [currentRole, setCurrentRole] = useState('cashier'); // cashier, director, accountant, warehouse
-  const [currentView, setCurrentView] = useState('pos'); // pos, sellers, director, warehouse, accounting
+  // UI Navigation: 4 Ta Asosiy Rol
+  // 'director' | 'accounting' | 'warehouse' | 'seller_mobile' | 'pos' | 'sellers'
+  const [currentRole, setCurrentRole] = useState('director');
+  const [currentView, setCurrentView] = useState('director');
   const [activeReceiptSale, setActiveReceiptSale] = useState(null);
   const [customerReceiptSale, setCustomerReceiptSale] = useState(null);
 
-  // Dynamic Multi-Industry Theme engine
+  // Current active user
+  const currentUser = staff.find(s => s.role?.toLowerCase().includes(currentRole)) || staff[0];
+
+  // Dynamic Theme
   useEffect(() => {
     const indId = currentStoreSession?.industryId || storeMode || 'clothing';
     document.documentElement.setAttribute('data-industry', indId);
     document.body.setAttribute('data-industry', indId);
   }, [currentStoreSession, storeMode]);
 
-  // Initial fetch from Railway PostgreSQL backend
+  // Sync to LocalStorage
+  useEffect(() => {
+    const indId = currentStoreSession?.industryId || storeMode || 'clothing';
+    localStorage.setItem(`billz_products_${indId}`, JSON.stringify(products));
+  }, [products, currentStoreSession, storeMode]);
+
+  useEffect(() => {
+    localStorage.setItem('savdo_stock_transfers', JSON.stringify(stockTransfers));
+  }, [stockTransfers]);
+
+  useEffect(() => {
+    localStorage.setItem('savdo_seller_orders', JSON.stringify(orders));
+  }, [orders]);
+
+  useEffect(() => {
+    localStorage.setItem('billz_balances', JSON.stringify(balances));
+  }, [balances]);
+
+  useEffect(() => {
+    localStorage.setItem('billz_debts', JSON.stringify(debts));
+  }, [debts]);
+
+  useEffect(() => {
+    localStorage.setItem('billz_sales', JSON.stringify(sales));
+  }, [sales]);
+
+  useEffect(() => {
+    localStorage.setItem('blizz_staff', JSON.stringify(staff));
+  }, [staff]);
+
+  useEffect(() => {
+    localStorage.setItem('billz_expenses', JSON.stringify(expenses));
+  }, [expenses]);
+
+  // Initial fetch from backend if available
   useEffect(() => {
     fetchAllServerData().then(serverData => {
       if (serverData) {
         setIsServerConnected(true);
-        try {
-          const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
-          const currentMode = session?.industryId || localStorage.getItem('billz_store_mode') || 'universal';
-
-          if (serverData.products && serverData.products.length > 0) {
-            // Faqat va faqat joriy do'konga tegishli tovarlar qabul qilinadi!
-            // Boshqa soha do'konlariga parfyumeriya tovarlari aslo tushmaydi!
-            if (currentMode === 'perfume') {
-              const perfumeOnly = serverData.products.filter(p => 
-                p.productType === 'perfume' || p.category === 'Erkaklar' || p.category === 'Ayollar' || p.category === 'Unisex'
-              );
-              if (perfumeOnly.length > 0 && products.length === 0) {
-                setProducts(perfumeOnly);
-              }
-            } else {
-              // Boshqa barcha sohalar uchun faqat shu sohaga tegishlilari:
-              const matching = serverData.products.filter(p => 
-                p.productType === currentMode || (p.storeId && p.storeId === session?.id)
-              );
-              if (matching.length > 0) {
-                setProducts(matching);
-              }
-            }
-          }
-
-          // Faqat parfyumeriya do'koni bo'lsa serverdagi eski parfyumeriya savdolarini yuklash:
-          if (currentMode === 'perfume') {
-            if (serverData.sales && serverData.sales.length > 0) setSales(serverData.sales);
-            if (serverData.balances) setBalances(serverData.balances);
-            if (serverData.debts) setDebts(serverData.debts);
-            if (serverData.expenses) setExpenses(serverData.expenses);
-          } else {
-            // Boshqa barcha sohalar (Maishiy texnika, kiyim-kechak, elektronika va h.k.) uchun:
-            // Faqat shu do'konga tegishli savdolar yuklanadi, parfyumeriya ma'lumotlari aslo tushmaydi!
-            const storeSales = (serverData.sales || []).filter(s => s.storeId && s.storeId === session?.id);
-            if (storeSales.length > 0) setSales(storeSales);
-          }
-          if (serverData.staff) setStaff(serverData.staff);
-        } catch (e) {
-          console.error('Server data filter error:', e);
-        }
       }
     });
   }, []);
 
-  // Handle QR Code Scan: agar QR-kod skaner qilingan bo'lsa, FAQAT CHEKNING O'ZI ochiladi!
+  // Check URL params for QR receipt
   useEffect(() => {
     try {
       const urlParams = new URLSearchParams(window.location.search);
@@ -236,340 +247,238 @@ export default function App() {
         const found = sales.find(s => s.id === receiptId);
         if (found) {
           setCustomerReceiptSale({ ...found, isVerifiedOnline: true });
-          return;
         }
-
-        const totalParam = Number(urlParams.get('total')) || 0;
-        const dateParam = urlParams.get('date') || new Date().toLocaleString('uz-UZ');
-        const cashierParam = urlParams.get('cashier') || 'Sotuvchi-kassir';
-        const methodParam = urlParams.get('method') || 'Karta';
-        const customerParam = urlParams.get('customer') || '';
-        const rawItemsParam = urlParams.get('items');
-
-        let parsedItems = [];
-        if (rawItemsParam) {
-          try {
-            const decodedStr = decodeURIComponent(rawItemsParam);
-            if (decodedStr.includes('|')) {
-              parsedItems = decodedStr.split('~').map(part => {
-                const [name, volume, quantity, price] = part.split('|');
-                return {
-                  name: name || 'Mahsulot',
-                  volume: volume || '',
-                  quantity: Number(quantity) || 1,
-                  price: Number(price) || totalParam
-                };
-              });
-            } else {
-              parsedItems = JSON.parse(decodedStr);
-            }
-          } catch {
-            parsedItems = [{ name: 'Mahsulot', quantity: 1, price: totalParam }];
-          }
-        } else {
-          parsedItems = [{ name: 'Mahsulot', quantity: 1, price: totalParam }];
-        }
-
-        setCustomerReceiptSale({
-          id: receiptId,
-          date: decodeURIComponent(dateParam),
-          cashierName: decodeURIComponent(cashierParam),
-          total: totalParam,
-          paymentMethod: decodeURIComponent(methodParam),
-          customer: customerParam ? decodeURIComponent(customerParam) : null,
-          items: parsedItems,
-          isVerifiedOnline: true
-        });
       }
-    } catch (err) {
-      console.error('URL receipt check error:', err);
-    }
+    } catch {}
   }, [sales]);
 
-  // Sync to localStorage strictly per active store industry
-  useEffect(() => {
-    const indId = currentStoreSession?.industryId || storeMode || 'universal';
-    localStorage.setItem(`billz_products_${indId}`, JSON.stringify(products));
-  }, [products, currentStoreSession, storeMode]);
+  // ==========================================
+  // BIZNES JARAYON ZANJIRI HANDLERLARI (WORKFLOW)
+  // ==========================================
 
-  useEffect(() => {
-    localStorage.setItem('billz_customers', JSON.stringify(customers));
-  }, [customers]);
+  // 1. DIREKTOR -> SKLADGA PEREHOD (KIRIM) YUBORISH
+  const handleCreateTransfer = (newTransfer) => {
+    setStockTransfers(prev => [newTransfer, ...prev]);
+    alert("Kirim partiyasi muvaffaqiyatli jo'natildi! Tovar Skladchining qabul qilish navbatiga o'tdi.");
+  };
 
-  useEffect(() => {
-    localStorage.setItem('billz_store_mode', storeMode);
-  }, [storeMode]);
+  // 2. SKLADCHI -> TOVARNI "QABUL QILDIM" (SKLAD BALANSIGA QO'SHISH)
+  const handleReceiveTransfer = (transferId) => {
+    const transfer = stockTransfers.find(t => t.id === transferId);
+    if (!transfer) return;
 
-  useEffect(() => {
-    const indId = currentStoreSession?.industryId || storeMode || 'universal';
-    localStorage.setItem(`billz_sales_${indId}`, JSON.stringify(sales));
-  }, [sales, currentStoreSession, storeMode]);
-
-  useEffect(() => {
-    const indId = currentStoreSession?.industryId || storeMode || 'universal';
-    localStorage.setItem(`billz_balances_${indId}`, JSON.stringify(balances));
-  }, [balances, currentStoreSession, storeMode]);
-
-  useEffect(() => {
-    const indId = currentStoreSession?.industryId || storeMode || 'universal';
-    localStorage.setItem(`billz_debts_${indId}`, JSON.stringify(debts));
-  }, [debts, currentStoreSession, storeMode]);
-
-  useEffect(() => {
-    const indId = currentStoreSession?.industryId || storeMode || 'universal';
-    localStorage.setItem(`billz_expenses_${indId}`, JSON.stringify(expenses));
-  }, [expenses, currentStoreSession, storeMode]);
-
-  useEffect(() => {
-    localStorage.setItem('blizz_staff', JSON.stringify(staff));
-  }, [staff]);
-
-  useEffect(() => {
-    localStorage.setItem('blizz_expenses', JSON.stringify(expenses));
-  }, [expenses]);
-
-  // Current active staff object
-  const currentUser = (staff || []).find(s => {
-    if (!s) return false;
-    if (currentRole === 'director') return s.role === 'Direktor';
-    if (currentRole === 'accountant') return s.role === 'Bosh Buxgalter';
-    if (currentRole === 'warehouse') return s.role === 'Sklad Mudiri';
-    return s?.role && typeof s.role === 'string' && s.role.includes('Sotuvchi');
-  }) || (staff && staff[0]) || { name: 'Admin', role: 'Direktor' };
-
-  // Sale completion handler
-  const handleCompleteSale = (newSale) => {
-    // 1. Update stock in warehouse
+    // Sklad qoldig'iga tovar qo'shish
     setProducts(prevProducts => {
-      return prevProducts.map(p => {
-        const soldItem = newSale.items.find(item => item.id === p.id);
-        if (soldItem) {
-          const updatedStock = Math.max(0, p.stock - soldItem.quantity);
-          return { ...p, stock: updatedStock };
-        }
-        return p;
-      });
+      const existing = prevProducts.find(p => 
+        (p.name || '').toLowerCase() === (transfer.productName || '').toLowerCase()
+      );
+
+      if (existing) {
+        return prevProducts.map(p => 
+          p.id === existing.id 
+            ? { ...p, stock: (p.stock || 0) + Number(transfer.quantity || 0) }
+            : p
+        );
+      } else {
+        const newProduct = {
+          id: `prd-${Date.now()}`,
+          name: transfer.productName,
+          category: transfer.category || 'Umumiy',
+          unit: transfer.unit || 'dona',
+          costPrice: Number(transfer.costPrice) || 0,
+          price: Number(transfer.price) || (Number(transfer.costPrice) * 1.3),
+          stock: Number(transfer.quantity) || 0,
+          minStock: 3,
+          barcode: `${Math.floor(1000000000 + Math.random() * 9000000000)}`
+        };
+        return [newProduct, ...prevProducts];
+      }
     });
 
-    // 2. Update balances based on payment breakdown
-    setBalances(prev => {
-      const breakdown = newSale.paymentBreakdown || {};
-      const newCash = prev.cash + (breakdown.cash || 0);
-      const newCard = prev.card + (breakdown.card || 0);
-      const newBank = prev.bank + (breakdown.bank || 0);
-      return { cash: newCash, card: newCard, bank: newBank };
-    });
+    // Transfer statusini yangilash
+    setStockTransfers(prev => prev.map(t => 
+      t.id === transferId 
+        ? { 
+            ...t, 
+            status: 'received', 
+            receivedAt: new Date().toLocaleString('uz-UZ'),
+            receivedBy: 'Bobur Rahimov (Sklad Mudiri)'
+          }
+        : t
+    ));
 
-    // 3. If debt, add to debts registry
-    if (newSale.paymentMethod === 'Qarz' && newSale.debtDetails) {
-      const newDebtItem = {
-        id: `dbt-${Date.now()}`,
-        customerName: newSale.customer || 'Noma’lum mijoz',
-        phone: newSale.customerPhone || '—',
-        productSummary: newSale.items.map(i => `${i.name} (${i.quantity}x)`).join(', '),
-        totalAmount: newSale.total,
-        paidAmount: newSale.debtDetails.paidAmount || 0,
-        remainingAmount: newSale.debtDetails.remainingAmount,
-        dueDate: newSale.debtDetails.dueDate,
-        createdAt: new Date().toISOString().split('T')[0],
-        status: 'Faol'
+    alert(`"${transfer.productName}" tovari (+${transfer.quantity} ${transfer.unit}) rasman skladga qabul qilindi!`);
+  };
+
+  // 3. SOTUVCHI -> BUXGALTERGA ZAYAVKA (ZAKAZ) YUBORISH
+  const handleCreateSellerOrder = (newOrder) => {
+    setOrders(prev => [newOrder, ...prev]);
+  };
+
+  // 4. BUXGALTER -> ZAYAVKANI TASDIQLASH (VA SKLADGA YUBORISH)
+  const handleApproveOrder = (orderId) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
+
+    // To'lov turiga qarab balanslarni yangilash
+    const amount = Number(order.totalAmount || 0);
+
+    if (order.paymentMethod === 'cash') {
+      setBalances(prev => ({ ...prev, cash: (prev.cash || 0) + amount }));
+    } else if (order.paymentMethod === 'card') {
+      setBalances(prev => ({ ...prev, card: (prev.card || 0) + amount }));
+    } else if (order.paymentMethod === 'bank') {
+      setBalances(prev => ({ ...prev, bank: (prev.bank || 0) + amount }));
+    } else if (order.paymentMethod === 'debt') {
+      // Qarz daftariga yozish
+      const newDebt = {
+        id: `debt-${Date.now()}`,
+        customerName: order.customerName,
+        customerPhone: order.customerPhone,
+        totalDebt: amount,
+        remainingAmount: amount,
+        date: new Date().toISOString().split('T')[0],
+        dueDate: '15 kun ichida',
+        orderId: order.id,
+        notes: `Zayavka ${order.orderNumber} bo'yicha nasiya`
       };
-      setDebts(prev => [newDebtItem, ...prev]);
-    }
-
-    // 4. Prepend to sales
-    setSales(prev => [newSale, ...prev]);
-
-    // Asynchronously sync with Railway backend
-    postSaleToServer(newSale);
-
-    // 5. Open receipt modal
-    setActiveReceiptSale(newSale);
-  };
-
-  // Pay Debt handler
-  const handlePayDebt = (debtId, amount, payMethod) => {
-    let updatedDebtObj = null;
-    setDebts(prev => prev.map(d => {
-      if (d.id === debtId) {
-        const updatedPaid = d.paidAmount + amount;
-        const updatedRemaining = Math.max(0, d.totalAmount - updatedPaid);
-        updatedDebtObj = {
-          ...d,
-          paidAmount: updatedPaid,
-          remainingAmount: updatedRemaining,
-          status: updatedRemaining === 0 ? 'To\'langan' : d.status
-        };
-        return updatedDebtObj;
-      }
-      return d;
-    }));
-
-    if (updatedDebtObj) {
-      updateDebtOnServer(updatedDebtObj);
-    }
-
-    // Update balances
-    setBalances(prev => {
-      const nextBalances = { ...prev };
-      if (payMethod === 'Naqd') nextBalances.cash += amount;
-      if (payMethod === 'Karta') nextBalances.card += amount;
-      if (payMethod === 'Bank perech') nextBalances.bank += amount;
-      updateBalancesOnServer(nextBalances);
-      return nextBalances;
-    });
-  };
-
-  // Pay Salary handler
-  const handlePaySalary = (staffId, amount, source) => {
-    setStaff(prev => prev.map(s => {
-      if (s.id === staffId) {
-        const updatedPaid = (s.paidThisMonth || 0) + amount;
-        const isFull = updatedPaid >= s.baseSalary;
-        return {
-          ...s,
-          paidThisMonth: updatedPaid,
-          status: isFull ? 'To\'langan' : 'Qisman to\'langan'
-        };
-      }
-      return s;
-    }));
-
-    // Deduct from balance
-    setBalances(prev => {
-      const next = { ...prev };
-      if (source === 'Naqd') {
-        next.cash = Math.max(0, next.cash - amount);
-      } else {
-        next.bank = Math.max(0, next.bank - amount);
-      }
-      updateBalancesOnServer(next);
-      return next;
-    });
-  };
-
-  // Add Expense handler
-  const handleAddExpense = (expense) => {
-    setExpenses(prev => [expense, ...prev]);
-    postExpenseToServer(expense);
-
-    setBalances(prev => {
-      const next = { ...prev };
-      if (expense.source === 'Naqd') {
-        next.cash = Math.max(0, next.cash - expense.amount);
-      } else {
-        next.bank = Math.max(0, next.bank - expense.amount);
-      }
-      updateBalancesOnServer(next);
-      return next;
-    });
-  };
-
-  // Warehouse product actions
-  const handleAddProduct = (newProd) => {
-    setProducts(prev => [newProd, ...prev]);
-    postProductToServer(newProd);
-  };
-
-  const handleBatchAddProducts = (newProductsList) => {
-    if (!Array.isArray(newProductsList) || newProductsList.length === 0) return;
-    setProducts(prev => [...newProductsList, ...prev]);
-    newProductsList.forEach(p => postProductToServer(p));
-  };
-
-  const handleUpdateProduct = (updatedProd) => {
-    setProducts(prev => prev.map(p => p.id === updatedProd.id ? updatedProd : p));
-    updateProductOnServer(updatedProd);
-  };
-
-  const handleDeleteProduct = (prodId) => {
-    setProducts(prev => prev.filter(p => p.id !== prodId));
-    deleteProductOnServer(prodId);
-  };
-
-  const handleClearAllProducts = () => {
-    const indId = currentStoreSession?.industryId || storeMode || 'universal';
-    setProducts([]);
-    localStorage.removeItem(`billz_products_${indId}`);
-    localStorage.removeItem('billz_products_v4');
-    localStorage.removeItem('blizz_products');
-  };
-
-  const lowStockCount = products.filter(p => p.stock <= (p.minStock || 3)).length;
-  const pendingDebtsCount = debts.filter(d => d.remainingAmount > 0).length;
-
-  // Onboarding & Login Handlers
-  const handleCompleteOnboarding = (sessionData) => {
-    setCurrentStoreSession(sessionData);
-    const indId = sessionData.industryId || 'universal';
-    setStoreMode(indId);
-    localStorage.setItem('billz_store_mode', indId);
-
-    // Yangi soha tanlanganda unga xos tovarlar va toza moliyaviy hisobot yuklanadi
-    const sampleProds = getSampleProductsForIndustry(indId);
-    setProducts(sampleProds);
-    localStorage.setItem(`billz_products_${indId}`, JSON.stringify(sampleProds));
-
-    const savedSales = localStorage.getItem(`billz_sales_${indId}`);
-    setSales(savedSales ? JSON.parse(savedSales) : []);
-    const savedBalances = localStorage.getItem(`billz_balances_${indId}`);
-    setBalances(savedBalances ? JSON.parse(savedBalances) : { cash: 0, card: 0, bank: 0 });
-    const savedDebts = localStorage.getItem(`billz_debts_${indId}`);
-    setDebts(savedDebts ? JSON.parse(savedDebts) : []);
-    const savedExpenses = localStorage.getItem(`billz_expenses_${indId}`);
-    setExpenses(savedExpenses ? JSON.parse(savedExpenses) : []);
-
-    setIsAuthModalOpen(false);
-
-    if (sessionData.directorName) {
+      setDebts(prev => [newDebt, ...prev]);
+    } else if (order.paymentMethod === 'salary_deduction') {
+      // Xodim oyligidan chegirib qolish
       setStaff(prev => prev.map(s => {
-        if (s.role === 'Direktor') {
-          return { ...s, name: sessionData.directorName, phone: sessionData.phone || s.phone };
+        if (s.name === order.sellerName || s.id === order.sellerId) {
+          return { ...s, paidThisMonth: (s.paidThisMonth || 0) + amount };
         }
         return s;
       }));
     }
+
+    // Zakaz statusini 'approved_accounting' ga o'tkazish (Skladchiga yo'naltirish)
+    setOrders(prev => prev.map(o => 
+      o.id === orderId 
+        ? { 
+            ...o, 
+            status: 'approved_accounting', 
+            accountingApprovedAt: new Date().toLocaleString('uz-UZ') 
+          }
+        : o
+    ));
+
+    alert(`Zayavka (${order.orderNumber}) to'lovi tasdiqlandi va Skladchiga otgruzka uchun yuborildi!`);
   };
 
-  const handleLoginSuccess = (sessionData) => {
-    setCurrentStoreSession(sessionData);
-    const indId = sessionData.industryId || 'universal';
-    setStoreMode(indId);
-    localStorage.setItem('billz_store_mode', indId);
-
-    const savedProds = localStorage.getItem(`billz_products_${indId}`);
-    setProducts(savedProds ? JSON.parse(savedProds) : getSampleProductsForIndustry(indId));
-    
-    const savedSales = localStorage.getItem(`billz_sales_${indId}`);
-    setSales(savedSales ? JSON.parse(savedSales) : []);
-    const savedBalances = localStorage.getItem(`billz_balances_${indId}`);
-    setBalances(savedBalances ? JSON.parse(savedBalances) : { cash: 0, card: 0, bank: 0 });
-    const savedDebts = localStorage.getItem(`billz_debts_${indId}`);
-    setDebts(savedDebts ? JSON.parse(savedDebts) : []);
-    const savedExpenses = localStorage.getItem(`billz_expenses_${indId}`);
-    setExpenses(savedExpenses ? JSON.parse(savedExpenses) : []);
-
-    setIsAuthModalOpen(false);
+  // 5. BUXGALTER -> ZAYAVKANI RAD ETISH
+  const handleRejectOrder = (orderId, reason) => {
+    setOrders(prev => prev.map(o => 
+      o.id === orderId 
+        ? { ...o, status: 'rejected_accounting', rejectionReason: reason }
+        : o
+    ));
   };
 
-  // Do'kon sohasini almashtirish: katalog va savdolar ham o'sha sohaga mos yangilanadi
-  const handleSelectStoreMode = (mode) => {
-    setStoreMode(mode);
-    localStorage.setItem('billz_store_mode', mode);
-    const savedProds = localStorage.getItem(`billz_products_${mode}`);
-    setProducts(savedProds ? JSON.parse(savedProds) : getSampleProductsForIndustry(mode));
+  // 6. SKLADCHI -> TOVARLARNI SOTUVCHIGA BERISH (VA SKLADDAN YECHISH!)
+  const handleDispatchOrder = (orderId) => {
+    const order = orders.find(o => o.id === orderId);
+    if (!order) return;
 
-    const savedSales = localStorage.getItem(`billz_sales_${mode}`);
-    setSales(savedSales ? JSON.parse(savedSales) : []);
-    const savedBalances = localStorage.getItem(`billz_balances_${mode}`);
-    setBalances(savedBalances ? JSON.parse(savedBalances) : { cash: 0, card: 0, bank: 0 });
-    const savedDebts = localStorage.getItem(`billz_debts_${mode}`);
-    setDebts(savedDebts ? JSON.parse(savedDebts) : []);
-    const savedExpenses = localStorage.getItem(`billz_expenses_${mode}`);
-    setExpenses(savedExpenses ? JSON.parse(savedExpenses) : []);
+    // AYAN SHU PAYTDA SKLADDAN TOVAR YECHILADI!
+    setProducts(prevProducts => {
+      const updated = [...prevProducts];
+      order.items?.forEach(item => {
+        const prodIndex = updated.findIndex(p => p.id === item.id || p.name === item.name);
+        if (prodIndex !== -1) {
+          const currentStock = updated[prodIndex].stock || 0;
+          updated[prodIndex] = {
+            ...updated[prodIndex],
+            stock: Math.max(0, currentStock - Number(item.quantity || 1))
+          };
+        }
+      });
+      return updated;
+    });
+
+    // Zakaz statusini 'dispatched_warehouse' ga o'tkazish
+    const dispatchedDate = new Date().toLocaleString('uz-UZ');
+    setOrders(prev => prev.map(o => 
+      o.id === orderId 
+        ? { ...o, status: 'dispatched_warehouse', dispatchedAt: dispatchedDate }
+        : o
+    ));
+
+    // Savdolar va cheklar ro'yxatiga qo'shish
+    const newSale = {
+      id: order.id,
+      orderNumber: order.orderNumber,
+      date: dispatchedDate,
+      cashierName: order.sellerName,
+      customer: order.customerName,
+      paymentMethod: order.paymentMethod === 'cash' ? 'Naqd' :
+                     order.paymentMethod === 'card' ? 'Karta' :
+                     order.paymentMethod === 'bank' ? 'Bank perech' :
+                     order.paymentMethod === 'debt' ? 'Qarz' : 'Oyligidan',
+      total: order.totalAmount,
+      items: order.items
+    };
+    setSales(prev => [newSale, ...prev]);
+
+    alert(`Zakaz (${order.orderNumber}) bo'yicha tovarlar sotuvchiga berildi va skladdan muvaffaqiyatli yechildi! ✅`);
   };
 
-  // AGAR QR-KOD SKANERLANGAN BO'LSA, FAQAT CHEKNING O'ZI CHIQSIN!
+  // Tovar qo'shish / tahrirlash / o'chirish
+  const handleAddProduct = (newProduct) => {
+    setProducts(prev => [newProduct, ...prev]);
+  };
+
+  const handleUpdateProduct = (updatedProduct) => {
+    setProducts(prev => prev.map(p => p.id === updatedProduct.id ? updatedProduct : p));
+  };
+
+  const handleDeleteProduct = (productId) => {
+    setProducts(prev => prev.filter(p => p.id !== productId));
+  };
+
+  // Kassa POS savdosi (Do'kondagi to'g'ridan-to'g'ri tezkor sotuv)
+  const handleCompleteSale = (saleData) => {
+    const newSale = {
+      ...saleData,
+      id: `SL-${Date.now().toString().slice(-4)}`,
+      date: new Date().toLocaleString('uz-UZ')
+    };
+    setSales(prev => [newSale, ...prev]);
+
+    // Skladdan yechish
+    setProducts(prevProducts => {
+      const updated = [...prevProducts];
+      newSale.items?.forEach(item => {
+        const prodIndex = updated.findIndex(p => p.id === item.id);
+        if (prodIndex !== -1) {
+          updated[prodIndex] = {
+            ...updated[prodIndex],
+            stock: Math.max(0, (updated[prodIndex].stock || 0) - (item.quantity || 1))
+          };
+        }
+      });
+      return updated;
+    });
+
+    // Balansga qo'shish
+    const total = Number(newSale.total || 0);
+    if (newSale.paymentMethod === 'Naqd') {
+      setBalances(prev => ({ ...prev, cash: (prev.cash || 0) + total }));
+    } else if (newSale.paymentMethod === 'Karta') {
+      setBalances(prev => ({ ...prev, card: (prev.card || 0) + total }));
+    }
+
+    setActiveReceiptSale(newSale);
+  };
+
+  // Counts for Badges
+  const lowStockCount = products.filter(p => (p.stock || 0) <= (p.minStock || 3)).length;
+  const pendingOrdersCount = orders.filter(o => o.status === 'pending_accounting').length;
+  const pendingTransfersCount = stockTransfers.filter(t => t.status === 'pending_warehouse').length;
+  const readyToDispatchCount = orders.filter(o => o.status === 'approved_accounting').length;
+
+  // Agar QR chek skaner qilingan bo'lsa
   if (customerReceiptSale) {
     return (
       <CustomerReceiptView 
@@ -592,12 +501,15 @@ export default function App() {
         currentView={currentView}
         onChangeView={(view) => setCurrentView(view)}
         lowStockCount={lowStockCount}
-        pendingDebtsCount={pendingDebtsCount}
+        pendingOrdersCount={pendingOrdersCount}
+        pendingTransfersCount={pendingTransfersCount}
+        readyToDispatchCount={readyToDispatchCount}
         storeMode={storeMode}
         currentStoreSession={currentStoreSession}
+        onOpenPwaModal={() => setIsPwaModalOpen(true)}
       />
 
-      {/* Main App Content Area */}
+      {/* Main Wrapper */}
       <div className="main-wrapper">
         <Header 
           currentRole={currentRole}
@@ -605,17 +517,98 @@ export default function App() {
           currentView={currentView}
           onChangeView={(view) => setCurrentView(view)}
           balances={balances}
-          lowStockCount={lowStockCount}
-          pendingDebtsCount={pendingDebtsCount}
           isServerConnected={isServerConnected}
+          pendingOrdersCount={pendingOrdersCount}
+          pendingTransfersCount={pendingTransfersCount}
+          readyToDispatchCount={readyToDispatchCount}
           storeMode={storeMode}
-          onSelectStoreMode={handleSelectStoreMode}
           currentStoreSession={currentStoreSession}
           onOpenSettings={() => setIsSettingsModalOpen(true)}
           onOpenAuth={() => setIsAuthModalOpen(true)}
+          onOpenPwaModal={() => setIsPwaModalOpen(true)}
         />
 
         <main style={{ flex: 1, minHeight: 'calc(100vh - 70px)' }}>
+          {/* 1. DIREKTOR BOSHQARUVI */}
+          {currentView === 'director' && (
+            <DirectorDashboard 
+              sales={sales}
+              products={products}
+              staff={staff}
+              balances={balances}
+              debts={debts}
+              expenses={expenses}
+              stockTransfers={stockTransfers}
+              orders={orders}
+              onCreateTransfer={handleCreateTransfer}
+              storeMode={storeMode}
+              onViewReceipt={(sale) => setActiveReceiptSale(sale)}
+              onChangeView={(view) => setCurrentView(view)}
+            />
+          )}
+
+          {/* 2. BUXGALTERIYA & TO'LOV NAZORATI */}
+          {currentView === 'accounting' && (
+            <AccountingView 
+              balances={balances}
+              debts={debts}
+              staff={staff}
+              expenses={expenses}
+              orders={orders}
+              sales={sales}
+              onApproveOrder={handleApproveOrder}
+              onRejectOrder={handleRejectOrder}
+              onPayDebt={(debtId, amount, method) => {
+                setDebts(prev => prev.map(d => d.id === debtId ? { ...d, remainingAmount: Math.max(0, d.remainingAmount - amount) } : d));
+                if (method === 'Naqd') setBalances(b => ({ ...b, cash: b.cash + amount }));
+                if (method === 'Karta') setBalances(b => ({ ...b, card: b.card + amount }));
+                if (method === 'Bank perech') setBalances(b => ({ ...b, bank: b.bank + amount }));
+              }}
+              onAddDebt={(d) => setDebts(prev => [d, ...prev])}
+              onPaySalary={(staffId, amount, source) => {
+                setStaff(prev => prev.map(s => s.id === staffId ? { ...s, paidThisMonth: (s.paidThisMonth || 0) + amount } : s));
+                if (source === 'Naqd') setBalances(b => ({ ...b, cash: Math.max(0, b.cash - amount) }));
+                if (source === 'Karta') setBalances(b => ({ ...b, card: Math.max(0, b.card - amount) }));
+                if (source === 'Bank perech') setBalances(b => ({ ...b, bank: Math.max(0, b.bank - amount) }));
+              }}
+              onAddExpense={(exp) => {
+                setExpenses(prev => [exp, ...prev]);
+                if (exp.source === 'Naqd') setBalances(b => ({ ...b, cash: Math.max(0, b.cash - exp.amount) }));
+                if (exp.source === 'Karta') setBalances(b => ({ ...b, card: Math.max(0, b.card - exp.amount) }));
+                if (exp.source === 'Bank perech') setBalances(b => ({ ...b, bank: Math.max(0, b.bank - exp.amount) }));
+              }}
+            />
+          )}
+
+          {/* 3. SKLADCHI & LOGISTIKA BOSHQARUVI */}
+          {currentView === 'warehouse' && (
+            <WarehouseView 
+              products={products}
+              stockTransfers={stockTransfers}
+              orders={orders}
+              onAddProduct={handleAddProduct}
+              onUpdateProduct={handleUpdateProduct}
+              onDeleteProduct={handleDeleteProduct}
+              onReceiveTransfer={handleReceiveTransfer}
+              onDispatchOrder={handleDispatchOrder}
+              storeMode={storeMode}
+            />
+          )}
+
+          {/* 4. SOTUVCHI MOBIL PROFILI (APK) */}
+          {currentView === 'seller_mobile' && (
+            <SellerMobileView 
+              products={products}
+              orders={orders}
+              staff={staff}
+              customers={customers}
+              onCreateOrder={handleCreateSellerOrder}
+              onOpenReceipt={(sale) => setActiveReceiptSale(sale)}
+              storeMode={storeMode}
+            />
+          )}
+
+          {/* 5. TEZKOR KASSA POS */}
           {currentView === 'pos' && (
             <div style={{ padding: '24px' }}>
               <POSCashier 
@@ -626,25 +619,12 @@ export default function App() {
                 onAddProduct={handleAddProduct}
                 customers={customers}
                 storeMode={storeMode}
-                onSelectStoreMode={handleSelectStoreMode}
+                onSelectStoreMode={(mode) => setStoreMode(mode)}
               />
             </div>
           )}
 
-          {currentView === 'director' && (
-            <DirectorDashboard 
-              sales={sales}
-              products={products}
-              staff={staff}
-              balances={balances}
-              debts={debts}
-              expenses={expenses}
-              storeMode={storeMode}
-              onViewReceipt={(sale) => setActiveReceiptSale(sale)}
-              onChangeView={(view) => setCurrentView(view)}
-            />
-          )}
-
+          {/* 6. XODIMLAR & SOTUVCHILAR JAMOASI */}
           {currentView === 'sellers' && (
             <SellersView 
               staff={staff}
@@ -653,45 +633,20 @@ export default function App() {
               onOpenPOS={() => setCurrentView('pos')}
             />
           )}
-
-          {currentView === 'warehouse' && (
-            <WarehouseView 
-              products={products}
-              onAddProduct={handleAddProduct}
-              onBatchAddProducts={handleBatchAddProducts}
-              onUpdateProduct={handleUpdateProduct}
-              onDeleteProduct={handleDeleteProduct}
-              onClearAllProducts={handleClearAllProducts}
-              storeMode={storeMode}
-              onSelectStoreMode={handleSelectStoreMode}
-            />
-          )}
-
-          {currentView === 'accounting' && (
-            <AccountingView 
-              balances={balances}
-              debts={debts}
-              staff={staff}
-              expenses={expenses}
-              sales={sales}
-              onPayDebt={handlePayDebt}
-              onAddDebt={(d) => setDebts(prev => [d, ...prev])}
-              onPaySalary={handlePaySalary}
-              onAddExpense={handleAddExpense}
-            />
-          )}
         </main>
       </div>
 
-      {/* Mobile Bottom Navigation Bar (Telefonlar uchun) */}
+      {/* Mobile Bottom Navigation */}
       <MobileNav 
         currentView={currentView}
         onChangeView={(view) => setCurrentView(view)}
         lowStockCount={lowStockCount}
-        pendingDebtsCount={pendingDebtsCount}
+        pendingOrdersCount={pendingOrdersCount}
+        pendingTransfersCount={pendingTransfersCount}
+        readyToDispatchCount={readyToDispatchCount}
       />
 
-      {/* Thermal receipt modal if any sale is open */}
+      {/* Thermal Receipt Modal */}
       {activeReceiptSale && (
         <ReceiptModal 
           sale={activeReceiptSale}
@@ -701,16 +656,7 @@ export default function App() {
         />
       )}
 
-      {/* Onboarding & Store Authentication Modal (24+ Savdo Tizimi & Shaxsiy Login/Parol) */}
-      {isAuthModalOpen && (
-        <StoreOnboardingAuth 
-          onCompleteOnboarding={handleCompleteOnboarding}
-          onLoginSuccess={handleLoginSuccess}
-          existingSession={currentStoreSession}
-        />
-      )}
-
-      {/* Do'kon Sozlamalari & Logo yuklash modali */}
+      {/* Store Settings Modal */}
       {isSettingsModalOpen && (
         <StoreSettingsModal 
           isOpen={isSettingsModalOpen}
@@ -719,9 +665,6 @@ export default function App() {
           onUpdateSession={(updated) => {
             setCurrentStoreSession(updated);
             localStorage.setItem('savdo_current_session', JSON.stringify(updated));
-            if (updated.directorName) {
-              setStaff(prev => prev.map(s => s.role === 'Direktor' ? { ...s, name: updated.directorName, phone: updated.phone || s.phone } : s));
-            }
           }}
           onOpenNewStoreOnboarding={() => {
             setIsSettingsModalOpen(false);
@@ -734,6 +677,55 @@ export default function App() {
             setIsAuthModalOpen(true);
           }}
         />
+      )}
+
+      {/* Global PWA / APK Modal */}
+      {isPwaModalOpen && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '440px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Smartphone size={22} style={{ color: '#4f46e5' }} />
+                <h3 style={{ margin: 0, fontSize: '18px', color: '#0f172a' }}>Ilovani Telefonga O'rnatish (APK)</h3>
+              </div>
+              <button onClick={() => setIsPwaModalOpen(false)} style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+                <X size={20} />
+              </button>
+            </div>
+
+            <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#64748b', lineHeight: '1.5' }}>
+              Ushbu tizim zamonaviy <strong>PWA (Progressive Web APK)</strong> texnologiyasi bilan jihozlangan. Har bir xodim (Direktor, Buxgalter, Skladchi va ayniqsa Sotuvchilar) ilovani o'z telefoniga 1 marta bosish orqali o'rnatib oladi!
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
+              <div style={{ display: 'flex', gap: '10px', background: '#f8fafc', padding: '10px', borderRadius: '12px' }}>
+                <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#4f46e5', color: '#fff', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>1</span>
+                <span style={{ fontSize: '12px', color: '#334155' }}>
+                  <strong>Barcha ma'lumotlar o'tadi:</strong> Sotuvchi telefondan zayavka berganda, buxgalter kompyuterida darhol aks etadi, buxgalter tasdiqlasa skladchiga tushadi!
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', background: '#f8fafc', padding: '10px', borderRadius: '12px' }}>
+                <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#4f46e5', color: '#fff', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>2</span>
+                <span style={{ fontSize: '12px', color: '#334155' }}>
+                  <strong>Qanday o'rnatiladi:</strong> Telefon brauzerida saytni ochib, <strong>"Bosh ekranga qo'shish" (Добавить на главный экран)</strong> tugmasini bosish kifoya.
+                </span>
+              </div>
+              <div style={{ display: 'flex', gap: '10px', background: '#f8fafc', padding: '10px', borderRadius: '12px' }}>
+                <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#4f46e5', color: '#fff', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>3</span>
+                <span style={{ fontSize: '12px', color: '#334155' }}>
+                  <strong>Alohida 4 ta APK shart emas:</strong> Bitta havola orqali har bir xodim o'z roli (Sotuvchi, Skladchi, Buxgalter, Direktor) bo'yicha mustaqil ishlaydi.
+                </span>
+              </div>
+            </div>
+
+            <button
+              onClick={() => setIsPwaModalOpen(false)}
+              style={{ width: '100%', background: '#4f46e5', color: '#ffffff', border: 'none', borderRadius: '14px', padding: '12px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
+            >
+              Tushundim, Rahmat
+            </button>
+          </div>
+        </div>
       )}
     </div>
   );

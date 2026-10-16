@@ -1,597 +1,681 @@
-import React, { useState, useEffect } from 'react';
-
+import React, { useState } from 'react';
 import { 
-  Plus, AlertTriangle, Search, Filter, 
-  ArrowUpRight, Edit2, Trash2, Box,
-  Download, Barcode, Shirt, Smartphone, Apple, 
-  Sparkles, Check, Image, Upload
+  Box, ArrowDownRight, Truck, CheckCircle2, Clock, AlertTriangle, 
+  Search, Filter, Plus, Edit2, Trash2, ArrowRight, User, Phone, 
+  CreditCard, Check, Sparkles, Building2, PackageCheck, Layers, Eye
 } from 'lucide-react';
-import { MEASURE_UNITS, PRODUCT_TYPES } from '../data/initialData';
 import { getIndustryById } from '../data/industriesData';
-import CatalogImportModal from './CatalogImportModal';
+import { MEASURE_UNITS } from '../data/initialData';
 
 export default function WarehouseView({ 
   products = [], 
+  stockTransfers = [], 
+  orders = [],
   onAddProduct, 
   onBatchAddProducts,
   onUpdateProduct, 
   onDeleteProduct,
-  onClearAllProducts,
-  storeMode = 'universal',
-  onSelectStoreMode
+  onReceiveTransfer,
+  onDispatchOrder,
+  storeMode = 'universal'
 }) {
   const safeProducts = Array.isArray(products) ? products : [];
-  const currentIndustry = getIndustryById(storeMode);
+  const safeTransfers = Array.isArray(stockTransfers) ? stockTransfers : [];
+  const safeOrders = Array.isArray(orders) ? orders : [];
 
+  // Active View Tab: 'receive_transfers' | 'dispatch_orders' | 'inventory'
+  const [activeTab, setActiveTab] = useState('receive_transfers');
+
+  // Search & Filter for Inventory
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('Hammasi');
-  const [filterBrand, setFilterBrand] = useState('Hammasi');
   const [onlyLowStock, setOnlyLowStock] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
-  const [showAiImportModal, setShowAiImportModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
 
-  // Form states for dynamic product creation
-  const [formType, setFormType] = useState(currentIndustry?.specialType || 'clothing');
+  // Form states for adding/editing product
   const [formName, setFormName] = useState('');
-  const [formBrand, setFormBrand] = useState('');
   const [formCategory, setFormCategory] = useState('');
-  const [formUnit, setFormUnit] = useState(currentIndustry?.unit || 'dona');
-  const [formBarcode, setFormBarcode] = useState('');
+  const [formUnit, setFormUnit] = useState('dona');
   const [formCostPrice, setFormCostPrice] = useState('');
   const [formPrice, setFormPrice] = useState('');
-  const [formWholesalePrice, setFormWholesalePrice] = useState('');
   const [formStock, setFormStock] = useState('10');
   const [formMinStock, setFormMinStock] = useState('3');
-  const [formImage, setFormImage] = useState('');
-  const [formNotes, setFormNotes] = useState('');
-
-  // Industry-specific attribute states:
-  // 1. Clothing:
-  const [formClothingSizes, setFormClothingSizes] = useState('S, M, L, XL');
-  const [formClothingColors, setFormClothingColors] = useState('Qora, Oq');
-  const [formClothingMaterial, setFormClothingMaterial] = useState('Paxta 100%');
-  
-  // 2. Electronics:
-  const [formTechWarranty, setFormTechWarranty] = useState('12 oy');
-  const [formTechMemory, setFormTechMemory] = useState('128GB, 256GB');
-  
-  // 3. Perfume:
-  const [formPerfumeVolume, setFormPerfumeVolume] = useState('50 ml');
-  const [formPerfumeConcentration, setFormPerfumeConcentration] = useState('EDP');
-  const [formPerfumePrices, setFormPerfumePrices] = useState({
-    '10 ml': '',
-    '20 ml': '',
-    '30 ml': '',
-    '50 ml': ''
-  });
-
-  // 4. Grocery:
-  const [formGroceryExpiry, setFormGroceryExpiry] = useState('');
-
-  // 5. Pharmacy:
-  const [formPharmacyExpiry, setFormPharmacyExpiry] = useState('');
-  const [formPharmacyDosage, setFormPharmacyDosage] = useState('');
-
-  // Rasm faylini qurilmadan yuklash handler
-  const handleProductImageFile = (e) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      alert("Rasm hajmi 5MB dan oshmasligi kerak!");
-      return;
-    }
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      setFormImage(event.target.result);
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Helper: Tovar turini aniqlash
-  const getProductType = (p) => {
-    if (!p) return 'general';
-    if (p.productType) return p.productType;
-    if (p.prices && (p.prices['10 ml'] || p.volume)) return 'perfume';
-    return 'general';
-  };
-
-  const getTypeBadge = (type) => {
-    switch (type) {
-      case 'clothing': return { label: 'Kiyim', emoji: '👕', color: '#818cf8', bg: 'rgba(129, 140, 248, 0.15)' };
-      case 'perfume': return { label: 'Parfyum', emoji: '💎', color: '#f59e0b', bg: 'rgba(245, 158, 11, 0.15)' };
-      case 'electronics': return { label: 'Gadjet', emoji: '📱', color: '#38bdf8', bg: 'rgba(56, 189, 248, 0.15)' };
-      case 'grocery': return { label: 'Oziq-ovqat', emoji: '🛒', color: '#34d399', bg: 'rgba(52, 211, 153, 0.15)' };
-      default: return { label: 'Tovar', emoji: '📦', color: '#a78bfa', bg: 'rgba(167, 139, 250, 0.15)' };
-    }
-  };
-
-  // Do'konning maxsus sohasiga xos kategoriyalar
-  const industryCategories = ['Hammasi', ...Array.from(new Set([
-    ...(currentIndustry?.categories?.filter(c => c !== 'Hammasi') || []),
-    ...safeProducts.map(p => p.category).filter(Boolean)
-  ]))];
-
-  const brands = ['Hammasi', ...Array.from(new Set(safeProducts.map(p => p?.brand).filter(Boolean)))];
-
-  // Filtrlangan tovarlar ro'yxati
-  const filteredProducts = safeProducts.filter(p => {
-    if (!p) return false;
-    const matchesCategory = selectedCategory === 'Hammasi' || p.category === selectedCategory;
-    const matchesBrand = filterBrand === 'Hammasi' || p.brand === filterBrand;
-    const matchesLowStock = !onlyLowStock || Number(p.stock || 0) <= Number(p.minStock || 3);
-
-    const term = searchTerm.toLowerCase();
-    const matchesSearch = 
-      !term ||
-      (p.name && String(p.name).toLowerCase().includes(term)) ||
-      (p.brand && String(p.brand).toLowerCase().includes(term)) ||
-      (p.category && String(p.category).toLowerCase().includes(term)) ||
-      (p.barcode && String(p.barcode).toLowerCase().includes(term));
-
-    return matchesCategory && matchesBrand && matchesLowStock && matchesSearch;
-  });
-
-  // Ombordagi hisob-kitoblar
-  const lowStockCount = safeProducts.filter(p => Number(p?.stock || 0) <= Number(p?.minStock || 3)).length;
-  const totalStockCount = safeProducts.reduce((acc, p) => acc + Number(p?.stock || 0), 0);
-  const totalCostValue = safeProducts.reduce((acc, p) => acc + (Number(p?.costPrice || 0) * Number(p?.stock || 0)), 0);
-  const totalRetailValue = safeProducts.reduce((acc, p) => {
-    const unitPrice = p?.price || (p?.prices ? Math.min(...Object.values(p.prices).filter(Boolean)) : 0) || 0;
-    return acc + (Number(unitPrice) * Number(p?.stock || 0));
-  }, 0);
-  const potentialProfit = totalRetailValue - totalCostValue;
+  const [formBarcode, setFormBarcode] = useState('');
+  const [formSupplier, setFormSupplier] = useState('');
 
   const formatMoney = (val) => Number(val || 0).toLocaleString('uz-UZ') + " so'm";
 
-  // Yangi tovar modalini ochish
-  const handleOpenAdd = () => {
-    setEditingProduct(null);
-    const indType = currentIndustry?.specialType || currentIndustry?.id || 'general';
-    setFormType(indType);
-    setFormName('');
-    setFormBrand('');
-    const defaultCat = currentIndustry?.categories?.find(c => c !== 'Hammasi') || 'Boshqa';
-    setFormCategory(defaultCat);
-    setFormUnit(currentIndustry?.unit || 'dona');
-    setFormBarcode(Math.floor(100000000000 + Math.random() * 900000000000).toString());
-    setFormCostPrice('');
-    setFormPrice('');
-    setFormWholesalePrice('');
-    setFormStock('10');
-    setFormMinStock('3');
-    setFormImage('');
-    setFormNotes('');
-    setFormClothingSizes('S, M, L, XL');
-    setFormClothingColors('Qora, Oq');
-    setFormClothingMaterial('Paxta 100%');
-    setFormTechWarranty('12 oy');
-    setFormTechMemory('128GB, 256GB');
-    setFormPerfumeVolume('50 ml');
-    setFormPerfumeConcentration('EDP');
-    setFormPerfumePrices({ '5 ml': '', '10 ml': '', '20 ml': '', '30 ml': '', '50 ml': '', '100 ml': '' });
-    setFormGroceryExpiry('');
-    setShowAddModal(true);
-  };
+  // Pending transfers waiting for warehousekeeper
+  const pendingTransfers = safeTransfers.filter(t => t.status === 'pending_warehouse');
+  const receivedTransfers = safeTransfers.filter(t => t.status === 'received');
 
-  // Tahrirlash modalini ochish
-  const handleOpenEdit = (p) => {
-    setEditingProduct(p);
-    const pType = getProductType(p);
-    setFormType(pType);
-    setFormName(p.name || '');
-    setFormBrand(p.brand || '');
-    setFormCategory(p.category || '');
-    setFormUnit(p.unit || 'dona');
-    setFormBarcode(p.barcode || '');
-    setFormCostPrice(p.costPrice || '');
-    setFormPrice(p.price || '');
-    setFormWholesalePrice(p.wholesalePrice || '');
-    setFormStock(p.stock || '0');
-    setFormMinStock(p.minStock || '3');
-    setFormImage(p.image || '');
-    setFormNotes(p.notes || '');
+  // Orders waiting for dispatch (Buxgalter tasdiqlagan zakazlar!)
+  const readyToDispatchOrders = safeOrders.filter(o => o.status === 'approved_accounting');
+  const dispatchedOrders = safeOrders.filter(o => o.status === 'dispatched_warehouse');
 
-    if (pType === 'clothing' && p.variants) {
-      const sizes = Array.from(new Set(p.variants.map(v => v.size).filter(Boolean))).join(', ');
-      const colors = Array.from(new Set(p.variants.map(v => v.color).filter(Boolean))).join(', ');
-      setFormClothingSizes(sizes || 'S, M, L');
-      setFormClothingColors(colors || 'Qora, Oq');
-    }
+  // Low stock products
+  const lowStockProducts = safeProducts.filter(p => (p.stock || 0) <= (p.minStock || 3));
 
-    if (pType === 'perfume') {
-      setFormPerfumeVolume(p.volume || '50 ml');
-      setFormPerfumeConcentration(p.concentration || 'EDP');
-      setFormPerfumePrices(p.prices || { '10 ml': '', '20 ml': '', '30 ml': '', '50 ml': '' });
-    }
+  // Categories
+  const categories = ['Hammasi', ...new Set(safeProducts.map(p => p.category).filter(Boolean))];
 
-    setShowAddModal(true);
-  };
+  // Filtered Products
+  const filteredProducts = safeProducts.filter(p => {
+    const matchesSearch = (p.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                          (p.barcode || '').includes(searchTerm);
+    const matchesCat = selectedCategory === 'Hammasi' || p.category === selectedCategory;
+    const matchesLow = !onlyLowStock || (p.stock || 0) <= (p.minStock || 3);
+    return matchesSearch && matchesCat && matchesLow;
+  });
 
-  // Mahsulotni saqlash (Qo'shish yoki Tahrirlash)
+  // Handle Save Product
   const handleSaveProduct = (e) => {
     e.preventDefault();
-    if (!formName || !formPrice) {
-      alert("Iltimos, tovar nomi va sotish narxini kiriting!");
-      return;
-    }
+    if (!formName.trim() || !formPrice) return;
 
-    const priceNum = Number(formPrice);
-    const costPriceNum = Number(formCostPrice) || Math.round(priceNum * 0.7);
-
-    // Variantlarni generatsiya qilish (agar kiyim yoki elektronika bo'lsa)
-    let variants = editingProduct?.variants || [];
-    if (formType === 'clothing' && formClothingSizes) {
-      const sizes = formClothingSizes.split(',').map(s => s.trim()).filter(Boolean);
-      const colors = formClothingColors.split(',').map(c => c.trim()).filter(Boolean);
-      variants = [];
-      sizes.forEach((sz, idx) => {
-        colors.forEach((col, cIdx) => {
-          variants.push({
-            id: `v-${idx}-${cIdx}-${Date.now()}`,
-            name: `${sz} / ${col}`,
-            size: sz,
-            color: col,
-            price: priceNum,
-            costPrice: costPriceNum,
-            stock: Math.max(1, Math.floor(Number(formStock) / (sizes.length * colors.length || 1)))
-          });
-        });
+    if (editingProduct) {
+      onUpdateProduct({
+        ...editingProduct,
+        name: formName.trim(),
+        category: formCategory.trim() || 'Umumiy',
+        unit: formUnit,
+        costPrice: Number(formCostPrice) || 0,
+        price: Number(formPrice),
+        stock: Number(formStock) || 0,
+        minStock: Number(formMinStock) || 3,
+        barcode: formBarcode.trim()
+      });
+      setEditingProduct(null);
+    } else {
+      onAddProduct({
+        id: `prd-${Date.now()}`,
+        name: formName.trim(),
+        category: formCategory.trim() || 'Umumiy',
+        unit: formUnit,
+        costPrice: Number(formCostPrice) || 0,
+        price: Number(formPrice),
+        stock: Number(formStock) || 0,
+        minStock: Number(formMinStock) || 3,
+        barcode: formBarcode.trim() || `${Math.floor(1000000000 + Math.random() * 9000000000)}`
       });
     }
 
-    const payload = {
-      id: editingProduct ? editingProduct.id : `prd-${Date.now()}`,
-      name: formName,
-      brand: formBrand || 'Do\'kon',
-      category: formCategory || 'Tovarlar',
-      productType: formType,
-      unit: formUnit || 'dona',
-      barcode: formBarcode || Math.floor(100000000000 + Math.random() * 900000000000).toString(),
-      price: priceNum,
-      costPrice: costPriceNum,
-      wholesalePrice: Number(formWholesalePrice) || Math.round(priceNum * 0.85),
-      stock: Number(formStock) || 0,
-      minStock: Number(formMinStock) || 3,
-      image: formImage || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400&q=80',
-      notes: formNotes,
-      hasVariants: variants.length > 0 || (formType === 'perfume' && Boolean(formPerfumePrices['10 ml'])),
-      variants: variants.length > 0 ? variants : undefined,
-      // Perfume-specific:
-      volume: formType === 'perfume' ? formPerfumeVolume : undefined,
-      concentration: formType === 'perfume' ? formPerfumeConcentration : undefined,
-      prices: formType === 'perfume' ? formPerfumePrices : undefined,
-      // Electronics-specific:
-      warranty: formType === 'electronics' ? formTechWarranty : undefined,
-      // Grocery & Pharmacy-specific:
-      expiryDate: (formType === 'grocery' ? formGroceryExpiry : (formType === 'pharmacy' ? formPharmacyExpiry : undefined)),
-      dosage: formType === 'pharmacy' ? formPharmacyDosage : undefined
-    };
-
-    if (editingProduct) {
-      onUpdateProduct(payload);
-    } else {
-      onAddProduct(payload);
-    }
-
     setShowAddModal(false);
+    resetForm();
   };
 
-  // CSV Export
-  const handleExportCSV = () => {
-    const headers = ['ID', 'Tovar Nomi', 'Brend', 'Toifa', 'Tovar Turi', 'Birlik', 'Sotish Narxi', 'Tannarx', 'Qoldiq', 'Shtrix-kod'];
-    const rows = products.map(p => [
-      p.id,
-      `"${(p.name || '').replace(/"/g, '""')}"`,
-      `"${(p.brand || '').replace(/"/g, '""')}"`,
-      `"${(p.category || '').replace(/"/g, '""')}"`,
-      getProductType(p),
-      p.unit || 'dona',
-      p.price || 0,
-      p.costPrice || 0,
-      p.stock || 0,
-      p.barcode || ''
-    ]);
-    const csvContent = '\uFEFF' + [headers.join(','), ...rows.map(e => e.join(','))].join('\n');
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement('a');
-    link.setAttribute('href', url);
-    link.setAttribute('download', `billz_ombor_baza_${new Date().toISOString().split('T')[0]}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const resetForm = () => {
+    setFormName('');
+    setFormCategory('');
+    setFormUnit('dona');
+    setFormCostPrice('');
+    setFormPrice('');
+    setFormStock('10');
+    setFormMinStock('3');
+    setFormBarcode('');
+    setFormSupplier('');
+    setEditingProduct(null);
+  };
+
+  const openEdit = (p) => {
+    setEditingProduct(p);
+    setFormName(p.name || '');
+    setFormCategory(p.category || '');
+    setFormUnit(p.unit || 'dona');
+    setFormCostPrice(p.costPrice || '');
+    setFormPrice(p.price || '');
+    setFormStock(p.stock || '0');
+    setFormMinStock(p.minStock || '3');
+    setFormBarcode(p.barcode || '');
+    setShowAddModal(true);
   };
 
   return (
-    <div className="page-container">
-      {/* Top Header */}
-      <div className="page-header">
-        <div className="page-title-group">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-            <span style={{ fontSize: '1.4rem' }}>{currentIndustry.emoji || '📦'}</span>
-            <h2>Ombor va Mahsulotlar Katalogi ({currentIndustry.shortName})</h2>
+    <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '24px 20px' }}>
+      
+      {/* Top Header & Overview */}
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <div style={{ width: '42px', height: '42px', borderRadius: '12px', background: '#e0e7ff', color: '#4338ca', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Box size={24} />
+            </div>
+            <div>
+              <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>Sklad Mudiri & Logistika Boshqaruvi</h2>
+              <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#64748b' }}>
+                Direktordan kirimlarni qabul qilish, buxgalter tasdiqlagan zakazlarni otgruzka qilish va qoldiqlar
+              </p>
+            </div>
           </div>
-          <p>{currentIndustry.name} — Mahsulotlar, qoldiqlar va narxlarni boshqarish</p>
         </div>
 
-        <div style={{ display: 'flex', gap: '8px', flexWrap: 'wrap', alignItems: 'center' }}>
-          <button 
-            type="button"
-            className="btn btn-primary" 
-            style={{ 
-              background: 'linear-gradient(135deg, #f59e0b, #6366f1)', 
-              border: 'none', 
-              display: 'flex', 
-              alignItems: 'center', 
-              gap: '6px', 
-              fontWeight: 800,
-              boxShadow: '0 0 16px rgba(99, 102, 241, 0.35)'
+        <div style={{ display: 'flex', gap: '10px' }}>
+          <button
+            onClick={() => { resetForm(); setShowAddModal(true); }}
+            style={{
+              background: '#4f46e5',
+              color: '#ffffff',
+              border: 'none',
+              borderRadius: '12px',
+              padding: '10px 18px',
+              fontSize: '13px',
+              fontWeight: 700,
+              display: 'flex',
+              alignItems: 'center',
+              gap: '6px',
+              cursor: 'pointer',
+              boxShadow: '0 4px 12px rgba(79, 70, 229, 0.25)'
             }}
-            onClick={() => setShowAiImportModal(true)}
-            title="Excel, PDF yoki Telegram narxnomalaridan AI orqali avtomatik kiritish"
           >
-            <Sparkles size={16} /> 
-            <span>✨ AI & Excel/PDF Import</span>
-          </button>
-          
-          <button className="btn btn-secondary" onClick={handleExportCSV}>
-            <Download size={16} /> Excel / CSV Eksport
-          </button>
-
-          {products.length > 0 && (
-            <button 
-              type="button"
-              className="btn btn-secondary"
-              style={{ color: 'var(--danger)', borderColor: 'rgba(244, 63, 94, 0.3)', display: 'flex', alignItems: 'center', gap: '5px' }}
-              onClick={() => {
-                if (window.confirm("DIQQAT: Ushbu do'kondagi barcha tovarlarni bazadan tozalab o'chirmoqchimisiz?")) {
-                  if (onClearAllProducts) onClearAllProducts();
-                }
-              }}
-              title="Do'kondagi barcha mahsulotlarni o'chirish"
-            >
-              <Trash2 size={15} />
-              <span>Tozalash ({products.length})</span>
-            </button>
-          )}
-
-          <button className="btn btn-primary" onClick={handleOpenAdd}>
             <Plus size={16} /> Yangi Tovar Qo'shish
           </button>
         </div>
       </div>
 
-      {/* Warehouse Summary KPI Cards */}
-      <div className="kpi-grid">
-        <div className="kpi-card">
-          <div className="kpi-title">
-            <span>Jami Tovar Birligi</span>
-            <Box size={18} color="var(--primary)" />
-          </div>
-          <div className="kpi-value">{totalStockCount.toLocaleString()}</div>
-          <div className="kpi-subtitle">
-            Bazada: <strong>{products.length} xil</strong> mahsulot turi
-          </div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-title">
-            <span>Ombor Tannarx Sarmoyasi</span>
-            <ArrowUpRight size={18} color="var(--info)" />
-          </div>
-          <div className="kpi-value">{formatMoney(totalCostValue)}</div>
-          <div className="kpi-subtitle">Xarid qilingan jami qiymat</div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-title">
-            <span>Chakana Savdo Qiymati</span>
-            <Sparkles size={18} color="var(--success)" />
-          </div>
-          <div className="kpi-value">{formatMoney(totalRetailValue)}</div>
-          <div className="kpi-subtitle">
-            Kutilayotgan sof marja: <strong style={{ color: 'var(--success)' }}>+{formatMoney(potentialProfit)}</strong>
-          </div>
-        </div>
-
-        <div className="kpi-card">
-          <div className="kpi-title">
-            <span>Kam Qolgan Zaxira</span>
-            <AlertTriangle size={18} color={lowStockCount > 0 ? 'var(--danger)' : 'var(--success)'} />
-          </div>
-          <div className="kpi-value" style={{ color: lowStockCount > 0 ? 'var(--danger)' : 'var(--text-main)' }}>
-            {lowStockCount} ta
-          </div>
-          <div className="kpi-subtitle">
-            {lowStockCount > 0 ? (
-              <button 
-                onClick={() => setOnlyLowStock(!onlyLowStock)} 
-                style={{ background: 'none', border: 'none', color: 'var(--danger)', cursor: 'pointer', fontWeight: 700, padding: 0 }}
-              >
-                {onlyLowStock ? 'Barchasini ko\'rsatish' : 'Faqat kam qolganlarni ko\'rish →'}
-              </button>
-            ) : 'Barcha tovarlar yetarli miqdorda'}
-          </div>
-        </div>
-      </div>
-
-      {/* STORE DEDICATED INDUSTRY CATEGORIES */}
-      <div className="billz-industry-nav" style={{ marginBottom: '16px' }}>
-        <div className="billz-industry-scroll">
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginRight: '8px', padding: '0 8px' }}>
-            <span style={{ fontSize: '1.2rem' }}>{currentIndustry.emoji}</span>
-            <span style={{ fontSize: '0.82rem', fontWeight: 700, color: currentIndustry.color }}>
-              {currentIndustry.shortName} Kategoriyalari:
+      {/* KPI Stats Cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+        <div 
+          onClick={() => setActiveTab('receive_transfers')}
+          style={{ 
+            background: activeTab === 'receive_transfers' ? '#f0fdf4' : '#ffffff', 
+            borderRadius: '18px', 
+            padding: '18px', 
+            border: activeTab === 'receive_transfers' ? '2px solid #22c55e' : '1px solid #e2e8f0', 
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: '#166534' }}>Kutilayotgan Kirimlar</span>
+            <span style={{ background: '#dcfce7', color: '#15803d', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 800 }}>
+              {pendingTransfers.length} ta partiya
             </span>
           </div>
-          {industryCategories.map(cat => {
-            const isActive = selectedCategory === cat;
-            const count = cat === 'Hammasi' 
-              ? safeProducts.length 
-              : safeProducts.filter(p => p.category === cat).length;
+          <div style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', margin: '10px 0 4px' }}>
+            {pendingTransfers.reduce((acc, t) => acc + Number(t.quantity || 0), 0)} dona
+          </div>
+          <div style={{ fontSize: '12px', color: '#64748b' }}>Direktor yuborgan, qabul qilish kutilmoqda</div>
+        </div>
 
-            return (
-              <button
-                key={cat}
-                type="button"
-                className={`billz-industry-tab ${isActive ? 'active' : ''}`}
-                onClick={() => setSelectedCategory(cat)}
-                style={isActive ? { borderColor: currentIndustry.color, background: `linear-gradient(135deg, ${currentIndustry.color}, #4f46e5)` } : {}}
-              >
-                <span className="tab-name">{cat}</span>
-                <span className="tab-badge">{count}</span>
-              </button>
-            );
-          })}
+        <div 
+          onClick={() => setActiveTab('dispatch_orders')}
+          style={{ 
+            background: activeTab === 'dispatch_orders' ? '#eff6ff' : '#ffffff', 
+            borderRadius: '18px', 
+            padding: '18px', 
+            border: activeTab === 'dispatch_orders' ? '2px solid #3b82f6' : '1px solid #e2e8f0', 
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: '#1e40af' }}>Otgruzkaga Tayyor Zakazlar</span>
+            <span style={{ background: '#dbeafe', color: '#1d4ed8', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 800 }}>
+              {readyToDispatchOrders.length} ta zakaz
+            </span>
+          </div>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', margin: '10px 0 4px' }}>
+            {formatMoney(readyToDispatchOrders.reduce((acc, o) => acc + (o.totalAmount || 0), 0))}
+          </div>
+          <div style={{ fontSize: '12px', color: '#64748b' }}>Buxgalter tasdiqlagan, yuborilsa skladdan yechiladi</div>
+        </div>
+
+        <div 
+          onClick={() => setActiveTab('inventory')}
+          style={{ 
+            background: activeTab === 'inventory' ? '#f8fafc' : '#ffffff', 
+            borderRadius: '18px', 
+            padding: '18px', 
+            border: activeTab === 'inventory' ? '2px solid #6366f1' : '1px solid #e2e8f0', 
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            boxShadow: '0 2px 4px rgba(0,0,0,0.02)'
+          }}
+        >
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: '#4338ca' }}>Sklad Umumiy Qoldig'i</span>
+            <span style={{ background: '#e0e7ff', color: '#4338ca', padding: '4px 10px', borderRadius: '12px', fontSize: '12px', fontWeight: 800 }}>
+              {safeProducts.length} xil tovar
+            </span>
+          </div>
+          <div style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', margin: '10px 0 4px' }}>
+            {safeProducts.reduce((acc, p) => acc + Number(p.stock || 0), 0)} dona
+          </div>
+          <div style={{ fontSize: '12px', color: lowStockProducts.length > 0 ? '#ef4444' : '#64748b', fontWeight: lowStockProducts.length > 0 ? 700 : 400 }}>
+            {lowStockProducts.length > 0 ? `⚠️ ${lowStockProducts.length} ta tovar tugamoqda!` : "Zaxira holati barqaror"}
+          </div>
         </div>
       </div>
 
-      {/* Filter and Search Bar */}
-      <div className="filter-card">
-        <div className="search-wrap">
-          <Search size={18} color="var(--text-sub)" />
-          <input 
-            type="text" 
-            placeholder="Tovar nomi, brendi, toifasi yoki shtrix-kod bo'yicha qidirish..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
-        </div>
+      {/* Main Tab Buttons */}
+      <div style={{ display: 'flex', gap: '10px', borderBottom: '2px solid #e2e8f0', marginBottom: '20px', overflowX: 'auto', paddingBottom: '2px' }}>
+        <button
+          onClick={() => setActiveTab('receive_transfers')}
+          style={{
+            padding: '12px 18px',
+            border: 'none',
+            background: 'none',
+            borderBottom: activeTab === 'receive_transfers' ? '3px solid #16a34a' : '3px solid transparent',
+            color: activeTab === 'receive_transfers' ? '#16a34a' : '#64748b',
+            fontWeight: 800,
+            fontSize: '14px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          <ArrowDownRight size={18} /> 1. Kutilayotgan Kirimlar (Direktordan) 
+          {pendingTransfers.length > 0 && (
+            <span style={{ background: '#16a34a', color: '#ffffff', borderRadius: '10px', padding: '2px 8px', fontSize: '11px' }}>
+              {pendingTransfers.length}
+            </span>
+          )}
+        </button>
 
-        <div style={{ display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-            <Filter size={15} color="var(--text-sub)" />
-            <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>Brend:</span>
-            <select 
-              className="filter-select"
-              value={filterBrand}
-              onChange={(e) => setFilterBrand(e.target.value)}
-            >
-              {brands.map(b => (
-                <option key={b} value={b}>{b}</option>
-              ))}
-            </select>
+        <button
+          onClick={() => setActiveTab('dispatch_orders')}
+          style={{
+            padding: '12px 18px',
+            border: 'none',
+            background: 'none',
+            borderBottom: activeTab === 'dispatch_orders' ? '3px solid #3b82f6' : '3px solid transparent',
+            color: activeTab === 'dispatch_orders' ? '#3b82f6' : '#64748b',
+            fontWeight: 800,
+            fontSize: '14px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          <Truck size={18} /> 2. Otgruzka (Buxgalter tasdiqlagan zakazlar)
+          {readyToDispatchOrders.length > 0 && (
+            <span style={{ background: '#3b82f6', color: '#ffffff', borderRadius: '10px', padding: '2px 8px', fontSize: '11px' }}>
+              {readyToDispatchOrders.length}
+            </span>
+          )}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('inventory')}
+          style={{
+            padding: '12px 18px',
+            border: 'none',
+            background: 'none',
+            borderBottom: activeTab === 'inventory' ? '3px solid #4f46e5' : '3px solid transparent',
+            color: activeTab === 'inventory' ? '#4f46e5' : '#64748b',
+            fontWeight: 800,
+            fontSize: '14px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px'
+          }}
+        >
+          <Layers size={18} /> 3. Sklad Qoldiqlari & Tovar Boshqaruvi
+        </button>
+      </div>
+
+      {/* TAB 1: KUTILAYOTGAN KIRIMLAR (DIREKTOR BERGAN TOVARLARNI QABUL QILISH) */}
+      {activeTab === 'receive_transfers' && (
+        <div>
+          <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', marginBottom: '24px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+              <div>
+                <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Direktor Yuborgan Kirim Partiyalari</h3>
+                <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>
+                  Tovar kelgach, skladchi tovarlarni sanab "Qabul qildim" tugmasini bosadi va ular sklad qoldig'iga qo'shiladi
+                </p>
+              </div>
+            </div>
+
+            {pendingTransfers.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+                <CheckCircle2 size={36} style={{ color: '#16a34a', margin: '0 auto 10px' }} />
+                <h4 style={{ margin: '0 0 4px', color: '#1e293b' }}>Hozirda kutilayotgan kirimlar yo'q</h4>
+                <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>Direktor yangi partiya tovar yuborganida shu yerda paydo bo'ladi</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                {pendingTransfers.map(transfer => (
+                  <div 
+                    key={transfer.id}
+                    style={{
+                      background: '#ffffff',
+                      border: '1px solid #bbf7d0',
+                      borderRadius: '16px',
+                      padding: '16px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      flexWrap: 'wrap',
+                      gap: '14px',
+                      boxShadow: '0 2px 5px rgba(34, 197, 94, 0.05)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                      <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: '#dcfce7', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '20px' }}>
+                        📥
+                      </div>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '12px', fontWeight: 800, color: '#16a34a', background: '#f0fdf4', padding: '2px 8px', borderRadius: '6px' }}>
+                            {transfer.transferNumber || transfer.id}
+                          </span>
+                          <span style={{ fontSize: '12px', color: '#64748b' }}>{transfer.createdAt}</span>
+                        </div>
+                        <div style={{ fontSize: '16px', fontWeight: 800, color: '#0f172a', marginTop: '2px' }}>
+                          {transfer.productName}
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#64748b', marginTop: '2px' }}>
+                          Yetkazib beruvchi: <strong>{transfer.supplier || 'Import/Zavod'}</strong> | Toifa: {transfer.category || 'Umumiy'}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>Kirim Miqdori:</div>
+                        <div style={{ fontSize: '18px', fontWeight: 800, color: '#16a34a' }}>
+                          +{transfer.quantity} {transfer.unit || 'dona'}
+                        </div>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>
+                          Tannarxi: {formatMoney(transfer.costPrice)}
+                        </div>
+                      </div>
+
+                      <button
+                        onClick={() => onReceiveTransfer(transfer.id)}
+                        style={{
+                          background: 'linear-gradient(135deg, #16a34a 0%, #15803d 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '14px',
+                          padding: '12px 20px',
+                          fontSize: '14px',
+                          fontWeight: 800,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(22, 163, 74, 0.3)'
+                        }}
+                      >
+                        <Check size={18} /> Qabul Qildim (Skladga Kiritish)
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
 
-          <label className="checkbox-wrap" style={{ cursor: 'pointer' }}>
-            <input 
-              type="checkbox" 
-              checked={onlyLowStock} 
-              onChange={(e) => setOnlyLowStock(e.target.checked)} 
-            />
-            <span style={{ fontSize: '0.82rem', color: onlyLowStock ? 'var(--danger)' : 'var(--text-muted)' }}>
-              Faqat kam qolganlar ({lowStockCount})
-            </span>
-          </label>
+          {/* Qabul qilingan kirimlar tarixi */}
+          {receivedTransfers.length > 0 && (
+            <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0' }}>
+              <h4 style={{ margin: '0 0 12px', fontSize: '14px', color: '#475569' }}>Yaqinda Skladga Qabul Qilingan Kirimlar Tarixi</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {receivedTransfers.slice(0, 5).map(t => (
+                  <div key={t.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8fafc', borderRadius: '10px', fontSize: '13px' }}>
+                    <div>
+                      <span style={{ fontWeight: 700, color: '#0f172a' }}>{t.productName}</span>
+                      <span style={{ color: '#64748b', marginLeft: '10px' }}>({t.quantity} {t.unit})</span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span style={{ fontSize: '11px', color: '#64748b' }}>Qabul qildi: {t.receivedBy || 'Sklad Mudiri'}</span>
+                      <span style={{ background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+                        Qabul qilingan ✅
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
-      </div>
+      )}
 
-      {/* BILLZ Products Table */}
-      <div className="table-card">
-        <div className="table-responsive">
-          <table className="custom-table">
-            <thead>
-              <tr>
-                <th>Tovar va Brend</th>
-                <th>Turi & Toifa</th>
-                <th>Shtrix-kod</th>
-                <th>Tannarx</th>
-                <th>Sotish Narxi</th>
-                <th>Foyda (Marja)</th>
-                <th>Qoldiq (Sklad)</th>
-                <th>Holat</th>
-                <th style={{ textAlign: 'center' }}>Amallar</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredProducts.length === 0 ? (
-                <tr>
-                  <td colSpan="9" style={{ textAlign: 'center', padding: '40px', color: 'var(--text-sub)' }}>
-                    Mos keluvchi tovar topilmadi
-                  </td>
-                </tr>
-              ) : (
-                filteredProducts.map(product => {
-                  const pType = getProductType(product);
-                  const badge = getTypeBadge(pType);
-                  const isLow = product.stock <= (product.minStock || 3);
-                  const profitSum = (product.price || 0) - (product.costPrice || 0);
-                  const profitPercent = product.price > 0 ? Math.round((profitSum / product.price) * 100) : 0;
+      {/* TAB 2: BUXGALTER TASDIQLAGAN ZAKAZLAR (OTGRUZKA & SKLADDAN YECHISH!) */}
+      {activeTab === 'dispatch_orders' && (
+        <div>
+          <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)', marginBottom: '24px' }}>
+            <div style={{ marginBottom: '16px' }}>
+              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>Buxgalter Tasdiqlagan Zayavkalar (Otgruzka)</h3>
+              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>
+                Buxgalter to'lovini tasdiqlagan zakazlar. Skladchi tovarlarni yig'ib <strong>"Sotuvchiga Yuborildi"</strong> tugmasini bosganda tovarlar skladdan avtomatik yechiladi!
+              </p>
+            </div>
 
-                  return (
-                    <tr key={product.id}>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                          <img 
-                            src={product.image || 'https://images.unsplash.com/photo-1526170375885-4d8ecf77b99f?w=400&q=80'} 
-                            alt="" 
-                            style={{ width: '40px', height: '40px', borderRadius: '8px', objectFit: 'cover' }} 
-                          />
-                          <div>
-                            <strong style={{ color: '#fff', fontSize: '0.88rem' }}>{product.name}</strong>
-                            <div style={{ fontSize: '0.74rem', color: 'var(--text-sub)' }}>
-                              {product.brand} {product.unit ? `• ${product.unit}` : ''}
-                              {product.variants ? ` • (${product.variants.length} variant)` : ''}
+            {readyToDispatchOrders.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '40px 20px', background: '#f8fafc', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
+                <PackageCheck size={36} style={{ color: '#3b82f6', margin: '0 auto 10px' }} />
+                <h4 style={{ margin: '0 0 4px', color: '#1e293b' }}>Hozircha otgruzka qilinadigan yangi zakaz yo'q</h4>
+                <p style={{ margin: 0, fontSize: '13px', color: '#64748b' }}>Sotuvchilar zakaz yuborib, buxgalter tasdiqlaganida shu yerga keladi</p>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {readyToDispatchOrders.map(order => (
+                  <div 
+                    key={order.id}
+                    style={{
+                      background: '#ffffff',
+                      border: '2px solid #93c5fd',
+                      borderRadius: '18px',
+                      padding: '18px',
+                      boxShadow: '0 4px 10px rgba(59, 130, 246, 0.08)'
+                    }}
+                  >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '12px', flexWrap: 'wrap', gap: '8px' }}>
+                      <div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ fontSize: '13px', fontWeight: 800, color: '#1d4ed8', background: '#eff6ff', padding: '2px 10px', borderRadius: '8px' }}>
+                            {order.orderNumber || order.id}
+                          </span>
+                          <span style={{ background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+                            To'lov buxgalter tomonidan tasdiqlangan ✅
+                          </span>
+                        </div>
+                        <div style={{ fontSize: '15px', fontWeight: 800, color: '#0f172a', marginTop: '4px' }}>
+                          Mijoz: {order.customerName} ({order.customerPhone})
+                        </div>
+                        <div style={{ fontSize: '12px', color: '#64748b' }}>
+                          Sotuvchi: <strong>{order.sellerName}</strong> | Vaqt: {order.createdAt}
+                        </div>
+                      </div>
+
+                      <div style={{ textAlign: 'right' }}>
+                        <div style={{ fontSize: '11px', color: '#64748b' }}>Buyurtma Summasi:</div>
+                        <div style={{ fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>{formatMoney(order.totalAmount)}</div>
+                        <div style={{ fontSize: '11px', color: '#475569', fontWeight: 600 }}>
+                          To'lov: {order.paymentMethod?.toUpperCase()} ({order.paymentDetails || 'Tasdiqlangan'})
+                        </div>
+                      </div>
+                    </div>
+
+                    {/* Tovarlar ro'yxati (Skladchi nimani olib berishi kerakligi!) */}
+                    <div style={{ background: '#f8fafc', borderRadius: '12px', padding: '12px', marginBottom: '14px', border: '1px solid #e2e8f0' }}>
+                      <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '6px' }}>
+                        📦 Qadoqlanishi kerak bo'lgan tovarlar:
+                      </div>
+                      <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                        {order.items?.map((item, idx) => (
+                          <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '13px', color: '#1e293b' }}>
+                            <div>
+                              <strong>• {item.name}</strong>
+                              <span style={{ color: '#64748b', marginLeft: '6px' }}>({formatMoney(item.price)})</span>
+                            </div>
+                            <div style={{ background: '#ede9fe', color: '#6d28d9', padding: '2px 8px', borderRadius: '6px', fontWeight: 800 }}>
+                              {item.quantity} {item.unit || 'dona'}
                             </div>
                           </div>
-                        </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Skladchi Harakati */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                      <div style={{ fontSize: '12px', color: '#b45309', background: '#fef3c7', padding: '6px 12px', borderRadius: '8px', fontWeight: 600 }}>
+                        ⚠️ Diqqat: Ushbu tugma bosilishi bilan tovarlar sklad balansidan rasman yechiladi!
+                      </div>
+
+                      <button
+                        onClick={() => onDispatchOrder(order.id)}
+                        style={{
+                          background: 'linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '14px',
+                          padding: '12px 24px',
+                          fontSize: '14px',
+                          fontWeight: 800,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(37, 99, 235, 0.3)'
+                        }}
+                      >
+                        <Truck size={18} /> Sotuvchiga Yuborildi (Skladdan Yechish) 🚀
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Otgruzka qilingan buyurtmalar tarixi */}
+          {dispatchedOrders.length > 0 && (
+            <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0' }}>
+              <h4 style={{ margin: '0 0 12px', fontSize: '14px', color: '#475569' }}>Yetkazilgan & Skladdan Yechilgan Zakazlar</h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {dispatchedOrders.slice(0, 5).map(o => (
+                  <div key={o.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8fafc', borderRadius: '10px', fontSize: '13px' }}>
+                    <div>
+                      <span style={{ fontWeight: 700, color: '#0f172a' }}>{o.orderNumber || o.id}</span>
+                      <span style={{ color: '#64748b', marginLeft: '10px' }}>Mijoz: {o.customerName}</span>
+                      <span style={{ color: '#4f46e5', marginLeft: '10px', fontWeight: 700 }}>({formatMoney(o.totalAmount)})</span>
+                    </div>
+                    <span style={{ background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+                      Skladdan yechilgan ✅
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* TAB 3: SKLAD QOLDIQLARI VA TOVARLAR KATALOGI */}
+      {activeTab === 'inventory' && (
+        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.03)' }}>
+          {/* Filters Bar */}
+          <div style={{ display: 'flex', gap: '12px', marginBottom: '16px', flexWrap: 'wrap', alignItems: 'center', justifyContent: 'space-between' }}>
+            <div style={{ display: 'flex', gap: '10px', flex: 1, minWidth: '280px' }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <input 
+                  type="text"
+                  placeholder="Tovar nomi, barkod..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px 10px 36px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <select 
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                style={{ padding: '10px 14px', borderRadius: '12px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#ffffff', color: '#1e293b' }}
+              >
+                {categories.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            <button
+              onClick={() => setOnlyLowStock(!onlyLowStock)}
+              style={{
+                padding: '10px 14px',
+                borderRadius: '12px',
+                border: '1px solid',
+                borderColor: onlyLowStock ? '#ef4444' : '#cbd5e1',
+                background: onlyLowStock ? '#fee2e2' : '#ffffff',
+                color: onlyLowStock ? '#dc2626' : '#475569',
+                fontSize: '13px',
+                fontWeight: 600,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                cursor: 'pointer'
+              }}
+            >
+              <AlertTriangle size={15} /> Tugayotgan tovarlar ({lowStockProducts.length})
+            </button>
+          </div>
+
+          {/* Table */}
+          <div style={{ overflowX: 'auto' }}>
+            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+              <thead>
+                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
+                  <th style={{ padding: '12px 14px' }}>Tovar Nomi</th>
+                  <th style={{ padding: '12px 14px' }}>Toifa</th>
+                  <th style={{ padding: '12px 14px' }}>Tannarx</th>
+                  <th style={{ padding: '12px 14px' }}>Sotish Narxi</th>
+                  <th style={{ padding: '12px 14px' }}>Skladdagi Qoldiq</th>
+                  <th style={{ padding: '12px 14px' }}>Holat</th>
+                  <th style={{ padding: '12px 14px', textAlign: 'right' }}>Amallar</th>
+                </tr>
+              </thead>
+              <tbody>
+                {filteredProducts.map(p => {
+                  const isLow = (p.stock || 0) <= (p.minStock || 3);
+                  return (
+                    <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                      <td style={{ padding: '12px 14px' }}>
+                        <div style={{ fontWeight: 700, color: '#0f172a' }}>{p.name}</div>
+                        <div style={{ fontSize: '11px', color: '#94a3b8' }}>Barkod: {p.barcode || '—'}</div>
                       </td>
-                      <td>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '3px' }}>
-                          <span className="product-type-badge-inline" style={{ color: badge.color, background: badge.bg }}>
-                            {badge.emoji} {badge.label}
-                          </span>
-                          <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)' }}>
-                            {product.category || 'Tovarlar'}
-                          </span>
-                        </div>
-                      </td>
-                      <td>
-                        <div style={{ fontFamily: 'monospace', fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                          <Barcode size={13} style={{ verticalAlign: 'middle', marginRight: '4px' }} />
-                          {product.barcode || '—'}
-                        </div>
-                      </td>
-                      <td style={{ color: 'var(--text-muted)', fontSize: '0.84rem' }}>
-                        {formatMoney(product.costPrice)}
-                      </td>
-                      <td style={{ color: '#fff', fontWeight: 700, fontSize: '0.88rem' }}>
-                        {formatMoney(product.price)}
-                      </td>
-                      <td>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.82rem', color: profitSum >= 0 ? 'var(--success)' : 'var(--danger)' }}>
-                          <strong>+{formatMoney(profitSum)}</strong>
-                          <span style={{ fontSize: '0.72rem', opacity: 0.8 }}>({profitPercent}%)</span>
-                        </div>
-                      </td>
-                      <td>
-                        <strong style={{ fontSize: '0.92rem', color: isLow ? 'var(--danger)' : '#fff' }}>
-                          {product.stock} {product.unit || 'dona'}
-                        </strong>
-                      </td>
-                      <td>
-                        <span className={`status-pill ${isLow ? 'status-danger' : 'status-success'}`}>
-                          {product.stock === 0 ? 'Tugagan' : isLow ? 'Kam qoldi' : 'Mavjud'}
+                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{p.category || 'Umumiy'}</td>
+                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{formatMoney(p.costPrice)}</td>
+                      <td style={{ padding: '12px 14px', fontWeight: 700, color: '#4f46e5' }}>{formatMoney(p.price)}</td>
+                      <td style={{ padding: '12px 14px' }}>
+                        <span style={{ fontSize: '14px', fontWeight: 800, color: isLow ? '#ef4444' : '#0f172a' }}>
+                          {p.stock || 0} {p.unit || 'dona'}
                         </span>
                       </td>
-                      <td>
-                        <div style={{ display: 'flex', gap: '6px', justifyContent: 'center' }}>
-                          <button 
-                            className="btn btn-icon btn-secondary" 
-                            onClick={() => handleOpenEdit(product)}
+                      <td style={{ padding: '12px 14px' }}>
+                        {isLow ? (
+                          <span style={{ background: '#fee2e2', color: '#dc2626', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+                            Kam qoldi (min: {p.minStock})
+                          </span>
+                        ) : (
+                          <span style={{ background: '#dcfce7', color: '#16a34a', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+                            Yetarli
+                          </span>
+                        )}
+                      </td>
+                      <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                        <div style={{ display: 'inline-flex', gap: '6px' }}>
+                          <button
+                            onClick={() => openEdit(p)}
+                            style={{ background: '#ede9fe', color: '#6d28d9', border: 'none', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer' }}
                             title="Tahrirlash"
                           >
                             <Edit2 size={14} />
                           </button>
-                          <button 
-                            className="btn btn-icon btn-secondary" 
-                            style={{ color: 'var(--danger)', borderColor: 'rgba(244,63,94,0.3)' }}
+                          <button
                             onClick={() => {
-                              if (confirm(`Haqiqatan ham "${product.name}" mahsulotini o'chirmoqchimisiz?`)) {
-                                onDeleteProduct(product.id);
+                              if (confirm(`Haqiqatan ham "${p.name}" tovarini o'chirmoqchimisiz?`)) {
+                                onDeleteProduct(p.id);
                               }
                             }}
+                            style={{ background: '#fee2e2', color: '#dc2626', border: 'none', borderRadius: '8px', padding: '6px 10px', cursor: 'pointer' }}
                             title="O'chirish"
                           >
                             <Trash2 size={14} />
@@ -600,415 +684,131 @@ export default function WarehouseView({
                       </td>
                     </tr>
                   );
-                })
-              )}
-            </tbody>
-          </table>
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
-      </div>
+      )}
 
-      {/* Universal BILLZ Product Add/Edit Modal */}
+      {/* MODAL: YANGI TOVAR QO'SHISH / TAHRIRLASH */}
       {showAddModal && (
-        <div className="modal-backdrop" onClick={() => setShowAddModal(false)}>
-          <div className="modal-content" style={{ maxWidth: '640px' }} onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <div>
-                <h3 style={{ fontSize: '1.2rem', fontWeight: 800 }}>
-                  {editingProduct ? 'Mahsulotni Tahrirlash' : 'Yangi Mahsulot Qo\'shish'}
-                </h3>
-                <p style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-                  {currentIndustry.name} tizimi uchun tovar ma'lumotlarini kiritish
-                </p>
-              </div>
-              <button className="modal-close" onClick={() => setShowAddModal(false)}>✕</button>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
+          <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '500px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
+              <h3 style={{ margin: 0, fontSize: '18px', color: '#0f172a' }}>
+                {editingProduct ? "Tovarni Tahrirlash" : "Yangi Tovar Qo'shish"}
+              </h3>
+              <button onClick={() => setShowAddModal(false)} style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer', fontSize: '18px' }}>✕</button>
             </div>
 
-            <form onSubmit={handleSaveProduct} style={{ padding: '20px' }}>
-              {/* Do'kon Soha Identifikatori (Bitta yo'nalish bo'yicha) */}
-              <div style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                padding: '12px 16px',
-                borderRadius: '12px',
-                background: 'rgba(99, 102, 241, 0.08)',
-                border: '1px solid rgba(99, 102, 241, 0.2)',
-                marginBottom: '16px'
-              }}>
-                <div style={{
-                  fontSize: '1.6rem',
-                  width: '42px',
-                  height: '42px',
-                  borderRadius: '10px',
-                  background: 'rgba(255, 255, 255, 0.05)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center'
-                }}>
-                  {currentIndustry.emoji}
-                </div>
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <span style={{ fontSize: '0.95rem', fontWeight: 800, color: '#fff' }}>
-                      {currentIndustry.name}
-                    </span>
-                    <span style={{
-                      fontSize: '0.7rem',
-                      fontWeight: 700,
-                      padding: '2px 8px',
-                      borderRadius: '8px',
-                      background: 'rgba(16, 185, 129, 0.15)',
-                      color: 'var(--success)'
-                    }}>
-                      Aktiv Tizim
-                    </span>
-                  </div>
-                  <p style={{ fontSize: '0.75rem', color: 'var(--text-muted)', margin: 0 }}>
-                    Ushbu tovar faqat {currentIndustry.shortName} katalogiga kiritiladi.
-                  </p>
-                </div>
-              </div>
-
-              {/* Basic Fields */}
-              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                <div>
-                  <label className="form-label">Tovar Nomi *</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    placeholder="Masalan: Nike Air Force, iPhone 15, Creed Aventus..." 
-                    value={formName} 
-                    onChange={(e) => setFormName(e.target.value)} 
-                    required 
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Brend / Ishlab chiqaruvchi</label>
-                  <input 
-                    type="text" 
-                    className="form-input" 
-                    placeholder="Nike, Zara, Apple..." 
-                    value={formBrand} 
-                    onChange={(e) => setFormBrand(e.target.value)} 
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '12px' }}>
-                <div>
-                  <label className="form-label">Kategoriya *</label>
-                  <select 
-                    className="form-input" 
-                    value={formCategory} 
-                    onChange={(e) => setFormCategory(e.target.value)}
-                  >
-                    {currentIndustry.categories.filter(c => c !== 'Hammasi').map(cat => (
-                      <option key={cat} value={cat}>{cat}</option>
-                    ))}
-                    <option value="Boshqa">+ Boshqa toifa</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="form-label">O'lchov Birligi</label>
-                  <select 
-                    className="form-input"
-                    value={formUnit}
-                    onChange={(e) => setFormUnit(e.target.value)}
-                  >
-                    {MEASURE_UNITS.map(u => (
-                      <option key={u.id} value={u.id}>{u.label}</option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label className="form-label">Shtrix-kod (EAN-13)</label>
-                  <div style={{ display: 'flex', gap: '4px' }}>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      value={formBarcode} 
-                      onChange={(e) => setFormBarcode(e.target.value)} 
-                    />
-                    <button 
-                      type="button" 
-                      className="btn btn-secondary btn-sm"
-                      onClick={() => setFormBarcode(Math.floor(100000000000 + Math.random() * 900000000000).toString())}
-                      title="Tasodifiy generatsiya"
-                    >
-                      🎲
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              {/* Dynamic Industry Specific Attributes */}
-              {formType === 'clothing' && (
-                <div className="industry-specific-box">
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#818cf8', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Shirt size={15} /> Kiyim va Poyabzal Variantlari (Razmer & Rang):
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <div>
-                      <label className="form-label">O'lchamlar (vergul bilan):</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        placeholder="S, M, L, XL yoki 40, 41, 42" 
-                        value={formClothingSizes} 
-                        onChange={(e) => setFormClothingSizes(e.target.value)} 
-                      />
-                    </div>
-                    <div>
-                      <label className="form-label">Ranglar (vergul bilan):</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        placeholder="Qora, Oq, Moviy" 
-                        value={formClothingColors} 
-                        onChange={(e) => setFormClothingColors(e.target.value)} 
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {formType === 'electronics' && (
-                <div className="industry-specific-box">
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#38bdf8', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Smartphone size={15} /> Elektronika Xususiyatlari:
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-                    <div>
-                      <label className="form-label">Xotira / Variantlar:</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        placeholder="128GB, 256GB, 512GB" 
-                        value={formTechMemory} 
-                        onChange={(e) => setFormTechMemory(e.target.value)} 
-                      />
-                    </div>
-                    <div>
-                      <label className="form-label">Rasmiy Kafolat Muddati:</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        placeholder="12 oy, 6 oy..." 
-                        value={formTechWarranty} 
-                        onChange={(e) => setFormTechWarranty(e.target.value)} 
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {(formType === 'perfume' || currentIndustry.hasVolumeMl) && (
-                <div className="industry-specific-box">
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--gold)', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Sparkles size={15} /> Parfyumeriya Quyma Hajmlar Narxi:
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(6, 1fr)', gap: '6px' }}>
-                    {['5 ml', '10 ml', '20 ml', '30 ml', '50 ml', '100 ml'].map(vol => (
-                      <div key={vol}>
-                        <label className="form-label" style={{ fontSize: '0.74rem' }}>{vol}:</label>
-                        <input 
-                          type="number" 
-                          className="form-input" 
-                          placeholder="Narx"
-                          value={formPerfumePrices[vol] || ''}
-                          onChange={(e) => setFormPerfumePrices({ ...formPerfumePrices, [vol]: Number(e.target.value) })}
-                        />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              )}
-
-              {formType === 'grocery' && (
-                <div className="industry-specific-box">
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#34d399', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <Apple size={15} /> Oziq-ovqat va Supermarket Parametrlari:
-                  </div>
-                  <div>
-                    <label className="form-label">Yaroqlilik muddati:</label>
-                    <input 
-                      type="date" 
-                      className="form-input" 
-                      value={formGroceryExpiry} 
-                      onChange={(e) => setFormGroceryExpiry(e.target.value)} 
-                    />
-                  </div>
-                </div>
-              )}
-
-              {formType === 'pharmacy' && (
-                <div className="industry-specific-box">
-                  <div style={{ fontSize: '0.82rem', fontWeight: 700, color: '#ec4899', marginBottom: '8px', display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    💊 Dorixona va Salomatlik Parametrlari:
-                  </div>
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                    <div>
-                      <label className="form-label">Yaroqlilik muddati:</label>
-                      <input 
-                        type="date" 
-                        className="form-input" 
-                        value={formPharmacyExpiry} 
-                        onChange={(e) => setFormPharmacyExpiry(e.target.value)} 
-                      />
-                    </div>
-                    <div>
-                      <label className="form-label">Dozasi (masalan: 500mg, 10ml):</label>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        placeholder="500 mg, 100 ml..." 
-                        value={formPharmacyDosage} 
-                        onChange={(e) => setFormPharmacyDosage(e.target.value)} 
-                      />
-                    </div>
-                  </div>
-                </div>
-              )}
-
-              {/* Prices and Stock */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', margin: '14px 0' }}>
-                <div>
-                  <label className="form-label">Tannarxi (so'm)</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    placeholder="150000" 
-                    value={formCostPrice} 
-                    onChange={(e) => setFormCostPrice(e.target.value)} 
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Chakana Sotish Narxi *</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    placeholder="220000" 
-                    value={formPrice} 
-                    onChange={(e) => setFormPrice(e.target.value)} 
-                    required 
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Ulgurji (Optom) Narx</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    placeholder="185000" 
-                    value={formWholesalePrice} 
-                    onChange={(e) => setFormWholesalePrice(e.target.value)} 
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px' }}>
-                <div>
-                  <label className="form-label">Ombordagi Soni *</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    value={formStock} 
-                    onChange={(e) => setFormStock(e.target.value)} 
-                    required 
-                  />
-                </div>
-                <div>
-                  <label className="form-label">Min Zaxira Limiti</label>
-                  <input 
-                    type="number" 
-                    className="form-input" 
-                    value={formMinStock} 
-                    onChange={(e) => setFormMinStock(e.target.value)} 
-                  />
-                </div>
-              </div>
-
-              {/* Device Image Uploader */}
-              <div style={{
-                background: 'rgba(0,0,0,0.2)',
-                border: '1px solid var(--border-light)',
-                borderRadius: '12px',
-                padding: '14px',
-                marginBottom: '16px'
-              }}>
-                <label className="form-label" style={{ display: 'flex', alignItems: 'center', gap: '6px', marginBottom: '8px' }}>
-                  <Image size={15} color="var(--primary)" />
-                  <span>Tovar Rasmi (Qurilmangizdan yuklash):</span>
-                </label>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-                  <div style={{
-                    width: '64px',
-                    height: '64px',
-                    borderRadius: '12px',
-                    background: 'var(--bg-elevated)',
-                    border: '1.5px dashed var(--border-light)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    overflow: 'hidden',
-                    flexShrink: 0
-                  }}>
-                    {formImage ? (
-                      <img src={formImage} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                    ) : (
-                      <Box size={24} color="var(--text-sub)" />
-                    )}
-                  </div>
-                  <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                    <div style={{ display: 'flex', gap: '8px', alignItems: 'center', flexWrap: 'wrap' }}>
-                      <label className="btn btn-sm btn-secondary" style={{ cursor: 'pointer', padding: '6px 12px', fontSize: '0.8rem' }}>
-                        <Upload size={14} /> <span>📁 Qurilmadan rasm tanlash (Telefon / Kompyuter)</span>
-                        <input type="file" accept="image/*" onChange={handleProductImageFile} style={{ display: 'none' }} />
-                      </label>
-                      {formImage && (
-                        <button 
-                          type="button" 
-                          className="btn btn-sm btn-secondary" 
-                          style={{ color: 'var(--danger)', padding: '6px 10px' }} 
-                          onClick={() => setFormImage('')}
-                          title="Rasmni o'chirish"
-                        >
-                          <Trash2 size={14} /> <span>O'chirish</span>
-                        </button>
-                      )}
-                    </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <span style={{ fontSize: '0.72rem', color: 'var(--text-sub)' }}>yoki URL:</span>
-                      <input 
-                        type="text" 
-                        className="form-input" 
-                        placeholder="https://images.unsplash.com/..." 
-                        value={formImage} 
-                        onChange={(e) => setFormImage(e.target.value)} 
-                        style={{ fontSize: '0.75rem', padding: '4px 8px', height: '28px' }}
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
-              <div style={{ marginBottom: '18px' }}>
-                <label className="form-label">Izoh / Tavsif</label>
-                <textarea 
-                  className="form-input" 
-                  rows="2" 
-                  placeholder="Mahsulot haqida qo'shimcha ma'lumot..."
-                  value={formNotes}
-                  onChange={(e) => setFormNotes(e.target.value)}
+            <form onSubmit={handleSaveProduct} style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Tovar Nomi *</label>
+                <input 
+                  type="text" 
+                  required
+                  placeholder="Masalan: Nike Air Max 270"
+                  value={formName}
+                  onChange={(e) => setFormName(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
                 />
               </div>
 
-              {/* Actions */}
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
-                <button type="button" className="btn btn-secondary" onClick={() => setShowAddModal(false)}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Toifa</label>
+                  <input 
+                    type="text" 
+                    placeholder="Masalan: Poyabzal"
+                    value={formCategory}
+                    onChange={(e) => setFormCategory(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>O'lchov Birligi</label>
+                  <select
+                    value={formUnit}
+                    onChange={(e) => setFormUnit(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  >
+                    {MEASURE_UNITS.map(u => <option key={u.id} value={u.id}>{u.label}</option>)}
+                  </select>
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Tannarx (so'm)</label>
+                  <input 
+                    type="number" 
+                    placeholder="250000"
+                    value={formCostPrice}
+                    onChange={(e) => setFormCostPrice(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Sotish Narxi *</label>
+                  <input 
+                    type="number" 
+                    required
+                    placeholder="400000"
+                    value={formPrice}
+                    onChange={(e) => setFormPrice(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Skladdagi Qoldiq</label>
+                  <input 
+                    type="number" 
+                    placeholder="10"
+                    value={formStock}
+                    onChange={(e) => setFormStock(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Min Qoldiq</label>
+                  <input 
+                    type="number" 
+                    placeholder="3"
+                    value={formMinStock}
+                    onChange={(e) => setFormMinStock(e.target.value)}
+                    style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 600, color: '#64748b', display: 'block', marginBottom: '4px' }}>Barkod (ixtiyoriy)</label>
+                <input 
+                  type="text" 
+                  placeholder="47800101001"
+                  value={formBarcode}
+                  onChange={(e) => setFormBarcode(e.target.value)}
+                  style={{ width: '100%', padding: '10px 12px', borderRadius: '10px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  style={{ flex: 1, padding: '12px', borderRadius: '12px', border: '1px solid #cbd5e1', background: '#f8fafc', color: '#475569', fontWeight: 700, cursor: 'pointer' }}
+                >
                   Bekor qilish
                 </button>
-                <button type="submit" className="btn btn-primary" style={{ padding: '10px 20px' }}>
-                  <Check size={16} /> Saqlash
+                <button
+                  type="submit"
+                  style={{ flex: 1, padding: '12px', borderRadius: '12px', border: 'none', background: '#4f46e5', color: '#ffffff', fontWeight: 800, cursor: 'pointer' }}
+                >
+                  Saqlash
                 </button>
               </div>
             </form>
@@ -1016,21 +816,6 @@ export default function WarehouseView({
         </div>
       )}
 
-      {/* AI & Excel/PDF Smart Catalog Import Modal */}
-      {showAiImportModal && (
-        <CatalogImportModal 
-          isOpen={showAiImportModal}
-          onClose={() => setShowAiImportModal(false)}
-          storeMode={storeMode}
-          onImportProducts={(importedList) => {
-            if (onBatchAddProducts) {
-              onBatchAddProducts(importedList);
-            } else {
-              importedList.forEach(p => onAddProduct(p));
-            }
-          }}
-        />
-      )}
     </div>
   );
 }
