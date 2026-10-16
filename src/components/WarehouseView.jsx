@@ -132,15 +132,15 @@ export default function WarehouseView({
   };
 
   return (
-    <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '24px 20px', fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif" }}>
+    <div className="cabinet-container">
       
       {/* Top Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
+          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
             {t('warehouseCabinet')}
           </h2>
-          <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>
+          <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#64748b' }}>
             {lang === 'ru' 
               ? 'Приемка товаров, выдача подтвержденных бухгалтером заказов и контроль остатков'
               : 'Kirim tovarlarni qabul qilish, buxgalter tasdiqlagan zakazlarni berish va qoldiq nazorati'}
@@ -154,8 +154,8 @@ export default function WarehouseView({
             color: '#ffffff',
             border: 'none',
             borderRadius: '10px',
-            padding: '10px 18px',
-            fontSize: '13px',
+            padding: '8px 16px',
+            fontSize: '12px',
             fontWeight: 700,
             display: 'flex',
             alignItems: 'center',
@@ -163,80 +163,83 @@ export default function WarehouseView({
             cursor: 'pointer'
           }}
         >
-          <Plus size={16} /> {t('addProductBtn')}
+          <Plus size={15} /> {t('addProductBtn')}
         </button>
       </div>
 
       {/* KPI Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+      <div className="cabinet-kpi-grid">
         <div 
           onClick={() => setActiveTab('receive_transfers')}
+          className="kpi-card-box"
           style={{ 
             background: '#ffffff', 
-            borderRadius: '14px', 
-            padding: '18px', 
+            borderRadius: '16px', 
+            padding: '16px', 
             border: activeTab === 'receive_transfers' ? '2px solid #16a34a' : '1px solid #e2e8f0', 
             cursor: 'pointer'
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>
               {lang === 'ru' ? 'Ожидаемые приходы' : 'Kutilayotgan Kirimlar'}
             </span>
-            <ArrowDownRight size={20} style={{ color: '#16a34a' }} />
+            <ArrowDownRight size={18} style={{ color: '#16a34a' }} />
           </div>
-          <div style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', margin: '8px 0 2px' }}>
-            {pendingTransfers.length} <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>{lang === 'ru' ? 'партий' : 'ta partiya'}</span>
+          <div className="kpi-amount-text" style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', margin: '6px 0 2px' }}>
+            {pendingTransfers.length} <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>{lang === 'ru' ? 'партий' : 'ta partiya'}</span>
           </div>
-          <div style={{ fontSize: '12px', color: '#64748b' }}>
-            {lang === 'ru' ? 'Всего:' : 'Jami:'} {pendingTransfers.reduce((acc, t) => acc + Number(t.quantity || 0), 0)} {lang === 'ru' ? 'шт. ожидается' : 'dona tovar qabul kutilmoqda'}
+          <div className="kpi-sub-text" style={{ fontSize: '11px', color: '#64748b' }}>
+            {lang === 'ru' ? 'Всего:' : 'Jami:'} {pendingTransfers.reduce((acc, t) => acc + Number(t.quantity || 0), 0)} {lang === 'ru' ? 'шт.' : 'dona kutilmoqda'}
           </div>
         </div>
 
         <div 
           onClick={() => setActiveTab('dispatch_orders')}
+          className="kpi-card-box"
           style={{ 
             background: '#ffffff', 
-            borderRadius: '14px', 
-            padding: '18px', 
+            borderRadius: '16px', 
+            padding: '16px', 
             border: activeTab === 'dispatch_orders' ? '2px solid #2563eb' : '1px solid #e2e8f0', 
             cursor: 'pointer'
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>
               {lang === 'ru' ? 'Готовые к отгрузке' : 'Otgruzkaga Tayyor Zakazlar'}
             </span>
-            <Truck size={20} style={{ color: '#2563eb' }} />
+            <Truck size={18} style={{ color: '#2563eb' }} />
           </div>
-          <div style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', margin: '8px 0 2px' }}>
-            {readyToDispatchOrders.length} <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>{lang === 'ru' ? 'заказов' : 'ta buyurtma'}</span>
+          <div className="kpi-amount-text" style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', margin: '6px 0 2px' }}>
+            {readyToDispatchOrders.length} <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>{lang === 'ru' ? 'заказов' : 'ta buyurtma'}</span>
           </div>
-          <div style={{ fontSize: '12px', color: '#64748b' }}>
-            {lang === 'ru' ? 'Оплата подтверждена бухгалтером' : 'Buxgalter tasdiqlagan, yuborilsa skladdan yechiladi'}
+          <div className="kpi-sub-text" style={{ fontSize: '11px', color: '#64748b' }}>
+            {lang === 'ru' ? 'Оплата подтверждена' : 'Buxgalter tasdiqlagan, berish kerak'}
           </div>
         </div>
 
         <div 
           onClick={() => setActiveTab('inventory')}
+          className="kpi-card-box"
           style={{ 
             background: '#ffffff', 
-            borderRadius: '14px', 
-            padding: '18px', 
+            borderRadius: '16px', 
+            padding: '16px', 
             border: activeTab === 'inventory' ? '2px solid #2563eb' : '1px solid #e2e8f0', 
             cursor: 'pointer'
           }}
         >
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>
+            <span style={{ fontSize: '12px', fontWeight: 600, color: '#64748b' }}>
               {lang === 'ru' ? 'Складские остатки' : 'Sklad Zaxirasi'}
             </span>
-            <Box size={20} style={{ color: '#475569' }} />
+            <Box size={18} style={{ color: '#475569' }} />
           </div>
-          <div style={{ fontSize: '26px', fontWeight: 800, color: '#0f172a', margin: '8px 0 2px' }}>
-            {safeProducts.reduce((acc, p) => acc + Number(p.stock || 0), 0)} <span style={{ fontSize: '14px', fontWeight: 600, color: '#64748b' }}>{lang === 'ru' ? 'шт.' : 'dona'} ({safeProducts.length} {lang === 'ru' ? 'наим.' : 'xil'})</span>
+          <div className="kpi-amount-text" style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a', margin: '6px 0 2px' }}>
+            {safeProducts.reduce((acc, p) => acc + Number(p.stock || 0), 0)} <span style={{ fontSize: '13px', fontWeight: 600, color: '#64748b' }}>{lang === 'ru' ? 'шт.' : 'dona'} ({safeProducts.length} {lang === 'ru' ? 'наим.' : 'xil'})</span>
           </div>
-          <div style={{ fontSize: '12px', color: lowStockProducts.length > 0 ? '#dc2626' : '#64748b', fontWeight: lowStockProducts.length > 0 ? 700 : 400 }}>
+          <div className="kpi-sub-text" style={{ fontSize: '11px', color: lowStockProducts.length > 0 ? '#dc2626' : '#64748b', fontWeight: lowStockProducts.length > 0 ? 700 : 400 }}>
             {lowStockProducts.length > 0 
               ? (lang === 'ru' ? `Мало на складе: ${lowStockProducts.length} позиций` : `${lowStockProducts.length} ta tovar kam qolgan`) 
               : (lang === 'ru' ? 'Остатки в норме' : "Zaxira me'yorda")}
@@ -245,62 +248,68 @@ export default function WarehouseView({
       </div>
 
       {/* Tabs Navigation */}
-      <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid #e2e8f0', marginBottom: '24px' }}>
+      <div className="cabinet-tabs-scroll">
         <button
           onClick={() => setActiveTab('receive_transfers')}
           style={{
-            padding: '12px 16px',
+            padding: '10px 16px',
             border: 'none',
             background: 'none',
             borderBottom: activeTab === 'receive_transfers' ? '2px solid #16a34a' : '2px solid transparent',
             color: activeTab === 'receive_transfers' ? '#16a34a' : '#64748b',
             fontWeight: 700,
-            fontSize: '14px',
+            fontSize: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px',
+            flexShrink: 0,
+            whiteSpace: 'nowrap'
           }}
         >
-          <ArrowDownRight size={17} /> 1. {t('tabWarehouseTransfers')} ({pendingTransfers.length})
+          <ArrowDownRight size={16} /> 1. {t('tabWarehouseTransfers')} ({pendingTransfers.length})
         </button>
 
         <button
           onClick={() => setActiveTab('dispatch_orders')}
           style={{
-            padding: '12px 16px',
+            padding: '10px 16px',
             border: 'none',
             background: 'none',
             borderBottom: activeTab === 'dispatch_orders' ? '2px solid #2563eb' : '2px solid transparent',
             color: activeTab === 'dispatch_orders' ? '#2563eb' : '#64748b',
             fontWeight: 700,
-            fontSize: '14px',
+            fontSize: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px',
+            flexShrink: 0,
+            whiteSpace: 'nowrap'
           }}
         >
-          <Truck size={17} /> 2. {t('tabWarehouseDispatch')} ({readyToDispatchOrders.length})
+          <Truck size={16} /> 2. {t('tabWarehouseOrders')} ({readyToDispatchOrders.length})
         </button>
 
         <button
           onClick={() => setActiveTab('inventory')}
           style={{
-            padding: '12px 16px',
+            padding: '10px 16px',
             border: 'none',
             background: 'none',
             borderBottom: activeTab === 'inventory' ? '2px solid #2563eb' : '2px solid transparent',
             color: activeTab === 'inventory' ? '#2563eb' : '#64748b',
             fontWeight: 700,
-            fontSize: '14px',
+            fontSize: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px',
+            flexShrink: 0,
+            whiteSpace: 'nowrap'
           }}
         >
-          <Layers size={17} /> 3. {t('tabWarehouseStock')}
+          <Box size={16} /> 3. {t('tabWarehouseStock')} ({safeProducts.length})
         </button>
       </div>
 

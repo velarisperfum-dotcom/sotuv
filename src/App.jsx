@@ -456,7 +456,7 @@ export default function App() {
 
   // AGAR TIZIMGA KIRGAN BO'LSA — FAQAT O'ZIGA TEGISHLI BO'LIM TO'LIQ OCHILADI!
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', flexDirection: 'column', width: '100%', overflowX: 'hidden' }}>
       {/* Top Corporate White Header */}
       <Header 
         currentUser={activeUser}

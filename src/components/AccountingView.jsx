@@ -111,104 +111,106 @@ export default function AccountingView({
   };
 
   return (
-    <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '24px 20px' }}>
+    <div className="cabinet-container">
       
       {/* Top Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-          <div style={{ width: '44px', height: '44px', borderRadius: '12px', background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Wallet size={24} />
+          <div style={{ width: '40px', height: '40px', borderRadius: '12px', background: '#ecfdf5', color: '#059669', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+            <Wallet size={22} />
           </div>
           <div>
-            <h2 style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>{t('accountingCabinet')}</h2>
-            <p style={{ margin: '2px 0 0', fontSize: '13px', color: '#64748b' }}>
+            <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>{t('accountingCabinet')}</h2>
+            <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>
               {t('accountingNoticeDesc')}
             </p>
           </div>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={() => setShowExpenseModal(true)}
-            style={{ background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '12px', padding: '10px 16px', fontSize: '13px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+            style={{ background: '#f1f5f9', color: '#334155', border: '1px solid #cbd5e1', borderRadius: '10px', padding: '8px 14px', fontSize: '12px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
           >
-            <Plus size={16} /> {t('newExpenseBtn')}
+            <Plus size={15} /> {t('newExpenseBtn')}
           </button>
         </div>
       </div>
 
       {/* Main KPI Balances Cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '14px', marginBottom: '24px' }}>
+      <div className="cabinet-kpi-grid">
         {/* Naqd Kassa */}
-        <div style={{ background: '#ffffff', borderRadius: '18px', padding: '18px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#10b981', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 700 }}>{t('cash')} ({lang === 'ru' ? 'Наличные' : 'Naqd pul'})</span>
-            <DollarSign size={20} />
+        <div className="kpi-card-box" style={{ background: '#ffffff', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#10b981', marginBottom: '6px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700 }}>{t('cash')} ({lang === 'ru' ? 'Наличные' : 'Naqd pul'})</span>
+            <DollarSign size={18} />
           </div>
-          <div style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>{formatMoney(safeBalances.cash)}</div>
-          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+          <div className="kpi-amount-text" style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>{formatMoney(safeBalances.cash)}</div>
+          <div className="kpi-sub-text" style={{ fontSize: '11px', color: '#64748b', marginTop: '3px' }}>
             {lang === 'ru' ? 'Наличная касса и выручка' : 'Naqd savdo va tushumlar'}
           </div>
         </div>
 
         {/* Plastik Karta */}
-        <div style={{ background: '#ffffff', borderRadius: '18px', padding: '18px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#3b82f6', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 700 }}>{t('card')} (Terminal)</span>
-            <CreditCard size={20} />
+        <div className="kpi-card-box" style={{ background: '#ffffff', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#3b82f6', marginBottom: '6px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700 }}>{t('card')} (Terminal)</span>
+            <CreditCard size={18} />
           </div>
-          <div style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>{formatMoney(safeBalances.card)}</div>
-          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+          <div className="kpi-amount-text" style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>{formatMoney(safeBalances.card)}</div>
+          <div className="kpi-sub-text" style={{ fontSize: '11px', color: '#64748b', marginTop: '3px' }}>
             {lang === 'ru' ? 'Банковские карты, Click, Payme' : 'Karta va Click/Payme'}
           </div>
         </div>
 
         {/* Bank Perechisleniye */}
-        <div style={{ background: '#ffffff', borderRadius: '18px', padding: '18px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#8b5cf6', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 700 }}>{t('bank')} ({lang === 'ru' ? 'Расчетный счет' : 'Hisob raqam'})</span>
-            <Building2 size={20} />
+        <div className="kpi-card-box" style={{ background: '#ffffff', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#8b5cf6', marginBottom: '6px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700 }}>{t('bank')} ({lang === 'ru' ? 'Расчетный счет' : 'Hisob raqam'})</span>
+            <Building2 size={18} />
           </div>
-          <div style={{ fontSize: '22px', fontWeight: 800, color: '#0f172a' }}>{formatMoney(safeBalances.bank)}</div>
-          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+          <div className="kpi-amount-text" style={{ fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>{formatMoney(safeBalances.bank)}</div>
+          <div className="kpi-sub-text" style={{ fontSize: '11px', color: '#64748b', marginTop: '3px' }}>
             {lang === 'ru' ? 'Платежное поручение (Перечисление)' : 'Bank to\'lov topshirig\'i (Perech)'}
           </div>
         </div>
 
         {/* Nasiyalar / Qarzlar */}
-        <div style={{ background: '#ffffff', borderRadius: '18px', padding: '18px', border: '1px solid #e2e8f0', boxShadow: '0 2px 4px rgba(0,0,0,0.02)' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#f59e0b', marginBottom: '8px' }}>
-            <span style={{ fontSize: '13px', fontWeight: 700 }}>{t('debt')} ({lang === 'ru' ? 'В долг / Дебиторка' : 'Nasiya'})</span>
-            <Clock size={20} />
+        <div className="kpi-card-box" style={{ background: '#ffffff', borderRadius: '16px', padding: '16px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', color: '#f59e0b', marginBottom: '6px' }}>
+            <span style={{ fontSize: '12px', fontWeight: 700 }}>{t('debt')} ({lang === 'ru' ? 'Дебиторка' : 'Nasiya'})</span>
+            <Clock size={18} />
           </div>
-          <div style={{ fontSize: '22px', fontWeight: 800, color: '#b45309' }}>{formatMoney(totalDebtsRemaining)}</div>
-          <div style={{ fontSize: '11px', color: '#64748b', marginTop: '4px' }}>
+          <div className="kpi-amount-text" style={{ fontSize: '20px', fontWeight: 800, color: '#b45309' }}>{formatMoney(totalDebtsRemaining)}</div>
+          <div className="kpi-sub-text" style={{ fontSize: '11px', color: '#64748b', marginTop: '3px' }}>
             {lang === 'ru' ? 'Неоплаченные долги клиентов' : 'Mijozlarning to\'lanmagan qarzi'}
           </div>
         </div>
       </div>
 
       {/* Tabs Bar */}
-      <div style={{ display: 'flex', gap: '8px', borderBottom: '2px solid #e2e8f0', marginBottom: '20px', overflowX: 'auto', paddingBottom: '2px' }}>
+      <div className="cabinet-tabs-scroll">
         <button
           onClick={() => setActiveTab('orders_approval')}
           style={{
-            padding: '12px 18px',
+            padding: '10px 16px',
             border: 'none',
             background: 'none',
             borderBottom: activeTab === 'orders_approval' ? '3px solid #4f46e5' : '3px solid transparent',
             color: activeTab === 'orders_approval' ? '#4f46e5' : '#64748b',
             fontWeight: 800,
-            fontSize: '14px',
+            fontSize: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px',
+            flexShrink: 0,
+            whiteSpace: 'nowrap'
           }}
         >
-          <ShieldCheck size={18} /> {t('tabOrderApproval')}
+          <ShieldCheck size={16} /> {t('tabOrderApproval')}
           {pendingOrders.length > 0 && (
-            <span style={{ background: '#ef4444', color: '#ffffff', borderRadius: '10px', padding: '2px 8px', fontSize: '11px', fontWeight: 800 }}>
+            <span style={{ background: '#ef4444', color: '#ffffff', borderRadius: '10px', padding: '2px 7px', fontSize: '10px', fontWeight: 800 }}>
               {pendingOrders.length} {lang === 'ru' ? 'новых' : 'yangi'}
             </span>
           )}
@@ -217,58 +219,64 @@ export default function AccountingView({
         <button
           onClick={() => setActiveTab('debts')}
           style={{
-            padding: '12px 18px',
+            padding: '10px 16px',
             border: 'none',
             background: 'none',
             borderBottom: activeTab === 'debts' ? '3px solid #f59e0b' : '3px solid transparent',
             color: activeTab === 'debts' ? '#f59e0b' : '#64748b',
             fontWeight: 800,
-            fontSize: '14px',
+            fontSize: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px',
+            flexShrink: 0,
+            whiteSpace: 'nowrap'
           }}
         >
-          <Clock size={18} /> {t('tabDebts')} ({safeDebts.length})
+          <Clock size={16} /> {t('tabDebts')} ({safeDebts.length})
         </button>
 
         <button
           onClick={() => setActiveTab('salaries')}
           style={{
-            padding: '12px 18px',
+            padding: '10px 16px',
             border: 'none',
             background: 'none',
             borderBottom: activeTab === 'salaries' ? '3px solid #10b981' : '3px solid transparent',
             color: activeTab === 'salaries' ? '#10b981' : '#64748b',
             fontWeight: 800,
-            fontSize: '14px',
+            fontSize: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px',
+            flexShrink: 0,
+            whiteSpace: 'nowrap'
           }}
         >
-          <Users size={18} /> {t('tabSalaries')} ({safeStaff.length})
+          <Users size={16} /> {t('tabSalaries')} ({safeStaff.length})
         </button>
 
         <button
           onClick={() => setActiveTab('expenses')}
           style={{
-            padding: '12px 18px',
+            padding: '10px 16px',
             border: 'none',
             background: 'none',
             borderBottom: activeTab === 'expenses' ? '3px solid #64748b' : '3px solid transparent',
             color: activeTab === 'expenses' ? '#0f172a' : '#64748b',
             fontWeight: 800,
-            fontSize: '14px',
+            fontSize: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px',
+            flexShrink: 0,
+            whiteSpace: 'nowrap'
           }}
         >
-          <FileText size={18} /> {t('tabExpenses')}
+          <FileText size={16} /> {t('tabExpenses')}
         </button>
       </div>
 
@@ -358,7 +366,7 @@ export default function AccountingView({
                     </div>
 
                     {/* Tovarlar va To'lov Izohi */}
-                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '14px', background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px', marginBottom: '14px', background: '#f8fafc', padding: '12px', borderRadius: '12px', border: '1px solid #e2e8f0' }}>
                       <div>
                         <div style={{ fontSize: '12px', fontWeight: 700, color: '#475569', marginBottom: '4px' }}>
                           {lang === 'ru' ? 'Товары в заказе:' : 'Mahsulotlar:'}

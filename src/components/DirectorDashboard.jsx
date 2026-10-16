@@ -231,30 +231,30 @@ export default function DirectorDashboard({
   };
 
   return (
-    <div style={{ maxWidth: '1240px', margin: '0 auto', padding: '24px 20px', fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif" }}>
+    <div className="cabinet-container">
       
       {/* Top Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '16px' }}>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px', flexWrap: 'wrap', gap: '14px' }}>
         <div>
-          <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#0f172a' }}>
+          <h2 style={{ margin: 0, fontSize: '18px', fontWeight: 800, color: '#0f172a' }}>
             {t('directorCabinet')}
           </h2>
-          <p style={{ margin: '4px 0 0', fontSize: '13px', color: '#64748b' }}>
+          <p style={{ margin: '3px 0 0', fontSize: '12px', color: '#64748b' }}>
             {lang === 'ru' 
               ? 'Складские остатки, приходы товаров, аналитика продаж и управление персоналом'
               : 'Sklad zaxirasi, tovar kirimlari, sotuvlar tahlili va xodimlar boshqaruvi'}
           </p>
         </div>
 
-        <div style={{ display: 'flex', gap: '10px' }}>
+        <div style={{ display: 'flex', gap: '8px' }}>
           <button
             onClick={() => { resetStaffForm(); setShowStaffModal(true); }}
             style={{
               background: '#ffffff',
               border: '1px solid #cbd5e1',
               borderRadius: '10px',
-              padding: '10px 16px',
-              fontSize: '13px',
+              padding: '8px 14px',
+              fontSize: '12px',
               fontWeight: 700,
               color: '#334155',
               display: 'flex',
@@ -263,7 +263,7 @@ export default function DirectorDashboard({
               cursor: 'pointer'
             }}
           >
-            <UserPlus size={16} /> {t('addStaffBtn')}
+            <UserPlus size={15} /> {t('addStaffBtn')}
           </button>
 
           <button
@@ -273,8 +273,8 @@ export default function DirectorDashboard({
               color: '#ffffff',
               border: 'none',
               borderRadius: '10px',
-              padding: '10px 18px',
-              fontSize: '13px',
+              padding: '8px 16px',
+              fontSize: '12px',
               fontWeight: 700,
               display: 'flex',
               alignItems: 'center',
@@ -282,68 +282,74 @@ export default function DirectorDashboard({
               cursor: 'pointer'
             }}
           >
-            <Plus size={16} /> {t('sendNewTransferBtn')}
+            <Plus size={15} /> {t('sendNewTransferBtn')}
           </button>
         </div>
       </div>
 
       {/* Tabs */}
-      <div style={{ display: 'flex', gap: '12px', borderBottom: '1px solid #e2e8f0', marginBottom: '24px' }}>
+      <div className="cabinet-tabs-scroll">
         <button
           onClick={() => setActiveTab('overview')}
           style={{
-            padding: '12px 16px',
+            padding: '10px 16px',
             border: 'none',
             background: 'none',
             borderBottom: activeTab === 'overview' ? '2px solid #2563eb' : '2px solid transparent',
             color: activeTab === 'overview' ? '#2563eb' : '#64748b',
             fontWeight: 700,
-            fontSize: '14px',
+            fontSize: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px',
+            flexShrink: 0,
+            whiteSpace: 'nowrap'
           }}
         >
-          <BarChart3 size={17} /> {t('tabOverview')}
+          <BarChart3 size={16} /> {t('tabOverview')}
         </button>
 
         <button
           onClick={() => setActiveTab('transfers')}
           style={{
-            padding: '12px 16px',
+            padding: '10px 16px',
             border: 'none',
             background: 'none',
             borderBottom: activeTab === 'transfers' ? '2px solid #2563eb' : '2px solid transparent',
             color: activeTab === 'transfers' ? '#2563eb' : '#64748b',
             fontWeight: 700,
-            fontSize: '14px',
+            fontSize: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px',
+            flexShrink: 0,
+            whiteSpace: 'nowrap'
           }}
         >
-          <Truck size={17} /> {t('tabTransfers')}
+          <Truck size={16} /> {t('tabTransfers')}
         </button>
 
         <button
           onClick={() => setActiveTab('staff')}
           style={{
-            padding: '12px 16px',
+            padding: '10px 16px',
             border: 'none',
             background: 'none',
             borderBottom: activeTab === 'staff' ? '2px solid #2563eb' : '2px solid transparent',
             color: activeTab === 'staff' ? '#2563eb' : '#64748b',
             fontWeight: 700,
-            fontSize: '14px',
+            fontSize: '13px',
             cursor: 'pointer',
             display: 'flex',
             alignItems: 'center',
-            gap: '8px'
+            gap: '6px',
+            flexShrink: 0,
+            whiteSpace: 'nowrap'
           }}
         >
-          <Key size={17} /> {t('tabStaff')}
+          <Key size={16} /> {t('tabStaff')}
         </button>
       </div>
 
@@ -351,7 +357,7 @@ export default function DirectorDashboard({
       {activeTab === 'overview' && (
         <div>
           {/* 4 Asosiy Metrik Kartalar */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px', marginBottom: '24px' }}>
+          <div className="cabinet-kpi-grid">
             
             {/* Metrik 1: Skladda Qancha Tovar Bor */}
             <div style={{ background: '#ffffff', borderRadius: '14px', padding: '18px 20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
