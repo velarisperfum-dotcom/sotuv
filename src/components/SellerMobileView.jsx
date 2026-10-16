@@ -432,21 +432,21 @@ export default function SellerMobileView({
                     {/* Add to Cart Actions */}
                     <div style={{ flexShrink: 0 }}>
                       {inCart ? (
-                        <div style={{ display: 'flex', alignItems: 'center', background: '#ede9fe', borderRadius: '10px', padding: '2px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', background: '#ede9fe', borderRadius: '10px', padding: '3px' }}>
                           <button
                             onClick={() => updateQuantity(p.id, -1)}
-                            style={{ width: '26px', height: '26px', borderRadius: '7px', border: 'none', background: '#ffffff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                            style={{ width: '30px', height: '30px', borderRadius: '8px', border: 'none', background: '#ffffff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}
                           >
-                            <Minus size={13} />
+                            <Minus size={14} />
                           </button>
-                          <span style={{ width: '22px', textAlign: 'center', fontSize: '12px', fontWeight: 800, color: '#4f46e5' }}>
+                          <span style={{ width: '26px', textAlign: 'center', fontSize: '13px', fontWeight: 800, color: '#4f46e5' }}>
                             {inCart.quantity}
                           </span>
                           <button
                             onClick={() => updateQuantity(p.id, 1)}
-                            style={{ width: '26px', height: '26px', borderRadius: '7px', border: 'none', background: '#ffffff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                            style={{ width: '30px', height: '30px', borderRadius: '8px', border: 'none', background: '#ffffff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', boxShadow: '0 1px 2px rgba(0,0,0,0.06)' }}
                           >
-                            <Plus size={13} />
+                            <Plus size={14} />
                           </button>
                         </div>
                       ) : (
@@ -458,17 +458,18 @@ export default function SellerMobileView({
                             color: '#ffffff',
                             border: 'none',
                             borderRadius: '10px',
-                            padding: '7px 11px',
-                            fontSize: '11px',
+                            padding: '8px 14px',
+                            fontSize: '12px',
                             fontWeight: 700,
                             display: 'flex',
                             alignItems: 'center',
                             gap: '4px',
                             cursor: isOutOfStock ? 'not-allowed' : 'pointer',
-                            whiteSpace: 'nowrap'
+                            whiteSpace: 'nowrap',
+                            boxShadow: isOutOfStock ? 'none' : '0 2px 6px rgba(79, 70, 229, 0.25)'
                           }}
                         >
-                          <Plus size={14} /> Qo'shish
+                          <Plus size={14} /> {t('addBtn') || "Qo'shish"}
                         </button>
                       )}
                     </div>
@@ -755,12 +756,34 @@ export default function SellerMobileView({
                     </div>
                   </div>
 
-                  {/* Workflow steps info */}
-                  <div style={{ marginTop: '10px', background: '#f1f5f9', padding: '6px 10px', borderRadius: '8px', fontSize: '11px', color: '#475569' }}>
-                    {order.status === 'pending_accounting' && "Buxgalter to'lovni tekshirmoqda..."}
-                    {order.status === 'approved_accounting' && "Buxgalter tasdiqladi! Skladchi tovarlarni berishi kutilmoqda..."}
-                    {order.status === 'dispatched_warehouse' && "Skladchi tovarlarni berdi va skladdan yechildi"}
-                    {order.status === 'rejected_accounting' && `Rad etildi: ${order.rejectionReason || "To'lov tasdiqlanmadi"}`}
+                  {/* Workflow steps info & Receipt button */}
+                  <div style={{ marginTop: '10px', background: '#f1f5f9', padding: '8px 10px', borderRadius: '8px', fontSize: '11px', color: '#475569', display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '8px' }}>
+                    <span style={{ flex: 1, minWidth: '180px' }}>
+                      {order.status === 'pending_accounting' && "Buxgalter to'lovni tekshirmoqda..."}
+                      {order.status === 'approved_accounting' && "Buxgalter tasdiqladi! Skladchi tovarlarni berishi kutilmoqda..."}
+                      {order.status === 'dispatched_warehouse' && "Skladchi tovarlarni berdi va skladdan yechildi"}
+                      {order.status === 'rejected_accounting' && `Rad etildi: ${order.rejectionReason || "To'lov tasdiqlanmadi"}`}
+                    </span>
+                    {onOpenReceipt && (
+                      <button
+                        onClick={() => onOpenReceipt(order)}
+                        style={{
+                          background: '#eff6ff',
+                          color: '#2563eb',
+                          border: '1px solid #bfdbfe',
+                          borderRadius: '8px',
+                          padding: '5px 10px',
+                          fontSize: '11px',
+                          fontWeight: 700,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          cursor: 'pointer'
+                        }}
+                      >
+                        <FileText size={12} /> {lang === 'ru' ? 'Чек' : 'Chek'}
+                      </button>
+                    )}
                   </div>
                 </div>
               ))

@@ -23,11 +23,27 @@ import {
 } from './data/initialData';
 
 export default function App() {
+  // Helper: Normalize user role safely so a cabinet ALWAYS renders without blank screens
+  const normalizeRole = (u) => {
+    if (!u) return null;
+    const r = (u.role || u.systemRole || u.position || '').toLowerCase();
+    if (r.includes('dir')) return 'director';
+    if (r.includes('bux') || r.includes('acc')) return 'accountant';
+    if (r.includes('sklad') || r.includes('ware') || r.includes('ombor')) return 'warehouse';
+    return 'seller_mobile';
+  };
+
   // 1. ACTIVE LOGGED IN USER STATE
   const [activeUser, setActiveUser] = useState(() => {
     try {
       const saved = localStorage.getItem('savdo_active_user');
-      return saved ? JSON.parse(saved) : null;
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      if (parsed && typeof parsed === 'object') {
+        const normRole = normalizeRole(parsed);
+        return { ...parsed, role: normRole };
+      }
+      return null;
     } catch {
       return null;
     }
@@ -196,8 +212,13 @@ export default function App() {
 
   // Auth Handlers
   const handleLoginSuccess = (user) => {
-    setActiveUser(user);
-    localStorage.setItem('savdo_active_user', JSON.stringify(user));
+    const normalized = { ...user, role: normalizeRole(user) };
+    setActiveUser(normalized);
+    try {
+      localStorage.setItem('savdo_active_user', JSON.stringify(normalized));
+    } catch (e) {
+      console.error(e);
+    }
   };
 
   const handleLogout = () => {
@@ -455,12 +476,14 @@ export default function App() {
   }
 
   // AGAR TIZIMGA KIRGAN BO'LSA — FAQAT O'ZIGA TEGISHLI BO'LIM TO'LIQ OCHILADI!
+  const userRole = normalizeRole(activeUser);
+
   return (
     <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', flexDirection: 'column', width: '100%', overflowX: 'hidden' }}>
       {/* Top Corporate White Header */}
       <Header 
         currentUser={activeUser}
-        currentRole={activeUser.role}
+        currentRole={userRole}
         onLogout={handleLogout}
         onOpenPwaModal={() => setIsPwaModalOpen(true)}
         balances={balances}
@@ -468,7 +491,7 @@ export default function App() {
 
       <main style={{ flex: 1, paddingBottom: '40px' }}>
         {/* 1. DIREKTOR KABINETI */}
-        {activeUser.role === 'director' && (
+        {userRole === 'director' && (
           <DirectorDashboard 
             sales={sales}
             products={products}
@@ -488,7 +511,7 @@ export default function App() {
         )}
 
         {/* 2. BUXGALTERIYA & TO'LOV NAZORATI KABINETI */}
-        {activeUser.role === 'accountant' && (
+        {userRole === 'accountant' && (
           <AccountingView 
             balances={balances}
             debts={debts}
@@ -521,7 +544,7 @@ export default function App() {
         )}
 
         {/* 3. SKLADCHI & LOGISTIKA KABINETI */}
-        {activeUser.role === 'warehouse' && (
+        {userRole === 'warehouse' && (
           <WarehouseView 
             products={products}
             stockTransfers={stockTransfers}
@@ -535,8 +558,8 @@ export default function App() {
           />
         )}
 
-        {/* 4. SOTUVCHI MOBIL KABINETI (APK REJIMI) */}
-        {activeUser.role === 'seller_mobile' && (
+        {/* 4. SOTUVCHI MOBIL KABINETI (APK REJIMI - Default for any seller or unrecognized role) */}
+        {(userRole === 'seller_mobile' || !['director', 'accountant', 'warehouse'].includes(userRole)) && (
           <SellerMobileView 
             products={products}
             orders={orders}

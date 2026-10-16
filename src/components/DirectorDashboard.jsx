@@ -620,54 +620,114 @@ export default function DirectorDashboard({
             </button>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
-                  <th style={{ padding: '12px 14px' }}>{t('docNumber')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('productName')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('quantity')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('costPrice')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('sellingPrice')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('supplier')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('date')}</th>
-                  <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t('status')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {safeTransfers.length === 0 ? (
-                  <tr>
-                    <td colSpan="8" style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>
-                      {t('emptyList')}
-                    </td>
+          {/* Desktop Table View */}
+          <div className="desktop-table-view">
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
+                    <th style={{ padding: '12px 14px' }}>{t('docNumber')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('productName')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('quantity')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('costPrice')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('sellingPrice')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('supplier')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('date')}</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t('status')}</th>
                   </tr>
-                ) : (
-                  safeTransfers.map(trf => (
-                    <tr key={trf.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '12px 14px', fontWeight: 700, color: '#2563eb' }}>{trf.transferNumber || trf.id}</td>
-                      <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{trf.productName}</td>
-                      <td style={{ padding: '12px 14px', fontWeight: 700, color: '#16a34a' }}>+{trf.quantity} {trf.unit}</td>
-                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{formatMoney(trf.costPrice)}</td>
-                      <td style={{ padding: '12px 14px', color: '#0f172a' }}>{formatMoney(trf.price)}</td>
-                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{trf.supplier}</td>
-                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{trf.createdAt}</td>
-                      <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                        <span style={{
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          background: trf.status === 'received' ? '#dcfce7' : '#fef3c7',
-                          color: trf.status === 'received' ? '#15803d' : '#b45309'
-                        }}>
-                          {trf.status === 'received' ? t('transferReceived') : t('transferPending')}
-                        </span>
+                </thead>
+                <tbody>
+                  {safeTransfers.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>
+                        {t('emptyList')}
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    safeTransfers.map(trf => (
+                      <tr key={trf.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '12px 14px', fontWeight: 700, color: '#2563eb' }}>{trf.transferNumber || trf.id}</td>
+                        <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{trf.productName}</td>
+                        <td style={{ padding: '12px 14px', fontWeight: 700, color: '#16a34a' }}>+{trf.quantity} {trf.unit}</td>
+                        <td style={{ padding: '12px 14px', color: '#64748b' }}>{formatMoney(trf.costPrice)}</td>
+                        <td style={{ padding: '12px 14px', color: '#0f172a' }}>{formatMoney(trf.price)}</td>
+                        <td style={{ padding: '12px 14px', color: '#64748b' }}>{trf.supplier}</td>
+                        <td style={{ padding: '12px 14px', color: '#64748b' }}>{trf.createdAt}</td>
+                        <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                          <span style={{
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            background: trf.status === 'received' ? '#dcfce7' : '#fef3c7',
+                            color: trf.status === 'received' ? '#15803d' : '#b45309'
+                          }}>
+                            {trf.status === 'received' ? t('transferReceived') : t('transferPending')}
+                          </span>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="mobile-card-view">
+            {safeTransfers.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8', fontSize: '13px' }}>
+                {t('emptyList')}
+              </div>
+            ) : (
+              safeTransfers.map(trf => (
+                <div key={trf.id} className="mobile-record-card">
+                  <div className="mobile-record-header">
+                    <span style={{ fontWeight: 800, color: '#2563eb', fontSize: '13px' }}>
+                      {trf.transferNumber || trf.id}
+                    </span>
+                    <span style={{
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      background: trf.status === 'received' ? '#dcfce7' : '#fef3c7',
+                      color: trf.status === 'received' ? '#15803d' : '#b45309'
+                    }}>
+                      {trf.status === 'received' ? t('transferReceived') : t('transferPending')}
+                    </span>
+                  </div>
+
+                  <div style={{ fontSize: '14px', fontWeight: 800, color: '#0f172a' }}>
+                    {trf.productName}
+                  </div>
+
+                  <div className="mobile-record-grid">
+                    <div>
+                      <span className="mobile-record-label">{t('quantity')}: </span>
+                      <span style={{ fontWeight: 800, color: '#16a34a' }}>+{trf.quantity} {trf.unit}</span>
+                    </div>
+                    <div>
+                      <span className="mobile-record-label">{t('costPrice')}: </span>
+                      <span className="mobile-record-val">{formatMoney(trf.costPrice)}</span>
+                    </div>
+                    <div>
+                      <span className="mobile-record-label">{t('sellingPrice')}: </span>
+                      <span className="mobile-record-val">{formatMoney(trf.price)}</span>
+                    </div>
+                    <div>
+                      <span className="mobile-record-label">{t('supplier')}: </span>
+                      <span className="mobile-record-val">{trf.supplier}</span>
+                    </div>
+                  </div>
+
+                  <div style={{ fontSize: '11px', color: '#64748b', display: 'flex', justifyContent: 'space-between', borderTop: '1px solid #f1f5f9', paddingTop: '6px' }}>
+                    <span>{t('date')}:</span>
+                    <span>{trf.createdAt}</span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
@@ -726,130 +786,225 @@ export default function DirectorDashboard({
             </button>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
-                  <th style={{ padding: '12px 14px' }}>{t('colFullName')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('colRole')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('colPhone')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('colUsername')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('colPassword')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('colSalary')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('status')}</th>
-                  <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t('actions')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {safeStaff.map(st => {
-                  const isVisible = !!visiblePasswords[st.id];
-                  const passwordText = st.password || '123';
-                  const isCopied = copiedId === st.id;
+          {/* Desktop Table View */}
+          <div className="desktop-table-view">
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
+                    <th style={{ padding: '12px 14px' }}>{t('colFullName')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('colRole')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('colPhone')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('colUsername')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('colPassword')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('colSalary')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('status')}</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t('actions')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {safeStaff.map(st => {
+                    const isVisible = !!visiblePasswords[st.id];
+                    const passwordText = st.password || '123';
+                    const isCopied = copiedId === st.id;
 
-                  return (
-                    <tr key={st.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{st.name}</td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <span style={{
-                          padding: '2px 8px',
-                          borderRadius: '6px',
-                          fontSize: '11px',
-                          fontWeight: 700,
-                          background: st.role?.toLowerCase().includes('direktor') || st.role?.toLowerCase().includes('директор') ? '#fef3c7' :
-                                      st.role?.toLowerCase().includes('buxgalter') || st.role?.toLowerCase().includes('бухгалтер') ? '#dcfce7' :
-                                      st.role?.toLowerCase().includes('sklad') || st.role?.toLowerCase().includes('склад') ? '#e0f2fe' : '#ede9fe',
-                          color: st.role?.toLowerCase().includes('direktor') || st.role?.toLowerCase().includes('директор') ? '#b45309' :
-                                 st.role?.toLowerCase().includes('buxgalter') || st.role?.toLowerCase().includes('бухгалтер') ? '#15803d' :
-                                 st.role?.toLowerCase().includes('sklad') || st.role?.toLowerCase().includes('склад') ? '#0369a1' : '#6d28d9'
-                        }}>
-                          {st.role}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{st.phone || '—'}</td>
-                      
-                      {/* Tizim Logini */}
-                      <td style={{ padding: '12px 14px' }}>
-                        <span style={{
-                          fontFamily: 'monospace',
-                          background: '#eff6ff',
-                          color: '#2563eb',
-                          fontWeight: 700,
-                          padding: '3px 8px',
-                          borderRadius: '6px',
-                          fontSize: '12px'
-                        }}>
-                          {st.username || st.name.toLowerCase().replace(/\s+/g, '')}
-                        </span>
-                      </td>
-
-                      {/* Tizim Paroli (Show / Hide & Copy) */}
-                      <td style={{ padding: '12px 14px' }}>
-                        <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f8fafc', padding: '3px 8px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                    return (
+                      <tr key={st.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{st.name}</td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <span style={{
+                            padding: '2px 8px',
+                            borderRadius: '6px',
+                            fontSize: '11px',
+                            fontWeight: 700,
+                            background: st.role?.toLowerCase().includes('direktor') || st.role?.toLowerCase().includes('директор') ? '#fef3c7' :
+                                        st.role?.toLowerCase().includes('buxgalter') || st.role?.toLowerCase().includes('бухгалтер') ? '#dcfce7' :
+                                        st.role?.toLowerCase().includes('sklad') || st.role?.toLowerCase().includes('склад') ? '#e0f2fe' : '#ede9fe',
+                            color: st.role?.toLowerCase().includes('direktor') || st.role?.toLowerCase().includes('директор') ? '#b45309' :
+                                   st.role?.toLowerCase().includes('buxgalter') || st.role?.toLowerCase().includes('бухгалтер') ? '#15803d' :
+                                   st.role?.toLowerCase().includes('sklad') || st.role?.toLowerCase().includes('склад') ? '#0369a1' : '#6d28d9'
+                          }}>
+                            {st.role}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 14px', color: '#64748b' }}>{st.phone || '—'}</td>
+                        
+                        {/* Tizim Logini */}
+                        <td style={{ padding: '12px 14px' }}>
                           <span style={{
                             fontFamily: 'monospace',
+                            background: '#eff6ff',
+                            color: '#2563eb',
                             fontWeight: 700,
-                            color: isVisible ? '#0f172a' : '#94a3b8',
-                            fontSize: '12px',
-                            minWidth: '55px'
+                            padding: '3px 8px',
+                            borderRadius: '6px',
+                            fontSize: '12px'
                           }}>
-                            {isVisible ? passwordText : '••••••'}
+                            {st.username || st.name.toLowerCase().replace(/\s+/g, '')}
                           </span>
+                        </td>
 
-                          {/* Eye Toggle */}
-                          <button
-                            type="button"
-                            onClick={() => togglePasswordVisibility(st.id)}
-                            style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '2px', display: 'flex' }}
-                            title={isVisible ? t('hidePassword') : t('showPassword')}
-                          >
-                            {isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
-                          </button>
+                        {/* Tizim Paroli (Show / Hide & Copy) */}
+                        <td style={{ padding: '12px 14px' }}>
+                          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#f8fafc', padding: '3px 8px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                            <span style={{
+                              fontFamily: 'monospace',
+                              fontWeight: 700,
+                              color: isVisible ? '#0f172a' : '#94a3b8',
+                              fontSize: '12px',
+                              minWidth: '55px'
+                            }}>
+                              {isVisible ? passwordText : '••••••'}
+                            </span>
 
-                          {/* Copy Button */}
-                          <button
-                            type="button"
-                            onClick={() => copyToClipboard(passwordText, st.id)}
-                            style={{ background: 'none', border: 'none', color: isCopied ? '#16a34a' : '#64748b', cursor: 'pointer', padding: '2px', display: 'flex' }}
-                            title={isCopied ? t('copied') : t('copyPassword')}
-                          >
-                            {isCopied ? <Check size={14} /> : <Copy size={14} />}
-                          </button>
-                        </div>
-                      </td>
+                            {/* Eye Toggle */}
+                            <button
+                              type="button"
+                              onClick={() => togglePasswordVisibility(st.id)}
+                              style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                              title={isVisible ? t('hidePassword') : t('showPassword')}
+                            >
+                              {isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
+                            </button>
 
-                      <td style={{ padding: '12px 14px', color: '#0f172a', fontWeight: 600 }}>{formatMoney(st.baseSalary)}</td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <span style={{ background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
-                          {t('active')}
+                            {/* Copy Button */}
+                            <button
+                              type="button"
+                              onClick={() => copyToClipboard(passwordText, st.id)}
+                              style={{ background: 'none', border: 'none', color: isCopied ? '#16a34a' : '#64748b', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                              title={isCopied ? t('copied') : t('copyPassword')}
+                            >
+                              {isCopied ? <Check size={14} /> : <Copy size={14} />}
+                            </button>
+                          </div>
+                        </td>
+
+                        <td style={{ padding: '12px 14px', color: '#0f172a', fontWeight: 600 }}>{formatMoney(st.baseSalary)}</td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <span style={{ background: '#dcfce7', color: '#15803d', padding: '2px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+                            {t('active')}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                          <div style={{ display: 'inline-flex', gap: '6px' }}>
+                            <button
+                              onClick={() => openEditStaff(st)}
+                              style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '5px 8px', cursor: 'pointer', color: '#475569' }}
+                              title={t('edit')}
+                            >
+                              <Edit2 size={13} />
+                            </button>
+                            <button
+                              onClick={() => {
+                                if (confirm(`${st.name} - ${t('delete')}?`)) {
+                                  onDeleteStaff(st.id);
+                                }
+                              }}
+                              style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 8px', cursor: 'pointer', color: '#dc2626' }}
+                              title={t('delete')}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="mobile-card-view">
+            {safeStaff.map(st => {
+              const isVisible = !!visiblePasswords[st.id];
+              const passwordText = st.password || '123';
+              const isCopied = copiedId === st.id;
+
+              return (
+                <div key={st.id} className="mobile-record-card">
+                  <div className="mobile-record-header">
+                    <div>
+                      <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '14px' }}>{st.name}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{st.phone || '—'}</div>
+                    </div>
+                    <span style={{
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: 700,
+                      background: st.role?.toLowerCase().includes('direktor') || st.role?.toLowerCase().includes('директор') ? '#fef3c7' :
+                                  st.role?.toLowerCase().includes('buxgalter') || st.role?.toLowerCase().includes('бухгалтер') ? '#dcfce7' :
+                                  st.role?.toLowerCase().includes('sklad') || st.role?.toLowerCase().includes('склад') ? '#e0f2fe' : '#ede9fe',
+                      color: st.role?.toLowerCase().includes('direktor') || st.role?.toLowerCase().includes('директор') ? '#b45309' :
+                             st.role?.toLowerCase().includes('buxgalter') || st.role?.toLowerCase().includes('бухгалтер') ? '#15803d' :
+                             st.role?.toLowerCase().includes('sklad') || st.role?.toLowerCase().includes('склад') ? '#0369a1' : '#6d28d9'
+                    }}>
+                      {st.role}
+                    </span>
+                  </div>
+
+                  <div style={{ background: '#f8fafc', padding: '10px 12px', borderRadius: '10px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                    <div className="mobile-record-row">
+                      <span className="mobile-record-label">{t('colUsername')}:</span>
+                      <span style={{ fontFamily: 'monospace', background: '#eff6ff', color: '#2563eb', fontWeight: 700, padding: '2px 6px', borderRadius: '4px', fontSize: '12px' }}>
+                        {st.username || st.name.toLowerCase().replace(/\s+/g, '')}
+                      </span>
+                    </div>
+
+                    <div className="mobile-record-row">
+                      <span className="mobile-record-label">{t('colPassword')}:</span>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: '6px', background: '#ffffff', padding: '3px 8px', borderRadius: '6px', border: '1px solid #e2e8f0' }}>
+                        <span style={{ fontFamily: 'monospace', fontWeight: 700, color: isVisible ? '#0f172a' : '#94a3b8', fontSize: '12px', minWidth: '55px' }}>
+                          {isVisible ? passwordText : '••••••'}
                         </span>
-                      </td>
-                      <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                        <div style={{ display: 'inline-flex', gap: '6px' }}>
-                          <button
-                            onClick={() => openEditStaff(st)}
-                            style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '5px 8px', cursor: 'pointer', color: '#475569' }}
-                            title={t('edit')}
-                          >
-                            <Edit2 size={13} />
-                          </button>
-                          <button
-                            onClick={() => {
-                              if (confirm(`${st.name} - ${t('delete')}?`)) {
-                                onDeleteStaff(st.id);
-                              }
-                            }}
-                            style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 8px', cursor: 'pointer', color: '#dc2626' }}
-                            title={t('delete')}
-                          >
-                            <Trash2 size={13} />
-                          </button>
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+                        <button
+                          type="button"
+                          onClick={() => togglePasswordVisibility(st.id)}
+                          style={{ background: 'none', border: 'none', color: '#64748b', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                          title={isVisible ? t('hidePassword') : t('showPassword')}
+                        >
+                          {isVisible ? <EyeOff size={14} /> : <Eye size={14} />}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => copyToClipboard(passwordText, st.id)}
+                          style={{ background: 'none', border: 'none', color: isCopied ? '#16a34a' : '#64748b', cursor: 'pointer', padding: '2px', display: 'flex' }}
+                          title={isCopied ? t('copied') : t('copyPassword')}
+                        >
+                          {isCopied ? <Check size={14} /> : <Copy size={14} />}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div className="mobile-record-row">
+                      <span className="mobile-record-label">{t('colSalary')}:</span>
+                      <span style={{ fontWeight: 800, color: '#0f172a' }}>{formatMoney(st.baseSalary)}</span>
+                    </div>
+                  </div>
+
+                  <div className="mobile-record-actions">
+                    <button
+                      onClick={() => openEditStaff(st)}
+                      style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '7px 14px', fontSize: '12px', fontWeight: 600, color: '#475569', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                    >
+                      <Edit2 size={13} /> {t('edit')}
+                    </button>
+                    <button
+                      onClick={() => {
+                        if (confirm(`${st.name} - ${t('delete')}?`)) {
+                          onDeleteStaff(st.id);
+                        }
+                      }}
+                      style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '8px', padding: '7px 14px', fontSize: '12px', fontWeight: 600, color: '#dc2626', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                    >
+                      <Trash2 size={13} /> {t('delete')}
+                    </button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

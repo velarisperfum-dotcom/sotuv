@@ -394,7 +394,7 @@ export default function AccountingView({
                     </div>
 
                     {/* Tasdiqlash / Rad etish tugmalari */}
-                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '10px', flexWrap: 'wrap' }}>
                       <button
                         onClick={() => { setRejectingOrder(order); setRejectReason(''); }}
                         style={{
@@ -402,13 +402,15 @@ export default function AccountingView({
                           color: '#dc2626',
                           border: 'none',
                           borderRadius: '10px',
-                          padding: '10px 18px',
+                          padding: '11px 18px',
                           fontSize: '13px',
                           fontWeight: 700,
                           display: 'flex',
                           alignItems: 'center',
+                          justifyContent: 'center',
                           gap: '6px',
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          flex: '1 1 120px'
                         }}
                       >
                         <X size={16} /> {t('rejectOrderBtn')}
@@ -421,13 +423,16 @@ export default function AccountingView({
                           color: '#ffffff',
                           border: 'none',
                           borderRadius: '10px',
-                          padding: '10px 22px',
+                          padding: '11px 22px',
                           fontSize: '13px',
                           fontWeight: 700,
                           display: 'flex',
                           alignItems: 'center',
+                          justifyContent: 'center',
                           gap: '6px',
-                          cursor: 'pointer'
+                          cursor: 'pointer',
+                          boxShadow: '0 2px 6px rgba(5, 150, 105, 0.25)',
+                          flex: '1 1 140px'
                         }}
                       >
                         <Check size={16} /> {t('approveOrderBtn')}
@@ -485,58 +490,136 @@ export default function AccountingView({
             </div>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
-                  <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Клиент' : 'Mijoz'}</th>
-                  <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Телефон' : 'Telefon'}</th>
-                  <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Общий Долг' : 'Umumiy Qarz'}</th>
-                  <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Остаток Долга' : 'Qolgan Summa'}</th>
-                  <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Срок' : 'Muddat'}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('status')}</th>
-                  <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t('actions')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {safeDebts.length === 0 ? (
-                  <tr>
-                    <td colSpan="7" style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>
-                      {lang === 'ru' ? 'На данный момент задолженностей нет' : 'Hozirda qarzdorliklar mavjud emas'}
-                    </td>
+          {/* Desktop Table View */}
+          <div className="desktop-table-view">
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
+                    <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Клиент' : 'Mijoz'}</th>
+                    <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Телефон' : 'Telefon'}</th>
+                    <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Общий Долг' : 'Umumiy Qarz'}</th>
+                    <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Остаток Долга' : 'Qolgan Summa'}</th>
+                    <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Срок' : 'Muddat'}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('status')}</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t('actions')}</th>
                   </tr>
-                ) : (
-                  safeDebts.map(debt => (
-                    <tr key={debt.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{debt.customerName}</td>
-                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{debt.customerPhone || '—'}</td>
-                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{formatMoney(debt.totalDebt)}</td>
-                      <td style={{ padding: '12px 14px', fontWeight: 800, color: '#dc2626' }}>{formatMoney(debt.remainingAmount)}</td>
-                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{debt.dueDate || debt.date || '—'}</td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <span style={{ background: debt.remainingAmount === 0 ? '#dcfce7' : '#fee2e2', color: debt.remainingAmount === 0 ? '#15803d' : '#b91c1c', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
-                          {debt.remainingAmount === 0 ? (lang === 'ru' ? 'Полностью погашен' : "To'liq so'ndirilgan") : (lang === 'ru' ? 'Не оплачен' : "To'lanmagan")}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                        {debt.remainingAmount > 0 && (
-                          <button
-                            onClick={() => {
-                              setSelectedDebt(debt);
-                              setPayAmount(debt.remainingAmount);
-                              setShowPayDebtModal(true);
-                            }}
-                            style={{ background: '#10b981', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
-                          >
-                            {t('payDebtBtn')}
-                          </button>
-                        )}
+                </thead>
+                <tbody>
+                  {safeDebts.length === 0 ? (
+                    <tr>
+                      <td colSpan="7" style={{ padding: '30px', textAlign: 'center', color: '#64748b' }}>
+                        {lang === 'ru' ? 'На данный момент задолженностей нет' : 'Hozirda qarzdorliklar mavjud emas'}
                       </td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                  ) : (
+                    safeDebts.map(debt => (
+                      <tr key={debt.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{debt.customerName}</td>
+                        <td style={{ padding: '12px 14px', color: '#64748b' }}>{debt.customerPhone || '—'}</td>
+                        <td style={{ padding: '12px 14px', color: '#64748b' }}>{formatMoney(debt.totalDebt)}</td>
+                        <td style={{ padding: '12px 14px', fontWeight: 800, color: '#dc2626' }}>{formatMoney(debt.remainingAmount)}</td>
+                        <td style={{ padding: '12px 14px', color: '#64748b' }}>{debt.dueDate || debt.date || '—'}</td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <span style={{ background: debt.remainingAmount === 0 ? '#dcfce7' : '#fee2e2', color: debt.remainingAmount === 0 ? '#15803d' : '#b91c1c', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+                            {debt.remainingAmount === 0 ? (lang === 'ru' ? 'Полностью погашен' : "To'liq so'ndirilgan") : (lang === 'ru' ? 'Не оплачен' : "To'lanmagan")}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                          {debt.remainingAmount > 0 && (
+                            <button
+                              onClick={() => {
+                                setSelectedDebt(debt);
+                                setPayAmount(debt.remainingAmount);
+                                setShowPayDebtModal(true);
+                              }}
+                              style={{ background: '#10b981', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                            >
+                              {t('payDebtBtn')}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="mobile-card-view">
+            {safeDebts.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px', color: '#64748b' }}>
+                {lang === 'ru' ? 'На данный момент задолженностей нет' : 'Hozirda qarzdorliklar mavjud emas'}
+              </div>
+            ) : (
+              safeDebts.map(debt => (
+                <div key={debt.id} className="mobile-record-card">
+                  <div className="mobile-record-header">
+                    <div>
+                      <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '14px' }}>{debt.customerName}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{debt.customerPhone || '—'}</div>
+                    </div>
+                    <span style={{
+                      background: debt.remainingAmount === 0 ? '#dcfce7' : '#fee2e2',
+                      color: debt.remainingAmount === 0 ? '#15803d' : '#b91c1c',
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: 700
+                    }}>
+                      {debt.remainingAmount === 0 ? (lang === 'ru' ? 'Погашен' : "So'ndirilgan") : (lang === 'ru' ? 'Не оплачен' : "Qarzdor")}
+                    </span>
+                  </div>
+
+                  <div className="mobile-record-grid">
+                    <div>
+                      <span className="mobile-record-label">{lang === 'ru' ? 'Общий долг:' : 'Umumiy qarz:'}</span>
+                      <span className="mobile-record-val">{formatMoney(debt.totalDebt)}</span>
+                    </div>
+                    <div>
+                      <span className="mobile-record-label">{lang === 'ru' ? 'Остаток:' : 'Qolgan summa:'}</span>
+                      <span style={{ fontWeight: 800, color: '#dc2626' }}>{formatMoney(debt.remainingAmount)}</span>
+                    </div>
+                    <div>
+                      <span className="mobile-record-label">{lang === 'ru' ? 'Срок:' : 'Muddat:'}</span>
+                      <span className="mobile-record-val">{debt.dueDate || debt.date || '—'}</span>
+                    </div>
+                  </div>
+
+                  {debt.remainingAmount > 0 && (
+                    <div className="mobile-record-actions">
+                      <button
+                        onClick={() => {
+                          setSelectedDebt(debt);
+                          setPayAmount(debt.remainingAmount);
+                          setShowPayDebtModal(true);
+                        }}
+                        style={{
+                          background: '#10b981',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '10px',
+                          padding: '10px 16px',
+                          fontSize: '13px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          width: '100%',
+                          boxShadow: '0 2px 6px rgba(16, 185, 129, 0.25)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        {t('payDebtBtn')}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}
@@ -553,55 +636,130 @@ export default function AccountingView({
             </div>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
-                  <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Сотрудник' : 'Xodim'}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('colRole')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('colSalary')}</th>
-                  <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Выплачено' : "To'langan Summa"}</th>
-                  <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Остаток к выплате' : "Qoldiq To'lov"}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('status')}</th>
-                  <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t('actions')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {safeStaff.map(st => {
-                  const remaining = Math.max(0, (st.baseSalary || 0) - (st.paidThisMonth || 0));
-                  return (
-                    <tr key={st.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                      <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{st.name}</td>
-                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{st.role}</td>
-                      <td style={{ padding: '12px 14px', color: '#64748b' }}>{formatMoney(st.baseSalary)}</td>
-                      <td style={{ padding: '12px 14px', color: '#10b981', fontWeight: 700 }}>{formatMoney(st.paidThisMonth)}</td>
-                      <td style={{ padding: '12px 14px', color: remaining > 0 ? '#b45309' : '#64748b', fontWeight: 700 }}>
-                        {formatMoney(remaining)}
-                      </td>
-                      <td style={{ padding: '12px 14px' }}>
-                        <span style={{ background: remaining === 0 ? '#dcfce7' : '#fef3c7', color: remaining === 0 ? '#15803d' : '#b45309', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
-                          {remaining === 0 ? (lang === 'ru' ? 'Выплачено полностью' : "To'liq to'langan") : (lang === 'ru' ? 'К выплате' : "To'lanishi kerak")}
-                        </span>
-                      </td>
-                      <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                        {remaining > 0 && (
-                          <button
-                            onClick={() => {
-                              setSelectedStaff(st);
-                              setSalaryAmount(remaining);
-                              setShowSalaryModal(true);
-                            }}
-                            style={{ background: '#4f46e5', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
-                          >
-                            {t('paySalaryBtn')}
-                          </button>
-                        )}
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
+          {/* Desktop Table View */}
+          <div className="desktop-table-view">
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
+                    <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Сотрудник' : 'Xodim'}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('colRole')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('colSalary')}</th>
+                    <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Выплачено' : "To'langan Summa"}</th>
+                    <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Остаток к выплате' : "Qoldiq To'lov"}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('status')}</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t('actions')}</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {safeStaff.map(st => {
+                    const remaining = Math.max(0, (st.baseSalary || 0) - (st.paidThisMonth || 0));
+                    return (
+                      <tr key={st.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                        <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{st.name}</td>
+                        <td style={{ padding: '12px 14px', color: '#64748b' }}>{st.role}</td>
+                        <td style={{ padding: '12px 14px', color: '#64748b' }}>{formatMoney(st.baseSalary)}</td>
+                        <td style={{ padding: '12px 14px', color: '#10b981', fontWeight: 700 }}>{formatMoney(st.paidThisMonth)}</td>
+                        <td style={{ padding: '12px 14px', color: remaining > 0 ? '#b45309' : '#64748b', fontWeight: 700 }}>
+                          {formatMoney(remaining)}
+                        </td>
+                        <td style={{ padding: '12px 14px' }}>
+                          <span style={{ background: remaining === 0 ? '#dcfce7' : '#fef3c7', color: remaining === 0 ? '#15803d' : '#b45309', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
+                            {remaining === 0 ? (lang === 'ru' ? 'Выплачено полностью' : "To'liq to'langan") : (lang === 'ru' ? 'К выплате' : "To'lanishi kerak")}
+                          </span>
+                        </td>
+                        <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                          {remaining > 0 && (
+                            <button
+                              onClick={() => {
+                                setSelectedStaff(st);
+                                setSalaryAmount(remaining);
+                                setShowSalaryModal(true);
+                              }}
+                              style={{ background: '#4f46e5', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
+                            >
+                              {t('paySalaryBtn')}
+                            </button>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="mobile-card-view">
+            {safeStaff.map(st => {
+              const remaining = Math.max(0, (st.baseSalary || 0) - (st.paidThisMonth || 0));
+              return (
+                <div key={st.id} className="mobile-record-card">
+                  <div className="mobile-record-header">
+                    <div>
+                      <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '14px' }}>{st.name}</div>
+                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{st.role}</div>
+                    </div>
+                    <span style={{
+                      background: remaining === 0 ? '#dcfce7' : '#fef3c7',
+                      color: remaining === 0 ? '#15803d' : '#b45309',
+                      padding: '3px 8px',
+                      borderRadius: '6px',
+                      fontSize: '11px',
+                      fontWeight: 700
+                    }}>
+                      {remaining === 0 ? (lang === 'ru' ? 'Выплачено' : "To'langan") : (lang === 'ru' ? 'К выплате' : "To'lanishi kerak")}
+                    </span>
+                  </div>
+
+                  <div className="mobile-record-grid">
+                    <div>
+                      <span className="mobile-record-label">{t('colSalary')}: </span>
+                      <span className="mobile-record-val">{formatMoney(st.baseSalary)}</span>
+                    </div>
+                    <div>
+                      <span className="mobile-record-label">{lang === 'ru' ? 'Выплачено:' : "To'landi:"} </span>
+                      <span style={{ fontWeight: 800, color: '#10b981' }}>{formatMoney(st.paidThisMonth)}</span>
+                    </div>
+                    <div>
+                      <span className="mobile-record-label">{lang === 'ru' ? 'Остаток:' : 'Qoldiq:'} </span>
+                      <span style={{ fontWeight: 800, color: remaining > 0 ? '#b45309' : '#64748b' }}>{formatMoney(remaining)}</span>
+                    </div>
+                  </div>
+
+                  {remaining > 0 && (
+                    <div className="mobile-record-actions">
+                      <button
+                        onClick={() => {
+                          setSelectedStaff(st);
+                          setSalaryAmount(remaining);
+                          setShowSalaryModal(true);
+                        }}
+                        style={{
+                          background: '#4f46e5',
+                          color: '#ffffff',
+                          border: 'none',
+                          borderRadius: '10px',
+                          padding: '10px 16px',
+                          fontSize: '13px',
+                          fontWeight: 700,
+                          cursor: 'pointer',
+                          width: '100%',
+                          boxShadow: '0 2px 6px rgba(79, 70, 229, 0.25)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          gap: '6px'
+                        }}
+                      >
+                        {t('paySalaryBtn')}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

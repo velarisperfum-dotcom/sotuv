@@ -350,8 +350,8 @@ export default function WarehouseView({
                     </div>
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
-                    <div style={{ textAlign: 'right' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '12px', width: '100%', borderTop: '1px solid #e2e8f0', paddingTop: '10px', marginTop: '4px', flexWrap: 'wrap' }}>
+                    <div>
                       <div style={{ fontSize: '11px', color: '#64748b' }}>{t('quantity')}:</div>
                       <div style={{ fontSize: '16px', fontWeight: 800, color: '#16a34a' }}>
                         +{trf.quantity} {trf.unit}
@@ -364,14 +364,17 @@ export default function WarehouseView({
                         background: '#16a34a',
                         color: '#ffffff',
                         border: 'none',
-                        borderRadius: '8px',
-                        padding: '10px 16px',
+                        borderRadius: '10px',
+                        padding: '11px 20px',
                         fontSize: '13px',
                         fontWeight: 700,
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px'
+                        justifyContent: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 6px rgba(22, 163, 74, 0.25)',
+                        flex: '1 1 180px'
                       }}
                     >
                       <Check size={16} /> {t('receiveStockBtn')}
@@ -448,14 +451,17 @@ export default function WarehouseView({
                         background: '#2563eb',
                         color: '#ffffff',
                         border: 'none',
-                        borderRadius: '8px',
-                        padding: '10px 18px',
+                        borderRadius: '10px',
+                        padding: '11px 22px',
                         fontSize: '13px',
                         fontWeight: 700,
                         cursor: 'pointer',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px'
+                        justifyContent: 'center',
+                        gap: '6px',
+                        boxShadow: '0 2px 6px rgba(37, 99, 235, 0.25)',
+                        width: '100%'
                       }}
                     >
                       <PackageCheck size={16} /> {t('dispatchStockBtn')}
@@ -532,82 +538,160 @@ export default function WarehouseView({
             </button>
           </div>
 
-          <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-              <thead>
-                <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
-                  <th style={{ padding: '12px 14px' }}>{t('colProduct')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('colCategory')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('colBarcode')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('colCostPrice')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('colSellingPrice')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('colStock')}</th>
-                  <th style={{ padding: '12px 14px' }}>{t('colCondition')}</th>
-                  <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t('actions')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredProducts.length === 0 ? (
-                  <tr>
-                    <td colSpan="8" style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>
-                      {t('emptyList')}
-                    </td>
+          {/* Desktop Table View */}
+          <div className="desktop-table-view">
+            <div style={{ overflowX: 'auto' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
+                <thead>
+                  <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0', color: '#475569' }}>
+                    <th style={{ padding: '12px 14px' }}>{t('colProduct')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('colCategory')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('colBarcode')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('colCostPrice')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('colSellingPrice')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('colStock')}</th>
+                    <th style={{ padding: '12px 14px' }}>{t('colCondition')}</th>
+                    <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t('actions')}</th>
                   </tr>
-                ) : (
-                  filteredProducts.map(p => {
-                    const isLow = (p.stock || 0) <= (p.minStock || 3);
-                    const isOut = (p.stock || 0) <= 0;
+                </thead>
+                <tbody>
+                  {filteredProducts.length === 0 ? (
+                    <tr>
+                      <td colSpan="8" style={{ padding: '36px', textAlign: 'center', color: '#94a3b8' }}>
+                        {t('emptyList')}
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredProducts.map(p => {
+                      const isLow = (p.stock || 0) <= (p.minStock || 3);
+                      const isOut = (p.stock || 0) <= 0;
 
-                    return (
-                      <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{p.name}</td>
-                        <td style={{ padding: '12px 14px', color: '#64748b' }}>{p.category}</td>
-                        <td style={{ padding: '12px 14px', fontFamily: 'monospace', color: '#475569', fontSize: '11px' }}>{p.barcode || '—'}</td>
-                        <td style={{ padding: '12px 14px', color: '#64748b' }}>{formatMoney(p.costPrice)}</td>
-                        <td style={{ padding: '12px 14px', color: '#0f172a', fontWeight: 700 }}>{formatMoney(p.price)}</td>
-                        <td style={{ padding: '12px 14px', fontWeight: 800, color: isOut ? '#dc2626' : isLow ? '#d97706' : '#16a34a' }}>
+                      return (
+                        <tr key={p.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
+                          <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{p.name}</td>
+                          <td style={{ padding: '12px 14px', color: '#64748b' }}>{p.category}</td>
+                          <td style={{ padding: '12px 14px', fontFamily: 'monospace', color: '#475569', fontSize: '11px' }}>{p.barcode || '—'}</td>
+                          <td style={{ padding: '12px 14px', color: '#64748b' }}>{formatMoney(p.costPrice)}</td>
+                          <td style={{ padding: '12px 14px', color: '#0f172a', fontWeight: 700 }}>{formatMoney(p.price)}</td>
+                          <td style={{ padding: '12px 14px', fontWeight: 800, color: isOut ? '#dc2626' : isLow ? '#d97706' : '#16a34a' }}>
+                            {p.stock || 0} {p.unit || 'dona'}
+                          </td>
+                          <td style={{ padding: '12px 14px' }}>
+                            <span style={{
+                              padding: '3px 8px',
+                              borderRadius: '6px',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              background: isOut ? '#fee2e2' : isLow ? '#fef3c7' : '#dcfce7',
+                              color: isOut ? '#dc2626' : isLow ? '#b45309' : '#15803d'
+                            }}>
+                              {isOut ? t('outOfStock') : isLow ? t('lowStock') : t('inStock')}
+                            </span>
+                          </td>
+                          <td style={{ padding: '12px 14px', textAlign: 'right' }}>
+                            <div style={{ display: 'inline-flex', gap: '6px' }}>
+                              <button
+                                onClick={() => openEdit(p)}
+                                style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '5px 8px', cursor: 'pointer', color: '#475569' }}
+                                title={t('edit')}
+                              >
+                                <Edit2 size={13} />
+                              </button>
+                              <button
+                                onClick={() => {
+                                  if (confirm(`${p.name} - ${t('delete')}?`)) {
+                                    onDeleteProduct(p.id);
+                                  }
+                                }}
+                                style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 8px', cursor: 'pointer', color: '#dc2626' }}
+                                title={t('delete')}
+                              >
+                                <Trash2 size={13} />
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Mobile Card View */}
+          <div className="mobile-card-view">
+            {filteredProducts.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8', fontSize: '13px' }}>
+                {t('emptyList')}
+              </div>
+            ) : (
+              filteredProducts.map(p => {
+                const isLow = (p.stock || 0) <= (p.minStock || 3);
+                const isOut = (p.stock || 0) <= 0;
+
+                return (
+                  <div key={p.id} className="mobile-record-card">
+                    <div className="mobile-record-header">
+                      <div>
+                        <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '14px' }}>{p.name}</div>
+                        <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{p.category}</div>
+                      </div>
+                      <span style={{
+                        padding: '3px 8px',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: 700,
+                        background: isOut ? '#fee2e2' : isLow ? '#fef3c7' : '#dcfce7',
+                        color: isOut ? '#dc2626' : isLow ? '#b45309' : '#15803d'
+                      }}>
+                        {isOut ? t('outOfStock') : isLow ? t('lowStock') : t('inStock')}
+                      </span>
+                    </div>
+
+                    <div className="mobile-record-grid">
+                      <div>
+                        <span className="mobile-record-label">{t('colStock')}: </span>
+                        <span style={{ fontWeight: 800, color: isOut ? '#dc2626' : isLow ? '#d97706' : '#16a34a' }}>
                           {p.stock || 0} {p.unit || 'dona'}
-                        </td>
-                        <td style={{ padding: '12px 14px' }}>
-                          <span style={{
-                            padding: '3px 8px',
-                            borderRadius: '6px',
-                            fontSize: '11px',
-                            fontWeight: 700,
-                            background: isOut ? '#fee2e2' : isLow ? '#fef3c7' : '#dcfce7',
-                            color: isOut ? '#dc2626' : isLow ? '#b45309' : '#15803d'
-                          }}>
-                            {isOut ? t('outOfStock') : isLow ? t('lowStock') : t('inStock')}
-                          </span>
-                        </td>
-                        <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                          <div style={{ display: 'inline-flex', gap: '6px' }}>
-                            <button
-                              onClick={() => openEdit(p)}
-                              style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '6px', padding: '5px 8px', cursor: 'pointer', color: '#475569' }}
-                              title={t('edit')}
-                            >
-                              <Edit2 size={13} />
-                            </button>
-                            <button
-                              onClick={() => {
-                                if (confirm(`${p.name} - ${t('delete')}?`)) {
-                                  onDeleteProduct(p.id);
-                                }
-                              }}
-                              style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '6px', padding: '5px 8px', cursor: 'pointer', color: '#dc2626' }}
-                              title={t('delete')}
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })
-                )}
-              </tbody>
-            </table>
+                        </span>
+                      </div>
+                      <div>
+                        <span className="mobile-record-label">{t('colSellingPrice')}: </span>
+                        <span className="mobile-record-val" style={{ color: '#2563eb' }}>{formatMoney(p.price)}</span>
+                      </div>
+                      <div>
+                        <span className="mobile-record-label">{t('colCostPrice')}: </span>
+                        <span className="mobile-record-val">{formatMoney(p.costPrice)}</span>
+                      </div>
+                      <div>
+                        <span className="mobile-record-label">{t('colBarcode')}: </span>
+                        <span style={{ fontFamily: 'monospace', fontSize: '11px', color: '#475569' }}>{p.barcode || '—'}</span>
+                      </div>
+                    </div>
+
+                    <div className="mobile-record-actions">
+                      <button
+                        onClick={() => openEdit(p)}
+                        style={{ background: '#f1f5f9', border: '1px solid #cbd5e1', borderRadius: '8px', padding: '7px 14px', fontSize: '12px', fontWeight: 600, color: '#475569', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                      >
+                        <Edit2 size={13} /> {t('edit')}
+                      </button>
+                      <button
+                        onClick={() => {
+                          if (confirm(`${p.name} - ${t('delete')}?`)) {
+                            onDeleteProduct(p.id);
+                          }
+                        }}
+                        style={{ background: '#fee2e2', border: '1px solid #fecaca', borderRadius: '8px', padding: '7px 14px', fontSize: '12px', fontWeight: 600, color: '#dc2626', display: 'inline-flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+                      >
+                        <Trash2 size={13} /> {t('delete')}
+                      </button>
+                    </div>
+                  </div>
+                );
+              })
+            )}
           </div>
         </div>
       )}
