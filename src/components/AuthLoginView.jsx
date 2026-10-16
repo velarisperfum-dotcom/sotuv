@@ -5,6 +5,7 @@ import {
   X, MessageSquare, Phone, Server, CheckCircle2
 } from 'lucide-react';
 import LanguageToggle from './LanguageToggle';
+import ThemeToggleButton from './ThemeToggleButton';
 import { useLang } from '../context/LanguageContext';
 
 export default function AuthLoginView({ users = [], onLoginSuccess, onOpenPwaModal }) {
@@ -58,8 +59,9 @@ export default function AuthLoginView({ users = [], onLoginSuccess, onOpenPwaMod
         padding: '36px 32px',
         position: 'relative'
       }}>
-        {/* Language Switcher in the top right of login card */}
-        <div style={{ position: 'absolute', top: '20px', right: '20px' }}>
+        {/* Controls in top right of login card (Theme & Language) */}
+        <div style={{ position: 'absolute', top: '18px', right: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <ThemeToggleButton />
           <LanguageToggle compact={true} />
         </div>
 

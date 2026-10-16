@@ -5,6 +5,7 @@ import {
   Box, Wallet, TrendingUp
 } from 'lucide-react';
 import LanguageToggle from './LanguageToggle';
+import ThemeToggleButton from './ThemeToggleButton';
 import { useLang } from '../context/LanguageContext';
 
 export default function Header({ 
@@ -84,8 +85,11 @@ export default function Header({
         </div>
       </div>
 
-      {/* Right: Language Toggle, Quick Balances, APK button & Logout */}
+      {/* Right: Theme Toggle, Language Toggle, Quick Balances, APK button & Logout */}
       <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+        {/* Auto Brightness & Theme Toggle */}
+        <ThemeToggleButton />
+
         {/* Language Switcher */}
         <LanguageToggle />
 

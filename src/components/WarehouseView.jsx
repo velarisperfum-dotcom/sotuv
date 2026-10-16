@@ -2,10 +2,12 @@ import React, { useState } from 'react';
 import { 
   Box, ArrowDownRight, Truck, CheckCircle2, Clock, AlertTriangle, 
   Search, Filter, Plus, Edit2, Trash2, ArrowRight, User, Phone, 
-  CreditCard, Check, Sparkles, Building2, PackageCheck, Layers, Eye
+  CreditCard, Check, Sparkles, Building2, PackageCheck, Layers, Eye,
+  Scan
 } from 'lucide-react';
 import { MEASURE_UNITS } from '../data/initialData';
 import { useLang } from '../context/LanguageContext';
+import BarcodeScannerModal from './BarcodeScannerModal';
 
 export default function WarehouseView({ 
   products = [], 
@@ -31,6 +33,7 @@ export default function WarehouseView({
   const [onlyLowStock, setOnlyLowStock] = useState(false);
   const [showAddModal, setShowAddModal] = useState(false);
   const [editingProduct, setEditingProduct] = useState(null);
+  const [showScanner, setShowScanner] = useState(false);
 
   // Form states for adding/editing product
   const [formName, setFormName] = useState('');
@@ -462,15 +465,35 @@ export default function WarehouseView({
           
           {/* Filter Bar */}
           <div style={{ display: 'flex', gap: '10px', marginBottom: '16px', flexWrap: 'wrap' }}>
-            <div style={{ position: 'relative', flex: 1, minWidth: '220px' }}>
-              <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-              <input 
-                type="text" 
-                placeholder={t('searchPlaceholder')}
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                style={{ width: '100%', padding: '9px 12px 9px 36px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
-              />
+            <div style={{ display: 'flex', gap: '6px', flex: 1, minWidth: '220px' }}>
+              <div style={{ position: 'relative', flex: 1 }}>
+                <Search size={16} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+                <input 
+                  type="text" 
+                  placeholder={t('searchPlaceholder')}
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px 9px 36px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                />
+              </div>
+              <button
+                type="button"
+                onClick={() => setShowScanner(true)}
+                style={{
+                  background: '#2563eb',
+                  color: '#ffffff',
+                  border: 'none',
+                  borderRadius: '8px',
+                  padding: '0 14px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer'
+                }}
+                title={t('barcodeScannerTitle')}
+              >
+                <Scan size={16} />
+              </button>
             </div>
 
             <select
@@ -720,6 +743,16 @@ export default function WarehouseView({
           </div>
         </div>
       )}
+
+      {/* Barcode Camera Scanner Modal */}
+      <BarcodeScannerModal
+        isOpen={showScanner}
+        onClose={() => setShowScanner(false)}
+        onDetected={(code) => {
+          setSearchTerm(code);
+          setActiveTab('inventory');
+        }}
+      />
 
     </div>
   );

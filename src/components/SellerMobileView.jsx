@@ -4,11 +4,14 @@ import {
   Clock, AlertCircle, Smartphone, User, Phone, DollarSign, 
   CreditCard, Building2, UserCheck, ChevronRight, Sparkles,
   ArrowRight, ShieldCheck, Box, RefreshCw, X, FileText, Check,
-  Banknote
+  Banknote, Scan
 } from 'lucide-react';
 import { PAYMENT_METHODS } from '../data/initialData';
 import LanguageToggle from './LanguageToggle';
+import ThemeToggleButton from './ThemeToggleButton';
+import BarcodeScannerModal from './BarcodeScannerModal';
 import { useLang } from '../context/LanguageContext';
+import { useTheme } from '../context/ThemeContext';
 
 export default function SellerMobileView({ 
   products = [], 
@@ -21,6 +24,8 @@ export default function SellerMobileView({
   storeMode = 'universal'
 }) {
   const { t, lang } = useLang();
+  const { playSound } = useTheme();
+  const [showScanner, setShowScanner] = useState(false);
   const safeProducts = Array.isArray(products) ? products : [];
   const safeOrders = Array.isArray(orders) ? orders : [];
   const safeStaff = Array.isArray(staff) ? staff.filter(s => s?.role && s.role.toLowerCase().includes('sotuvchi')) : [];
@@ -68,6 +73,7 @@ export default function SellerMobileView({
       alert("Bu tovardan skladda hozircha qolmagan!");
       return;
     }
+    playSound('success');
     setCartItems(prev => {
       const existing = prev.find(item => item.id === product.id);
       if (existing) {
@@ -235,6 +241,7 @@ export default function SellerMobileView({
           </div>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <ThemeToggleButton />
             <LanguageToggle compact={true} />
             <button 
               onClick={() => onOpenInstallModal ? onOpenInstallModal() : setShowPwaModal(true)}
@@ -310,16 +317,39 @@ export default function SellerMobileView({
       {/* TAB 1: CATALOG (Mahsulotlar va Sklad Qoldig'i) */}
       {activeTab === 'catalog' && (
         <div style={{ padding: '0 16px' }}>
-          {/* Search Bar */}
-          <div style={{ position: 'relative', marginBottom: '12px' }}>
-            <Search size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
-            <input 
-              type="text" 
-              placeholder={t('searchPlaceholder')}
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              style={{ width: '100%', padding: '12px 14px 12px 42px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', background: '#ffffff', boxSizing: 'border-box' }}
-            />
+          {/* Search Bar with Camera Barcode Scanner */}
+          <div style={{ display: 'flex', gap: '8px', marginBottom: '12px' }}>
+            <div style={{ position: 'relative', flex: 1 }}>
+              <Search size={18} style={{ position: 'absolute', left: '14px', top: '50%', transform: 'translateY(-50%)', color: '#94a3b8' }} />
+              <input 
+                type="text" 
+                placeholder={t('searchPlaceholder')}
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{ width: '100%', padding: '12px 14px 12px 42px', borderRadius: '14px', border: '1px solid #cbd5e1', fontSize: '14px', outline: 'none', background: '#ffffff', boxSizing: 'border-box' }}
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowScanner(true)}
+              style={{
+                background: '#2563eb',
+                color: '#ffffff',
+                border: 'none',
+                borderRadius: '14px',
+                padding: '0 16px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: '6px',
+                cursor: 'pointer',
+                fontSize: '12px',
+                fontWeight: 700
+              }}
+              title={t('barcodeScannerTitle')}
+            >
+              <Scan size={18} />
+            </button>
           </div>
 
           {/* Categories Pill Slider */}
@@ -861,6 +891,16 @@ export default function SellerMobileView({
           </div>
         </div>
       )}
+
+      {/* Barcode Camera Scanner Modal */}
+      <BarcodeScannerModal
+        isOpen={showScanner}
+        onClose={() => setShowScanner(false)}
+        onDetected={(code) => {
+          setSearchTerm(code);
+          setActiveTab('catalog');
+        }}
+      />
 
     </div>
   );
