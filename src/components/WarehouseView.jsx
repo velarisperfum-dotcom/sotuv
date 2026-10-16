@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { 
   Box, ArrowDownRight, Truck, CheckCircle2, Clock, AlertTriangle, 
   Search, Filter, Plus, Edit2, Trash2, ArrowRight, User, Phone, 
@@ -44,6 +44,121 @@ export default function WarehouseView({
   const [formStock, setFormStock] = useState('10');
   const [formMinStock, setFormMinStock] = useState('3');
   const [formBarcode, setFormBarcode] = useState('');
+
+  // Hardware Barcode Scanner Gun (Pistalet) Ref & Feedback State
+  const barcodeInputRef = useRef(null);
+  const [scanFeedback, setScanFeedback] = useState(false);
+
+  // BARCODE SCANNER PISTOL LISTENER:
+  // Faqat shtrix-kod joyiga yozilishi va boshqa inputlarni ifloslantirmasligini ta'minlaydi!
+  useEffect(() => {
+    let buffer = '';
+    let lastKeyTime = 0;
+    let initialTarget = null;
+    let initialTargetValue = '';
+    let isScannerSequence = false;
+    let finishTimeout = null;
+
+    const onKeyDown = (e) => {
+      const now = Date.now();
+      const diff = now - lastKeyTime;
+      lastKeyTime = now;
+
+      // Skaner pistoletlari kod oxirida 'Enter' yuboradi
+      if (e.key === 'Enter') {
+        if (isScannerSequence || buffer.length >= 3) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const scannedCode = buffer.trim();
+          if (scannedCode.length >= 3) {
+            if (showAddModal) {
+              // Tovar qo'shish/tahrirlash oynasi ochiq bo'lsa:
+              // Shtrix-kod FAQAT formBarcode ga tushadi, boshqa inputlarga yozilmaydi!
+              setFormBarcode(scannedCode);
+              if (barcodeInputRef.current) {
+                barcodeInputRef.current.value = scannedCode;
+                barcodeInputRef.current.focus();
+              }
+              setScanFeedback(true);
+              setTimeout(() => setScanFeedback(false), 2500);
+            } else {
+              // Sklad asosiy sahifasida: tovar qidiruviga yo'naltiriladi
+              setSearchTerm(scannedCode);
+              setActiveTab('inventory');
+            }
+          }
+          buffer = '';
+          isScannerSequence = false;
+          initialTarget = null;
+          return;
+        }
+      }
+
+      // Modifikator tugmalarni (Shift, Alt, Ctrl, Meta) hisobga olmaymiz
+      if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) {
+        return;
+      }
+
+      // Skaner pistoleti belgilarni juda tez yuboradi (odatda 5ms - 45ms oralig'ida)
+      if (diff <= 45) {
+        isScannerSequence = true;
+        buffer += e.key;
+
+        // Agar foydalanuvchi shtrix-koddan boshqa ixtiyoriy inputda (nomi, narxi, qoldiq) turgan bo'lsa:
+        if (showAddModal && e.target && e.target !== barcodeInputRef.current) {
+          // Bu belgi o'sha inputga yozilishini darhol bloklaymiz!
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Skaner boshlangan paytdagi ilk 1-belgi o'tib ketgan bo'lsa, uni ham inputdan o'chirib, tozalaymiz
+          if (initialTarget && initialTarget === e.target && 'value' in initialTarget) {
+            initialTarget.value = initialTargetValue;
+            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+            if (nativeSetter) {
+              nativeSetter.call(initialTarget, initialTargetValue);
+            }
+            initialTarget.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        }
+      } else {
+        // Oddiy inson tomonidan klaviaturada sekin terish (> 45ms)
+        buffer = e.key;
+        isScannerSequence = false;
+        initialTarget = e.target;
+        initialTargetValue = e.target && 'value' in e.target ? e.target.value : '';
+      }
+
+      clearTimeout(finishTimeout);
+      finishTimeout = setTimeout(() => {
+        if (isScannerSequence && buffer.length >= 3) {
+          const scannedCode = buffer.trim();
+          if (showAddModal) {
+            setFormBarcode(scannedCode);
+            if (barcodeInputRef.current) {
+              barcodeInputRef.current.value = scannedCode;
+              barcodeInputRef.current.focus();
+            }
+            setScanFeedback(true);
+            setTimeout(() => setScanFeedback(false), 2500);
+          } else {
+            setSearchTerm(scannedCode);
+            setActiveTab('inventory');
+          }
+        }
+        buffer = '';
+        isScannerSequence = false;
+        initialTarget = null;
+      }, 90);
+    };
+
+    // Capture fazasida hodisani ushlaymiz (inputlarga yetib bormasdan oldin bloklash uchun)
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown, true);
+      clearTimeout(finishTimeout);
+    };
+  }, [showAddModal]);
 
   const formatMoney = (val) => Number(val || 0).toLocaleString(lang === 'ru' ? 'ru-RU' : 'uz-UZ') + " " + t('currency');
 
@@ -804,17 +919,92 @@ export default function WarehouseView({
                 </div>
               </div>
 
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
-                  {t('barcodeLabel')}
-                </label>
-                <input 
-                  type="text" 
-                  placeholder={lang === 'ru' ? 'Штрих-код' : 'Shtrix-kod'}
-                  value={formBarcode}
-                  onChange={(e) => setFormBarcode(e.target.value)}
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
-                />
+              {/* SHTRIX-KOD MAYDONI (FAQAT SKANER PISTOLET UCHUN HIMOYALANGAN) */}
+              <div style={{
+                background: scanFeedback ? '#f0fdf4' : '#f8fafc',
+                border: scanFeedback ? '2px solid #22c55e' : '1px solid #cbd5e1',
+                borderRadius: '12px',
+                padding: '12px',
+                transition: 'all 0.2s ease'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+                  <label style={{ fontSize: '12px', fontWeight: 800, color: scanFeedback ? '#15803d' : '#334155', display: 'flex', alignItems: 'center', gap: '6px', margin: 0 }}>
+                    <Scan size={15} style={{ color: scanFeedback ? '#16a34a' : '#2563eb' }} />
+                    {t('barcodeLabel')}
+                  </label>
+                  <span style={{
+                    fontSize: '11px',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: '6px',
+                    background: scanFeedback ? '#dcfce7' : '#e0e7ff',
+                    color: scanFeedback ? '#16a34a' : '#4338ca',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px'
+                  }}>
+                    {scanFeedback 
+                      ? '✅ ' + (lang === 'ru' ? 'Сканировано!' : 'Skanerlandi!') 
+                      : '🔫 ' + (lang === 'ru' ? 'Только для сканера' : 'Faqat skaner joyi')}
+                  </span>
+                </div>
+
+                <div style={{ position: 'relative' }}>
+                  <input 
+                    ref={barcodeInputRef}
+                    type="text" 
+                    placeholder={lang === 'ru' ? 'Штрих-код (пистолет сканирует только сюда)' : 'Shtrix-kod (pistolet faqat shu yerga yozadi)'}
+                    value={formBarcode}
+                    onChange={(e) => setFormBarcode(e.target.value)}
+                    style={{ 
+                      width: '100%', 
+                      padding: '10px 32px 10px 12px', 
+                      borderRadius: '8px', 
+                      border: scanFeedback ? '1px solid #22c55e' : '1px solid #cbd5e1', 
+                      fontSize: '14px', 
+                      fontFamily: 'monospace',
+                      fontWeight: 700,
+                      color: '#0f172a',
+                      background: '#ffffff',
+                      boxSizing: 'border-box' 
+                    }}
+                  />
+                  {formBarcode && (
+                    <button
+                      type="button"
+                      onClick={() => setFormBarcode('')}
+                      style={{
+                        position: 'absolute',
+                        right: '8px',
+                        top: '50%',
+                        transform: 'translateY(-50%)',
+                        background: '#f1f5f9',
+                        border: 'none',
+                        borderRadius: '6px',
+                        width: '24px',
+                        height: '24px',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '12px',
+                        color: '#64748b',
+                        cursor: 'pointer'
+                      }}
+                      title={lang === 'ru' ? 'Очистить штрих-код' : 'Shtrix-kodni tozalash'}
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
+                <div style={{ fontSize: '11px', color: '#64748b', marginTop: '6px', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                  <span>🔒</span>
+                  <span>
+                    {lang === 'ru' 
+                      ? 'Пистолет-сканер записывает штрих-код ТОЛЬКО сюда, другие поля защищены.' 
+                      : 'Skaner-pistolet bosilganda shtrix-kod FAQAT shu joyga yoziladi, boshqa maydonlar himoyalangan.'}
+                  </span>
+                </div>
               </div>
 
               <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>

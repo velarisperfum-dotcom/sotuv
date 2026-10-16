@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   ShoppingBag, Search, Plus, Minus, Trash2, Send, CheckCircle2, 
   Clock, AlertCircle, Smartphone, User, Phone, DollarSign, 
@@ -121,6 +121,97 @@ export default function SellerMobileView({
   const removeFromCart = (id) => {
     setCartItems(prev => prev.filter(i => i.id !== id));
   };
+
+  // BARCODE SCANNER PISTOL LISTENER (SOTUVCHI UCHUN):
+  // Skaner pistoletidan kelgan shtrix-kodni inputlarni buzmasdan to'g'ridan-to'g'ri savatga qo'shadi!
+  useEffect(() => {
+    let buffer = '';
+    let lastKeyTime = 0;
+    let initialTarget = null;
+    let initialTargetValue = '';
+    let isScannerSequence = false;
+    let finishTimeout = null;
+
+    const onKeyDown = (e) => {
+      const now = Date.now();
+      const diff = now - lastKeyTime;
+      lastKeyTime = now;
+
+      if (e.key === 'Enter') {
+        if (isScannerSequence || buffer.length >= 3) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          const scannedCode = buffer.trim();
+          if (scannedCode.length >= 3) {
+            const matched = safeProducts.find(p => (p.barcode || '').trim() === scannedCode);
+            if (matched) {
+              addToCart(matched);
+            } else {
+              setSearchTerm(scannedCode);
+            }
+          }
+          buffer = '';
+          isScannerSequence = false;
+          initialTarget = null;
+          return;
+        }
+      }
+
+      if (e.key.length !== 1 || e.ctrlKey || e.metaKey || e.altKey) {
+        return;
+      }
+
+      // Skaner pistoleti tezligi (<= 45ms)
+      if (diff <= 45) {
+        isScannerSequence = true;
+        buffer += e.key;
+
+        // Agar foydalanuvchi mijoz ismi, telefon yoki qidiruv inputida turgan bo'lsa:
+        if (e.target && ('value' in e.target)) {
+          e.preventDefault();
+          e.stopPropagation();
+
+          // Birinchi harf o'tib ketgan bo'lsa uni tozalaymiz
+          if (initialTarget && initialTarget === e.target) {
+            initialTarget.value = initialTargetValue;
+            const nativeSetter = Object.getOwnPropertyDescriptor(window.HTMLInputElement.prototype, 'value')?.set;
+            if (nativeSetter) {
+              nativeSetter.call(initialTarget, initialTargetValue);
+            }
+            initialTarget.dispatchEvent(new Event('input', { bubbles: true }));
+          }
+        }
+      } else {
+        buffer = e.key;
+        isScannerSequence = false;
+        initialTarget = e.target;
+        initialTargetValue = e.target && 'value' in e.target ? e.target.value : '';
+      }
+
+      clearTimeout(finishTimeout);
+      finishTimeout = setTimeout(() => {
+        if (isScannerSequence && buffer.length >= 3) {
+          const scannedCode = buffer.trim();
+          const matched = safeProducts.find(p => (p.barcode || '').trim() === scannedCode);
+          if (matched) {
+            addToCart(matched);
+          } else {
+            setSearchTerm(scannedCode);
+          }
+        }
+        buffer = '';
+        isScannerSequence = false;
+        initialTarget = null;
+      }, 90);
+    };
+
+    window.addEventListener('keydown', onKeyDown, true);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown, true);
+      clearTimeout(finishTimeout);
+    };
+  }, [safeProducts]);
 
   const cartTotal = cartItems.reduce((acc, item) => acc + item.total, 0);
   const cartItemCount = cartItems.reduce((acc, item) => acc + item.quantity, 0);
