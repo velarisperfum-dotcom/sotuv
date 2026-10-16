@@ -128,14 +128,65 @@ export default function DirectorDashboard({
 
   const topProducts = Object.values(productSalesMap).sort((a, b) => b.quantity - a.quantity);
 
-  // 4. To'lov turlari
+  // 4. To'lov turlari bo'yicha tushum
+  const allCompletedSales = [...safeSales];
+  safeOrders.filter(o => o.status === 'dispatched_warehouse').forEach(o => {
+    if (!allCompletedSales.some(s => s.id === o.id)) {
+      allCompletedSales.push({
+        paymentMethod: o.paymentMethod,
+        total: o.totalAmount
+      });
+    }
+  });
+
   const paymentStats = {
-    cash: safeSales.filter(s => s?.paymentMethod === 'Naqd' || s?.paymentMethod === 'cash').reduce((a, s) => a + Number(s?.total || 0), 0),
-    card: safeSales.filter(s => s?.paymentMethod === 'Karta' || s?.paymentMethod === 'card').reduce((a, s) => a + Number(s?.total || 0), 0),
-    bank: safeSales.filter(s => s?.paymentMethod === 'Bank perech' || s?.paymentMethod === 'bank').reduce((a, s) => a + Number(s?.total || 0), 0),
-    debt: safeSales.filter(s => s?.paymentMethod === 'Qarz' || s?.paymentMethod === 'debt').reduce((a, s) => a + Number(s?.total || 0), 0),
-    salary: safeSales.filter(s => s?.paymentMethod === 'salary_deduction').reduce((a, s) => a + Number(s?.total || 0), 0)
+    cash: allCompletedSales.filter(s => s?.paymentMethod === 'Naqd' || s?.paymentMethod === 'cash').reduce((a, s) => a + Number(s?.total || 0), 0),
+    card: allCompletedSales.filter(s => s?.paymentMethod === 'Karta' || s?.paymentMethod === 'card').reduce((a, s) => a + Number(s?.total || 0), 0),
+    bank: allCompletedSales.filter(s => s?.paymentMethod === 'Bank perech' || s?.paymentMethod === 'bank').reduce((a, s) => a + Number(s?.total || 0), 0),
+    debt: allCompletedSales.filter(s => s?.paymentMethod === 'Qarz' || s?.paymentMethod === 'debt').reduce((a, s) => a + Number(s?.total || 0), 0),
+    salary: allCompletedSales.filter(s => s?.paymentMethod === 'salary_deduction').reduce((a, s) => a + Number(s?.total || 0), 0)
   };
+
+  // 5. Tovar turlari (kategoriyalar) bo'yicha tushum
+  const categorySalesMap = {};
+  safeSales.forEach(sale => {
+    sale?.items?.forEach(item => {
+      const prod = safeProducts.find(p => p.id === item.id || p.name === item.name);
+      const cat = prod?.category || item.category || (lang === 'ru' ? 'Общий' : 'Umumiy');
+      if (!categorySalesMap[cat]) {
+        categorySalesMap[cat] = { category: cat, quantity: 0, revenue: 0 };
+      }
+      categorySalesMap[cat].quantity += Number(item.quantity || 1);
+      categorySalesMap[cat].revenue += Number(item.total || (Number(item.price || 0) * Number(item.quantity || 1)));
+    });
+  });
+
+  safeOrders.filter(o => o.status === 'dispatched_warehouse').forEach(o => {
+    if (!safeSales.some(s => s.id === o.id)) {
+      o.items?.forEach(item => {
+        const prod = safeProducts.find(p => p.id === item.id || p.name === item.name);
+        const cat = prod?.category || item.category || (lang === 'ru' ? 'Общий' : 'Umumiy');
+        if (!categorySalesMap[cat]) {
+          categorySalesMap[cat] = { category: cat, quantity: 0, revenue: 0 };
+        }
+        categorySalesMap[cat].quantity += Number(item.quantity || 1);
+        categorySalesMap[cat].revenue += Number(item.total || (Number(item.price || 0) * Number(item.quantity || 1)));
+      });
+    }
+  });
+
+  // If no sales yet, extract categories with available stock count
+  if (Object.keys(categorySalesMap).length === 0) {
+    safeProducts.forEach(p => {
+      const cat = p.category || (lang === 'ru' ? 'Общий' : 'Umumiy');
+      if (!categorySalesMap[cat]) {
+        categorySalesMap[cat] = { category: cat, quantity: 0, revenue: 0, stockCount: 0 };
+      }
+      categorySalesMap[cat].stockCount = (categorySalesMap[cat].stockCount || 0) + Number(p.stock || 0);
+    });
+  }
+
+  const categoryStats = Object.values(categorySalesMap).sort((a, b) => b.revenue - a.revenue);
 
   // Submit transfer
   const handleSendTransfer = (e) => {
@@ -431,32 +482,42 @@ export default function DirectorDashboard({
             </div>
           </div>
 
-          {/* Sotilgan Mahsulotlar & To'lov Usullari */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '20px' }}>
+          {/* Sotilgan Mahsulotlar, Tovar turlari & To'lov Usullari */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginBottom: '20px' }}>
             
-            {/* Nimadan qancha sotildi jadvali */}
-            <div style={{ background: '#ffffff', borderRadius: '14px', padding: '20px', border: '1px solid #e2e8f0' }}>
-              <h3 style={{ margin: '0 0 16px', fontSize: '15px', color: '#0f172a' }}>
-                {lang === 'ru' ? 'Товары, списанные со склада (Продажи)' : 'Sklad hisobidan yechilgan tovarlar (Sotuvlar)'}
-              </h3>
+            {/* 1. Tovar turlari (kategoriyalar) bo'yicha tushum */}
+            <div style={{ background: '#ffffff', borderRadius: '16px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#eff6ff', color: '#2563eb', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Layers size={18} />
+                </div>
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
+                  {lang === 'ru' ? 'Выручка по категориям товаров' : 'Tovar turlari bo\'yicha tushum'}
+                </h3>
+              </div>
               
-              {topProducts.length === 0 ? (
+              {categoryStats.length === 0 ? (
                 <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8', fontSize: '13px' }}>
                   {t('emptyList')}
                 </div>
               ) : (
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                  {topProducts.map((p, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', fontSize: '13px' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ width: '20px', height: '20px', borderRadius: '50%', background: '#e2e8f0', color: '#475569', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                          {idx + 1}
+                  {categoryStats.map((cat, idx) => (
+                    <div key={idx} style={{ padding: '10px 12px', background: '#f8fafc', borderRadius: '10px', border: '1px solid #f1f5f9' }}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '4px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                          <span style={{ width: '22px', height: '22px', borderRadius: '6px', background: '#e0e7ff', color: '#4338ca', fontSize: '11px', fontWeight: 800, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                            {idx + 1}
+                          </span>
+                          <strong style={{ fontSize: '13px', color: '#1e293b' }}>{cat.category}</strong>
+                        </div>
+                        <span style={{ fontSize: '14px', fontWeight: 800, color: '#16a34a' }}>
+                          {formatMoney(cat.revenue)}
                         </span>
-                        <strong style={{ color: '#0f172a' }}>{p.name}</strong>
                       </div>
-                      <div>
-                        <span style={{ fontWeight: 800, color: '#16a34a' }}>{p.quantity} {p.unit}</span>
-                        <span style={{ color: '#94a3b8', marginLeft: '8px' }}>({formatMoney(p.revenue)})</span>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', color: '#64748b' }}>
+                        <span>{lang === 'ru' ? 'Продано:' : 'Sotilgan:'} <strong>{cat.quantity} ta</strong></span>
+                        {cat.stockCount !== undefined && <span>{lang === 'ru' ? 'На складе:' : 'Skladda:'} {cat.stockCount} ta</span>}
                       </div>
                     </div>
                   ))}
@@ -464,39 +525,80 @@ export default function DirectorDashboard({
               )}
             </div>
 
-            {/* To'lov turlari bo'yicha tushum */}
-            <div style={{ background: '#ffffff', borderRadius: '14px', padding: '20px', border: '1px solid #e2e8f0' }}>
-              <h3 style={{ margin: '0 0 16px', fontSize: '15px', color: '#0f172a' }}>
-                {lang === 'ru' ? 'Поступления по способам оплаты' : 'To\'lov turlari bo\'yicha tushum'}
-              </h3>
+            {/* 2. To'lov turlari bo'yicha tushum */}
+            <div style={{ background: '#ffffff', borderRadius: '16px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#f0fdf4', color: '#16a34a', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <DollarSign size={18} />
+                </div>
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
+                  {lang === 'ru' ? 'Поступления по способам оплаты' : 'To\'lov turlari bo\'yicha tushum'}
+                </h3>
+              </div>
               
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', fontSize: '13px' }}>
-                  <span style={{ color: '#475569' }}>{t('paymentCash')}:</span>
-                  <strong style={{ color: '#16a34a' }}>{formatMoney(paymentStats.cash)}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8fafc', borderRadius: '10px', fontSize: '13px' }}>
+                  <span style={{ color: '#475569', fontWeight: 600 }}>{t('paymentCash')} (Naqd):</span>
+                  <strong style={{ color: '#16a34a', fontSize: '14px' }}>{formatMoney(paymentStats.cash)}</strong>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', fontSize: '13px' }}>
-                  <span style={{ color: '#475569' }}>{t('paymentCard')}:</span>
-                  <strong style={{ color: '#2563eb' }}>{formatMoney(paymentStats.card)}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8fafc', borderRadius: '10px', fontSize: '13px' }}>
+                  <span style={{ color: '#475569', fontWeight: 600 }}>{t('paymentCard')} (Terminal/Click):</span>
+                  <strong style={{ color: '#2563eb', fontSize: '14px' }}>{formatMoney(paymentStats.card)}</strong>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', fontSize: '13px' }}>
-                  <span style={{ color: '#475569' }}>{t('paymentBank')}:</span>
-                  <strong style={{ color: '#7c3aed' }}>{formatMoney(paymentStats.bank)}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8fafc', borderRadius: '10px', fontSize: '13px' }}>
+                  <span style={{ color: '#475569', fontWeight: 600 }}>{t('paymentBank')} (Perechisleniye):</span>
+                  <strong style={{ color: '#7c3aed', fontSize: '14px' }}>{formatMoney(paymentStats.bank)}</strong>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', fontSize: '13px' }}>
-                  <span style={{ color: '#475569' }}>{t('paymentDebt')}:</span>
-                  <strong style={{ color: '#d97706' }}>{formatMoney(paymentStats.debt)}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8fafc', borderRadius: '10px', fontSize: '13px' }}>
+                  <span style={{ color: '#475569', fontWeight: 600 }}>{t('paymentDebt')} (Nasiya/Qarz):</span>
+                  <strong style={{ color: '#d97706', fontSize: '14px' }}>{formatMoney(paymentStats.debt)}</strong>
                 </div>
 
-                <div style={{ display: 'flex', justifyContent: 'space-between', padding: '10px 12px', background: '#f8fafc', borderRadius: '8px', fontSize: '13px' }}>
-                  <span style={{ color: '#475569' }}>{t('paymentSalary')}:</span>
-                  <strong style={{ color: '#db2777' }}>{formatMoney(paymentStats.salary)}</strong>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8fafc', borderRadius: '10px', fontSize: '13px' }}>
+                  <span style={{ color: '#475569', fontWeight: 600 }}>{t('paymentSalary')} (Oylikdan ushlash):</span>
+                  <strong style={{ color: '#db2777', fontSize: '14px' }}>{formatMoney(paymentStats.salary)}</strong>
                 </div>
               </div>
             </div>
+
+            {/* 3. Nimadan qancha sotildi jadvali */}
+            <div style={{ background: '#ffffff', borderRadius: '16px', padding: '20px', border: '1px solid #e2e8f0', boxShadow: '0 1px 3px rgba(0,0,0,0.02)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
+                <div style={{ width: '32px', height: '32px', borderRadius: '8px', background: '#fef3c7', color: '#d97706', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <Award size={18} />
+                </div>
+                <h3 style={{ margin: 0, fontSize: '15px', fontWeight: 800, color: '#0f172a' }}>
+                  {lang === 'ru' ? 'Товары, списанные со склада (Продажи)' : 'Sklad hisobidan yechilgan tovarlar (Sotuvlar)'}
+                </h3>
+              </div>
+              
+              {topProducts.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '30px', color: '#94a3b8', fontSize: '13px' }}>
+                  {t('emptyList')}
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  {topProducts.map((p, idx) => (
+                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 12px', background: '#f8fafc', borderRadius: '10px', fontSize: '13px' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', minWidth: 0, flex: 1, paddingRight: '10px' }}>
+                        <span style={{ width: '22px', height: '22px', borderRadius: '6px', background: '#e2e8f0', color: '#475569', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          {idx + 1}
+                        </span>
+                        <strong style={{ color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{p.name}</strong>
+                      </div>
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <span style={{ fontWeight: 800, color: '#16a34a' }}>{p.quantity} {p.unit}</span>
+                        <div style={{ color: '#64748b', fontSize: '11px' }}>{formatMoney(p.revenue)}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
           </div>
         </div>
       )}
