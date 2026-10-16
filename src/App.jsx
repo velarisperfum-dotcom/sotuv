@@ -1,120 +1,101 @@
 import React, { useState, useEffect } from 'react';
-import Sidebar from './components/Sidebar';
 import Header from './components/Header';
-import POSCashier from './components/POSCashier';
 import WarehouseView from './components/WarehouseView';
 import AccountingView from './components/AccountingView';
 import DirectorDashboard from './components/DirectorDashboard';
 import SellerMobileView from './components/SellerMobileView';
+import AuthLoginView from './components/AuthLoginView';
 import ReceiptModal from './components/ReceiptModal';
-import MobileNav from './components/MobileNav';
-import SellersView from './components/SellersView';
 import CustomerReceiptView from './components/CustomerReceiptView';
-import StoreOnboardingAuth from './components/StoreOnboardingAuth';
-import StoreSettingsModal from './components/StoreSettingsModal';
-import { Smartphone, X, CheckCircle2 } from 'lucide-react';
+import { Smartphone, X } from 'lucide-react';
 
 import { getSampleProductsForIndustry } from './data/industryProducts';
-import { getIndustryById } from './data/industriesData';
-
 import { 
-  INITIAL_PRODUCTS, 
-  INITIAL_STAFF, 
-  INITIAL_DEBTS, 
-  INITIAL_SALES, 
-  INITIAL_EXPENSES, 
-  INITIAL_BALANCES,
-  INITIAL_CUSTOMERS,
+  SYSTEM_USERS,
   INITIAL_STOCK_TRANSFERS,
-  INITIAL_SELLER_ORDERS
+  INITIAL_SELLER_ORDERS,
+  INITIAL_STAFF,
+  INITIAL_CUSTOMERS
 } from './data/initialData';
 
 import { 
   fetchAllServerData, 
   postSaleToServer, 
   postProductToServer, 
-  updateProductOnServer, 
-  deleteProductOnServer, 
-  updateDebtOnServer, 
-  postExpenseToServer, 
-  updateBalancesOnServer 
+  updateProductOnServer 
 } from './services/api';
 
 export default function App() {
-  // Store Onboarding & Session Auth State
-  const [currentStoreSession, setCurrentStoreSession] = useState(() => {
+  // 1. ACTIVE LOGGED IN USER STATE (Login & Parol orqali)
+  const [activeUser, setActiveUser] = useState(() => {
     try {
-      const saved = localStorage.getItem('savdo_current_session');
-      return saved ? JSON.parse(saved) : null;
+      const saved = localStorage.getItem('savdo_active_user');
+      return saved ? JSON.parse(saved) : null; // Dastlab tizimga kirish ekrani chiqadi!
     } catch {
       return null;
     }
   });
 
-  const [isAuthModalOpen, setIsAuthModalOpen] = useState(false);
-  const [isSettingsModalOpen, setIsSettingsModalOpen] = useState(false);
   const [isPwaModalOpen, setIsPwaModalOpen] = useState(false);
 
-  // Store Mode (Savdo sohasi)
-  const [storeMode, setStoreMode] = useState(() => {
-    try {
-      const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
-      if (session?.industryId) return session.industryId;
-    } catch {}
-    const saved = localStorage.getItem('billz_store_mode');
-    return saved || 'clothing';
-  });
+  // Eski aralashgan test ma'lumotlarini tozalash (Clean slate)
+  useEffect(() => {
+    if (!localStorage.getItem('savdo_clean_v5')) {
+      localStorage.removeItem('billz_products_perfume');
+      localStorage.removeItem('billz_products_universal');
+      localStorage.removeItem('billz_sales_isolated_v3');
+      localStorage.setItem('savdo_clean_v5', 'true');
+    }
+  }, []);
 
-  // 1. PRODUCTS (Sklad Qoldiqlari)
+  // 2. PRODUCTS (Sklad Qoldiqlari)
   const [products, setProducts] = useState(() => {
     try {
-      const session = JSON.parse(localStorage.getItem('savdo_current_session') || 'null');
-      const activeIndustry = session?.industryId || localStorage.getItem('billz_store_mode') || 'clothing';
-      const savedInd = localStorage.getItem(`billz_products_${activeIndustry}`);
-      if (savedInd) {
-        const parsed = JSON.parse(savedInd);
+      const saved = localStorage.getItem('savdo_products_v5');
+      if (saved) {
+        const parsed = JSON.parse(saved);
         if (Array.isArray(parsed) && parsed.length > 0) return parsed;
       }
-      return getSampleProductsForIndustry(activeIndustry);
+      return getSampleProductsForIndustry('clothing');
     } catch {
       return getSampleProductsForIndustry('clothing');
     }
   });
 
-  // 2. STOCK TRANSFERS (Direktor skladga yuborgan perexodlar / kirimlar)
+  // 3. STOCK TRANSFERS (Direktor skladga yuborgan kirimlar / perexodlar)
   const [stockTransfers, setStockTransfers] = useState(() => {
     try {
-      const saved = localStorage.getItem('savdo_stock_transfers');
+      const saved = localStorage.getItem('savdo_stock_transfers_v5');
       return saved ? JSON.parse(saved) : INITIAL_STOCK_TRANSFERS;
     } catch {
       return INITIAL_STOCK_TRANSFERS;
     }
   });
 
-  // 3. SELLER ORDERS (Sotuvchilar telefondan yuborgan zayavkalar)
+  // 4. SELLER ORDERS (Sotuvchilar telefondan buxgalterga yuborgan zayavkalar)
   const [orders, setOrders] = useState(() => {
     try {
-      const saved = localStorage.getItem('savdo_seller_orders');
+      const saved = localStorage.getItem('savdo_seller_orders_v5');
       return saved ? JSON.parse(saved) : INITIAL_SELLER_ORDERS;
     } catch {
       return INITIAL_SELLER_ORDERS;
     }
   });
 
-  // 4. BALANCES (Kassa, Karta, Bank)
+  // 5. BALANCES (Kassa, Karta, Bank)
   const [balances, setBalances] = useState(() => {
     try {
-      const saved = localStorage.getItem('billz_balances');
+      const saved = localStorage.getItem('savdo_balances_v5');
       return saved ? JSON.parse(saved) : { cash: 12500000, card: 8400000, bank: 34500000 };
     } catch {
       return { cash: 12500000, card: 8400000, bank: 34500000 };
     }
   });
 
-  // 5. DEBTS (Nasiyalar daftari)
+  // 6. DEBTS (Nasiyalar daftari)
   const [debts, setDebts] = useState(() => {
     try {
-      const saved = localStorage.getItem('billz_debts');
+      const saved = localStorage.getItem('savdo_debts_v5');
       return saved ? JSON.parse(saved) : [
         {
           id: 'd-1',
@@ -132,22 +113,15 @@ export default function App() {
     }
   });
 
-  // 6. CUSTOMERS
-  const [customers, setCustomers] = useState(() => {
-    const saved = localStorage.getItem('billz_customers');
-    return saved ? JSON.parse(saved) : INITIAL_CUSTOMERS;
-  });
-
-  // 7. STAFF (Xodimlar)
+  // 7. STAFF
   const [staff, setStaff] = useState(() => {
-    const saved = localStorage.getItem('blizz_staff');
-    return saved ? JSON.parse(saved) : INITIAL_STAFF;
+    return INITIAL_STAFF;
   });
 
-  // 8. EXPENSES (Xarajatlar)
+  // 8. EXPENSES
   const [expenses, setExpenses] = useState(() => {
     try {
-      const saved = localStorage.getItem('billz_expenses');
+      const saved = localStorage.getItem('savdo_expenses_v5');
       return saved ? JSON.parse(saved) : [
         { id: 'exp-1', title: 'Do\'kon oylik ijarasi', amount: 3500000, category: 'Ijara', source: 'Bank perech', date: '2026-10-01' }
       ];
@@ -159,7 +133,7 @@ export default function App() {
   // 9. SALES (Tarix va cheklar)
   const [sales, setSales] = useState(() => {
     try {
-      const saved = localStorage.getItem('billz_sales');
+      const saved = localStorage.getItem('savdo_sales_v5');
       return saved ? JSON.parse(saved) : [
         {
           id: 'SL-1001',
@@ -176,81 +150,48 @@ export default function App() {
     }
   });
 
-  const [isServerConnected, setIsServerConnected] = useState(false);
-
-  // UI Navigation: 4 Ta Asosiy Rol
-  // 'director' | 'accounting' | 'warehouse' | 'seller_mobile' | 'pos' | 'sellers'
-  const [currentRole, setCurrentRole] = useState('director');
-  const [currentView, setCurrentView] = useState('director');
   const [activeReceiptSale, setActiveReceiptSale] = useState(null);
   const [customerReceiptSale, setCustomerReceiptSale] = useState(null);
 
-  // Current active user
-  const currentUser = staff.find(s => s.role?.toLowerCase().includes(currentRole)) || staff[0];
-
-  // Dynamic Theme
-  useEffect(() => {
-    const indId = currentStoreSession?.industryId || storeMode || 'clothing';
-    document.documentElement.setAttribute('data-industry', indId);
-    document.body.setAttribute('data-industry', indId);
-  }, [currentStoreSession, storeMode]);
-
   // Sync to LocalStorage
   useEffect(() => {
-    const indId = currentStoreSession?.industryId || storeMode || 'clothing';
-    localStorage.setItem(`billz_products_${indId}`, JSON.stringify(products));
-  }, [products, currentStoreSession, storeMode]);
+    localStorage.setItem('savdo_products_v5', JSON.stringify(products));
+  }, [products]);
 
   useEffect(() => {
-    localStorage.setItem('savdo_stock_transfers', JSON.stringify(stockTransfers));
+    localStorage.setItem('savdo_stock_transfers_v5', JSON.stringify(stockTransfers));
   }, [stockTransfers]);
 
   useEffect(() => {
-    localStorage.setItem('savdo_seller_orders', JSON.stringify(orders));
+    localStorage.setItem('savdo_seller_orders_v5', JSON.stringify(orders));
   }, [orders]);
 
   useEffect(() => {
-    localStorage.setItem('billz_balances', JSON.stringify(balances));
+    localStorage.setItem('savdo_balances_v5', JSON.stringify(balances));
   }, [balances]);
 
   useEffect(() => {
-    localStorage.setItem('billz_debts', JSON.stringify(debts));
+    localStorage.setItem('savdo_debts_v5', JSON.stringify(debts));
   }, [debts]);
 
   useEffect(() => {
-    localStorage.setItem('billz_sales', JSON.stringify(sales));
-  }, [sales]);
-
-  useEffect(() => {
-    localStorage.setItem('blizz_staff', JSON.stringify(staff));
-  }, [staff]);
-
-  useEffect(() => {
-    localStorage.setItem('billz_expenses', JSON.stringify(expenses));
+    localStorage.setItem('savdo_expenses_v5', JSON.stringify(expenses));
   }, [expenses]);
 
-  // Initial fetch from backend if available
   useEffect(() => {
-    fetchAllServerData().then(serverData => {
-      if (serverData) {
-        setIsServerConnected(true);
-      }
-    });
-  }, []);
-
-  // Check URL params for QR receipt
-  useEffect(() => {
-    try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const receiptId = urlParams.get('receipt') || urlParams.get('chek');
-      if (receiptId) {
-        const found = sales.find(s => s.id === receiptId);
-        if (found) {
-          setCustomerReceiptSale({ ...found, isVerifiedOnline: true });
-        }
-      }
-    } catch {}
+    localStorage.setItem('savdo_sales_v5', JSON.stringify(sales));
   }, [sales]);
+
+  // Auth Handlers
+  const handleLoginSuccess = (user) => {
+    setActiveUser(user);
+    localStorage.setItem('savdo_active_user', JSON.stringify(user));
+  };
+
+  const handleLogout = () => {
+    setActiveUser(null);
+    localStorage.removeItem('savdo_active_user');
+  };
 
   // ==========================================
   // BIZNES JARAYON ZANJIRI HANDLERLARI (WORKFLOW)
@@ -320,9 +261,9 @@ export default function App() {
     const order = orders.find(o => o.id === orderId);
     if (!order) return;
 
-    // To'lov turiga qarab balanslarni yangilash
     const amount = Number(order.totalAmount || 0);
 
+    // To'lov turiga qarab balanslarni yangilash
     if (order.paymentMethod === 'cash') {
       setBalances(prev => ({ ...prev, cash: (prev.cash || 0) + amount }));
     } else if (order.paymentMethod === 'card') {
@@ -330,7 +271,6 @@ export default function App() {
     } else if (order.paymentMethod === 'bank') {
       setBalances(prev => ({ ...prev, bank: (prev.bank || 0) + amount }));
     } else if (order.paymentMethod === 'debt') {
-      // Qarz daftariga yozish
       const newDebt = {
         id: `debt-${Date.now()}`,
         customerName: order.customerName,
@@ -344,7 +284,6 @@ export default function App() {
       };
       setDebts(prev => [newDebt, ...prev]);
     } else if (order.paymentMethod === 'salary_deduction') {
-      // Xodim oyligidan chegirib qolish
       setStaff(prev => prev.map(s => {
         if (s.name === order.sellerName || s.id === order.sellerId) {
           return { ...s, paidThisMonth: (s.paidThisMonth || 0) + amount };
@@ -397,7 +336,6 @@ export default function App() {
       return updated;
     });
 
-    // Zakaz statusini 'dispatched_warehouse' ga o'tkazish
     const dispatchedDate = new Date().toLocaleString('uz-UZ');
     setOrders(prev => prev.map(o => 
       o.id === orderId 
@@ -405,7 +343,6 @@ export default function App() {
         : o
     ));
 
-    // Savdolar va cheklar ro'yxatiga qo'shish
     const newSale = {
       id: order.id,
       orderNumber: order.orderNumber,
@@ -421,10 +358,10 @@ export default function App() {
     };
     setSales(prev => [newSale, ...prev]);
 
-    alert(`Zakaz (${order.orderNumber}) bo'yicha tovarlar sotuvchiga berildi va skladdan muvaffaqiyatli yechildi! ✅`);
+    alert(`Zakaz (${order.orderNumber}) bo'yicha tovarlar berildi va skladdan muvaffaqiyatli yechildi! ✅`);
   };
 
-  // Tovar qo'shish / tahrirlash / o'chirish
+  // Tovar boshqaruvi
   const handleAddProduct = (newProduct) => {
     setProducts(prev => [newProduct, ...prev]);
   };
@@ -437,256 +374,146 @@ export default function App() {
     setProducts(prev => prev.filter(p => p.id !== productId));
   };
 
-  // Kassa POS savdosi (Do'kondagi to'g'ridan-to'g'ri tezkor sotuv)
-  const handleCompleteSale = (saleData) => {
-    const newSale = {
-      ...saleData,
-      id: `SL-${Date.now().toString().slice(-4)}`,
-      date: new Date().toLocaleString('uz-UZ')
-    };
-    setSales(prev => [newSale, ...prev]);
-
-    // Skladdan yechish
-    setProducts(prevProducts => {
-      const updated = [...prevProducts];
-      newSale.items?.forEach(item => {
-        const prodIndex = updated.findIndex(p => p.id === item.id);
-        if (prodIndex !== -1) {
-          updated[prodIndex] = {
-            ...updated[prodIndex],
-            stock: Math.max(0, (updated[prodIndex].stock || 0) - (item.quantity || 1))
-          };
-        }
-      });
-      return updated;
-    });
-
-    // Balansga qo'shish
-    const total = Number(newSale.total || 0);
-    if (newSale.paymentMethod === 'Naqd') {
-      setBalances(prev => ({ ...prev, cash: (prev.cash || 0) + total }));
-    } else if (newSale.paymentMethod === 'Karta') {
-      setBalances(prev => ({ ...prev, card: (prev.card || 0) + total }));
-    }
-
-    setActiveReceiptSale(newSale);
-  };
-
-  // Counts for Badges
-  const lowStockCount = products.filter(p => (p.stock || 0) <= (p.minStock || 3)).length;
-  const pendingOrdersCount = orders.filter(o => o.status === 'pending_accounting').length;
-  const pendingTransfersCount = stockTransfers.filter(t => t.status === 'pending_warehouse').length;
-  const readyToDispatchCount = orders.filter(o => o.status === 'approved_accounting').length;
-
-  // Agar QR chek skaner qilingan bo'lsa
-  if (customerReceiptSale) {
+  // AGAR FOYDALANUVCHI TIZIMGA KIRMAGAN BO'LSA — FAQAT LOGIN EKRANI CHIQADI!
+  if (!activeUser) {
     return (
-      <CustomerReceiptView 
-        sale={customerReceiptSale}
-        onGoHome={() => {
-          const newUrl = window.location.pathname;
-          window.history.pushState({}, '', newUrl);
-          setCustomerReceiptSale(null);
-        }}
-      />
-    );
-  }
-
-  return (
-    <div className="app-container">
-      {/* Sidebar Navigation */}
-      <Sidebar 
-        currentRole={currentRole}
-        onChangeRole={(role) => setCurrentRole(role)}
-        currentView={currentView}
-        onChangeView={(view) => setCurrentView(view)}
-        lowStockCount={lowStockCount}
-        pendingOrdersCount={pendingOrdersCount}
-        pendingTransfersCount={pendingTransfersCount}
-        readyToDispatchCount={readyToDispatchCount}
-        storeMode={storeMode}
-        currentStoreSession={currentStoreSession}
-        onOpenPwaModal={() => setIsPwaModalOpen(true)}
-      />
-
-      {/* Main Wrapper */}
-      <div className="main-wrapper">
-        <Header 
-          currentRole={currentRole}
-          currentUser={currentUser}
-          currentView={currentView}
-          onChangeView={(view) => setCurrentView(view)}
-          balances={balances}
-          isServerConnected={isServerConnected}
-          pendingOrdersCount={pendingOrdersCount}
-          pendingTransfersCount={pendingTransfersCount}
-          readyToDispatchCount={readyToDispatchCount}
-          storeMode={storeMode}
-          currentStoreSession={currentStoreSession}
-          onOpenSettings={() => setIsSettingsModalOpen(true)}
-          onOpenAuth={() => setIsAuthModalOpen(true)}
+      <>
+        <AuthLoginView 
+          onLoginSuccess={handleLoginSuccess}
           onOpenPwaModal={() => setIsPwaModalOpen(true)}
         />
 
-        <main style={{ flex: 1, minHeight: 'calc(100vh - 70px)' }}>
-          {/* 1. DIREKTOR BOSHQARUVI */}
-          {currentView === 'director' && (
-            <DirectorDashboard 
-              sales={sales}
-              products={products}
-              staff={staff}
-              balances={balances}
-              debts={debts}
-              expenses={expenses}
-              stockTransfers={stockTransfers}
-              orders={orders}
-              onCreateTransfer={handleCreateTransfer}
-              storeMode={storeMode}
-              onViewReceipt={(sale) => setActiveReceiptSale(sale)}
-              onChangeView={(view) => setCurrentView(view)}
-            />
-          )}
+        {/* Global PWA Modal */}
+        {isPwaModalOpen && (
+          <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
+            <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '440px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <Smartphone size={22} style={{ color: '#2563eb' }} />
+                  <h3 style={{ margin: 0, fontSize: '18px', color: '#0f172a' }}>Telefonga APK O'rnatish</h3>
+                </div>
+                <button onClick={() => setIsPwaModalOpen(false)} style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer' }}>
+                  <X size={20} />
+                </button>
+              </div>
 
-          {/* 2. BUXGALTERIYA & TO'LOV NAZORATI */}
-          {currentView === 'accounting' && (
-            <AccountingView 
-              balances={balances}
-              debts={debts}
-              staff={staff}
-              expenses={expenses}
-              orders={orders}
-              sales={sales}
-              onApproveOrder={handleApproveOrder}
-              onRejectOrder={handleRejectOrder}
-              onPayDebt={(debtId, amount, method) => {
-                setDebts(prev => prev.map(d => d.id === debtId ? { ...d, remainingAmount: Math.max(0, d.remainingAmount - amount) } : d));
-                if (method === 'Naqd') setBalances(b => ({ ...b, cash: b.cash + amount }));
-                if (method === 'Karta') setBalances(b => ({ ...b, card: b.card + amount }));
-                if (method === 'Bank perech') setBalances(b => ({ ...b, bank: b.bank + amount }));
-              }}
-              onAddDebt={(d) => setDebts(prev => [d, ...prev])}
-              onPaySalary={(staffId, amount, source) => {
-                setStaff(prev => prev.map(s => s.id === staffId ? { ...s, paidThisMonth: (s.paidThisMonth || 0) + amount } : s));
-                if (source === 'Naqd') setBalances(b => ({ ...b, cash: Math.max(0, b.cash - amount) }));
-                if (source === 'Karta') setBalances(b => ({ ...b, card: Math.max(0, b.card - amount) }));
-                if (source === 'Bank perech') setBalances(b => ({ ...b, bank: Math.max(0, b.bank - amount) }));
-              }}
-              onAddExpense={(exp) => {
-                setExpenses(prev => [exp, ...prev]);
-                if (exp.source === 'Naqd') setBalances(b => ({ ...b, cash: Math.max(0, b.cash - exp.amount) }));
-                if (exp.source === 'Karta') setBalances(b => ({ ...b, card: Math.max(0, b.card - exp.amount) }));
-                if (exp.source === 'Bank perech') setBalances(b => ({ ...b, bank: Math.max(0, b.bank - exp.amount) }));
-              }}
-            />
-          )}
+              <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#64748b', lineHeight: '1.5' }}>
+                Sotuvchilar ushbu saytni telefon brauzerida ochib, <strong>"Bosh ekranga qo'shish" (Добавить на главный экран)</strong> tugmasi orqali APK ilova sifatida o'rnatib olishlari mumkin. Barcha ma'lumotlar markaziy bazada sinxron ishlaydi!
+              </p>
 
-          {/* 3. SKLADCHI & LOGISTIKA BOSHQARUVI */}
-          {currentView === 'warehouse' && (
-            <WarehouseView 
-              products={products}
-              stockTransfers={stockTransfers}
-              orders={orders}
-              onAddProduct={handleAddProduct}
-              onUpdateProduct={handleUpdateProduct}
-              onDeleteProduct={handleDeleteProduct}
-              onReceiveTransfer={handleReceiveTransfer}
-              onDispatchOrder={handleDispatchOrder}
-              storeMode={storeMode}
-            />
-          )}
-
-          {/* 4. SOTUVCHI MOBIL PROFILI (APK) */}
-          {currentView === 'seller_mobile' && (
-            <SellerMobileView 
-              products={products}
-              orders={orders}
-              staff={staff}
-              customers={customers}
-              onCreateOrder={handleCreateSellerOrder}
-              onOpenReceipt={(sale) => setActiveReceiptSale(sale)}
-              storeMode={storeMode}
-            />
-          )}
-
-          {/* 5. TEZKOR KASSA POS */}
-          {currentView === 'pos' && (
-            <div style={{ padding: '24px' }}>
-              <POSCashier 
-                products={products}
-                onCompleteSale={handleCompleteSale}
-                currentUser={currentUser}
-                onOpenSellers={() => setCurrentView('sellers')}
-                onAddProduct={handleAddProduct}
-                customers={customers}
-                storeMode={storeMode}
-                onSelectStoreMode={(mode) => setStoreMode(mode)}
-              />
+              <button
+                onClick={() => setIsPwaModalOpen(false)}
+                style={{ width: '100%', background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '14px', padding: '12px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
+              >
+                Tushundim
+              </button>
             </div>
-          )}
+          </div>
+        )}
+      </>
+    );
+  }
 
-          {/* 6. XODIMLAR & SOTUVCHILAR JAMOASI */}
-          {currentView === 'sellers' && (
-            <SellersView 
-              staff={staff}
-              sales={sales}
-              onAddStaff={(newS) => setStaff(prev => [...prev, newS])}
-              onOpenPOS={() => setCurrentView('pos')}
-            />
-          )}
-        </main>
-      </div>
-
-      {/* Mobile Bottom Navigation */}
-      <MobileNav 
-        currentView={currentView}
-        onChangeView={(view) => setCurrentView(view)}
-        lowStockCount={lowStockCount}
-        pendingOrdersCount={pendingOrdersCount}
-        pendingTransfersCount={pendingTransfersCount}
-        readyToDispatchCount={readyToDispatchCount}
+  // AGAR TIZIMGA KIRGAN BO'LSA — FAQAT O'ZIGA TEGISHLI BO'LIM TO'LIQ OCHILADI!
+  return (
+    <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', flexDirection: 'column' }}>
+      {/* Top Corporate White Header */}
+      <Header 
+        currentUser={activeUser}
+        currentRole={activeUser.role}
+        onLogout={handleLogout}
+        onOpenPwaModal={() => setIsPwaModalOpen(true)}
+        balances={balances}
       />
 
-      {/* Thermal Receipt Modal */}
-      {activeReceiptSale && (
-        <ReceiptModal 
-          sale={activeReceiptSale}
-          onClose={() => setActiveReceiptSale(null)}
-          storeMode={storeMode}
-          currentStoreSession={currentStoreSession}
-        />
-      )}
+      <main style={{ flex: 1, paddingBottom: '40px' }}>
+        {/* 1. DIREKTOR KABINETI */}
+        {activeUser.role === 'director' && (
+          <DirectorDashboard 
+            sales={sales}
+            products={products}
+            staff={staff}
+            balances={balances}
+            debts={debts}
+            expenses={expenses}
+            stockTransfers={stockTransfers}
+            orders={orders}
+            onCreateTransfer={handleCreateTransfer}
+            storeMode="clothing"
+            onViewReceipt={(sale) => setActiveReceiptSale(sale)}
+          />
+        )}
 
-      {/* Store Settings Modal */}
-      {isSettingsModalOpen && (
-        <StoreSettingsModal 
-          isOpen={isSettingsModalOpen}
-          onClose={() => setIsSettingsModalOpen(false)}
-          currentStoreSession={currentStoreSession}
-          onUpdateSession={(updated) => {
-            setCurrentStoreSession(updated);
-            localStorage.setItem('savdo_current_session', JSON.stringify(updated));
-          }}
-          onOpenNewStoreOnboarding={() => {
-            setIsSettingsModalOpen(false);
-            setIsAuthModalOpen(true);
-          }}
-          onLogout={() => {
-            localStorage.removeItem('savdo_current_session');
-            setCurrentStoreSession(null);
-            setIsSettingsModalOpen(false);
-            setIsAuthModalOpen(true);
-          }}
-        />
-      )}
+        {/* 2. BUXGALTERIYA & TO'LOV NAZORATI KABINETI */}
+        {activeUser.role === 'accountant' && (
+          <AccountingView 
+            balances={balances}
+            debts={debts}
+            staff={staff}
+            expenses={expenses}
+            orders={orders}
+            sales={sales}
+            onApproveOrder={handleApproveOrder}
+            onRejectOrder={handleRejectOrder}
+            onPayDebt={(debtId, amount, method) => {
+              setDebts(prev => prev.map(d => d.id === debtId ? { ...d, remainingAmount: Math.max(0, d.remainingAmount - amount) } : d));
+              if (method === 'Naqd') setBalances(b => ({ ...b, cash: b.cash + amount }));
+              if (method === 'Karta') setBalances(b => ({ ...b, card: b.card + amount }));
+              if (method === 'Bank perech') setBalances(b => ({ ...b, bank: b.bank + amount }));
+            }}
+            onAddDebt={(d) => setDebts(prev => [d, ...prev])}
+            onPaySalary={(staffId, amount, source) => {
+              setStaff(prev => prev.map(s => s.id === staffId ? { ...s, paidThisMonth: (s.paidThisMonth || 0) + amount } : s));
+              if (source === 'Naqd') setBalances(b => ({ ...b, cash: Math.max(0, b.cash - amount) }));
+              if (source === 'Karta') setBalances(b => ({ ...b, card: Math.max(0, b.card - amount) }));
+              if (source === 'Bank perech') setBalances(b => ({ ...b, bank: Math.max(0, b.bank - amount) }));
+            }}
+            onAddExpense={(exp) => {
+              setExpenses(prev => [exp, ...prev]);
+              if (exp.source === 'Naqd') setBalances(b => ({ ...b, cash: Math.max(0, b.cash - exp.amount) }));
+              if (exp.source === 'Karta') setBalances(b => ({ ...b, card: Math.max(0, b.card - exp.amount) }));
+              if (exp.source === 'Bank perech') setBalances(b => ({ ...b, bank: Math.max(0, b.bank - exp.amount) }));
+            }}
+          />
+        )}
 
-      {/* Global PWA / APK Modal */}
+        {/* 3. SKLADCHI & LOGISTIKA KABINETI */}
+        {activeUser.role === 'warehouse' && (
+          <WarehouseView 
+            products={products}
+            stockTransfers={stockTransfers}
+            orders={orders}
+            onAddProduct={handleAddProduct}
+            onUpdateProduct={handleUpdateProduct}
+            onDeleteProduct={handleDeleteProduct}
+            onReceiveTransfer={handleReceiveTransfer}
+            onDispatchOrder={handleDispatchOrder}
+            storeMode="clothing"
+          />
+        )}
+
+        {/* 4. SOTUVCHI MOBIL KABINETI (APK REJIMI) */}
+        {activeUser.role === 'seller_mobile' && (
+          <SellerMobileView 
+            products={products}
+            orders={orders}
+            staff={staff}
+            customers={INITIAL_CUSTOMERS}
+            onCreateOrder={handleCreateSellerOrder}
+            onOpenReceipt={(sale) => setActiveReceiptSale(sale)}
+            storeMode="clothing"
+          />
+        )}
+      </main>
+
+      {/* Global PWA Modal */}
       {isPwaModalOpen && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
           <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '440px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <Smartphone size={22} style={{ color: '#4f46e5' }} />
-                <h3 style={{ margin: 0, fontSize: '18px', color: '#0f172a' }}>Ilovani Telefonga O'rnatish (APK)</h3>
+                <Smartphone size={22} style={{ color: '#2563eb' }} />
+                <h3 style={{ margin: 0, fontSize: '18px', color: '#0f172a' }}>Telefonga APK O'rnatish</h3>
               </div>
               <button onClick={() => setIsPwaModalOpen(false)} style={{ border: 'none', background: 'none', color: '#94a3b8', cursor: 'pointer' }}>
                 <X size={20} />
@@ -694,38 +521,26 @@ export default function App() {
             </div>
 
             <p style={{ margin: '0 0 16px', fontSize: '13px', color: '#64748b', lineHeight: '1.5' }}>
-              Ushbu tizim zamonaviy <strong>PWA (Progressive Web APK)</strong> texnologiyasi bilan jihozlangan. Har bir xodim (Direktor, Buxgalter, Skladchi va ayniqsa Sotuvchilar) ilovani o'z telefoniga 1 marta bosish orqali o'rnatib oladi!
+              Ushbu tizim zamonaviy <strong>PWA WebAPK</strong> texnologiyasiga ega. Xodimlar telefon brauzerida saytni ochib, <strong>"Bosh ekranga qo'shish"</strong> orqali ilova kabi o'rnatib oladilar!
             </p>
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', marginBottom: '20px' }}>
-              <div style={{ display: 'flex', gap: '10px', background: '#f8fafc', padding: '10px', borderRadius: '12px' }}>
-                <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#4f46e5', color: '#fff', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>1</span>
-                <span style={{ fontSize: '12px', color: '#334155' }}>
-                  <strong>Barcha ma'lumotlar o'tadi:</strong> Sotuvchi telefondan zayavka berganda, buxgalter kompyuterida darhol aks etadi, buxgalter tasdiqlasa skladchiga tushadi!
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: '10px', background: '#f8fafc', padding: '10px', borderRadius: '12px' }}>
-                <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#4f46e5', color: '#fff', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>2</span>
-                <span style={{ fontSize: '12px', color: '#334155' }}>
-                  <strong>Qanday o'rnatiladi:</strong> Telefon brauzerida saytni ochib, <strong>"Bosh ekranga qo'shish" (Добавить на главный экран)</strong> tugmasini bosish kifoya.
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: '10px', background: '#f8fafc', padding: '10px', borderRadius: '12px' }}>
-                <span style={{ width: '22px', height: '22px', borderRadius: '50%', background: '#4f46e5', color: '#fff', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>3</span>
-                <span style={{ fontSize: '12px', color: '#334155' }}>
-                  <strong>Alohida 4 ta APK shart emas:</strong> Bitta havola orqali har bir xodim o'z roli (Sotuvchi, Skladchi, Buxgalter, Direktor) bo'yicha mustaqil ishlaydi.
-                </span>
-              </div>
-            </div>
 
             <button
               onClick={() => setIsPwaModalOpen(false)}
-              style={{ width: '100%', background: '#4f46e5', color: '#ffffff', border: 'none', borderRadius: '14px', padding: '12px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
+              style={{ width: '100%', background: '#2563eb', color: '#ffffff', border: 'none', borderRadius: '14px', padding: '12px', fontSize: '14px', fontWeight: 700, cursor: 'pointer' }}
             >
-              Tushundim, Rahmat
+              Tushundim
             </button>
           </div>
         </div>
+      )}
+
+      {/* Thermal Receipt Modal */}
+      {activeReceiptSale && (
+        <ReceiptModal 
+          sale={activeReceiptSale}
+          onClose={() => setActiveReceiptSale(null)}
+          storeMode="clothing"
+        />
       )}
     </div>
   );

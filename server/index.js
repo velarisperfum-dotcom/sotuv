@@ -1,9 +1,16 @@
 import express from 'express';
 import cors from 'cors';
 import dotenv from 'dotenv';
+import path from 'path';
+import fs from 'fs';
+import { fileURLToPath } from 'url';
 import { initDatabase, getStoreData, setStoreData, getAllData } from './db.js';
 
 dotenv.config();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+const distPath = path.resolve(__dirname, '../dist');
 
 const app = express();
 const PORT = process.env.PORT || 5050;
@@ -14,12 +21,12 @@ app.use(express.json());
 // Initialize database
 await initDatabase();
 
-// Health Check
-app.get('/', (req, res) => {
+// Health Check API
+app.get('/api/status', (req, res) => {
   res.json({
     status: 'online',
-    name: 'Velaris Perfum - Sotuv API',
-    version: '1.0.0',
+    name: 'SAVDO ERP - Central API',
+    version: '2.0.0',
     time: new Date().toISOString()
   });
 });
@@ -240,6 +247,17 @@ app.get('/api/staff', async (req, res) => {
   res.json(staff || []);
 });
 
+// --- Static Frontend Serving (Agar dist papka mavjud bo'lsa) ---
+if (fs.existsSync(distPath)) {
+  app.use(express.static(distPath));
+  app.get('*', (req, res) => {
+    if (req.path.startsWith('/api')) {
+      return res.status(404).json({ error: 'API endpoint topilmadi' });
+    }
+    res.sendFile(path.join(distPath, 'index.html'));
+  });
+}
+
 app.listen(PORT, '0.0.0.0', () => {
-  console.log(`🚀 Velaris Sotuv API http://0.0.0.0:${PORT} portida ishga tushdi!`);
+  console.log(`🚀 SAVDO ERP Server http://0.0.0.0:${PORT} portida ishga tushdi!`);
 });

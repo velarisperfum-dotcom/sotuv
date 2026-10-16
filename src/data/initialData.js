@@ -45,7 +45,56 @@ export const INITIAL_CUSTOMERS = [
   { id: 'c-4', name: 'Madina Karimova', phone: '+998 91 345 67 89', bonusBalance: 88000, totalPurchases: 3200000, visitsCount: 11 }
 ];
 
-export const INITIAL_PRODUCTS = [];
+export const SYSTEM_USERS = [
+  {
+    id: 'user-dir',
+    username: 'direktor',
+    password: '123',
+    role: 'director',
+    name: 'Sardor Alimov',
+    position: 'Bosh Direktor',
+    badge: 'Direktor Kabineti',
+    avatar: '👑',
+    color: '#f59e0b',
+    description: 'Barcha hisobotlar, sklad qoldig\'i, tovar kirimlari (perexod) va sotuvlar nazorati'
+  },
+  {
+    id: 'user-acc',
+    username: 'buxgalter',
+    password: '123',
+    role: 'accountant',
+    name: 'Malika Rustamova',
+    position: 'Bosh Buxgalter',
+    badge: 'Buxgalteriya & Moliya',
+    avatar: '📊',
+    color: '#10b981',
+    description: 'Sotuvchilar zayavkalarini tekshirish, aplatani tasdiqlash, skladga yuborish va moliya'
+  },
+  {
+    id: 'user-wh',
+    username: 'sklad',
+    password: '123',
+    role: 'warehouse',
+    name: 'Bobur Rahimov',
+    position: 'Sklad Mudiri',
+    badge: 'Sklad & Logistika',
+    avatar: '📦',
+    color: '#2563eb',
+    description: 'Direktordan kirimlarni qabul qilish va buxgalter tasdiqlagan zakazlarni berish (yechish)'
+  },
+  {
+    id: 'user-sel',
+    username: 'sotuvchi',
+    password: '123',
+    role: 'seller_mobile',
+    name: 'Jasur Qodirov',
+    position: 'Savdo Agenti / Sotuvchi',
+    badge: 'Mobil Sotuvchi Profili (APK)',
+    avatar: '📱',
+    color: '#ec4899',
+    description: 'Telefondan kirib tovar tanlash, aplata turini belgilash va buxgalterga zayavka yuborish'
+  }
+];
 
 export const INITIAL_STAFF = [
   {
