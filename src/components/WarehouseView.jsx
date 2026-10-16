@@ -605,8 +605,30 @@ export default function WarehouseView({
 
       {/* MODAL: TOVAR QO'SHISH / TAHRIRLASH */}
       {showAddModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(15,23,42,0.6)', backdropFilter: 'blur(3px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
-          <div style={{ background: '#ffffff', borderRadius: '18px', maxWidth: '440px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0,0,0,0.1)' }}>
+        <div style={{ 
+          position: 'fixed', 
+          inset: 0, 
+          background: 'rgba(15,23,42,0.65)', 
+          backdropFilter: 'blur(4px)', 
+          display: 'flex', 
+          alignItems: 'center', 
+          justifyContent: 'center', 
+          zIndex: 9999, 
+          padding: '16px',
+          overflowY: 'auto',
+          WebkitOverflowScrolling: 'touch'
+        }}>
+          <div style={{ 
+            background: '#ffffff', 
+            borderRadius: '20px', 
+            maxWidth: '460px', 
+            width: '100%', 
+            padding: '22px', 
+            boxShadow: '0 20px 35px -10px rgba(0,0,0,0.25)',
+            margin: 'auto',
+            maxHeight: 'calc(100dvh - 32px)',
+            overflowY: 'auto'
+          }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>
                 {editingProduct ? (lang === 'ru' ? 'Редактирование товара' : 'Tovarni Tahrirlash') : t('productModalTitle')}

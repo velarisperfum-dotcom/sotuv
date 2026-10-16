@@ -56,7 +56,20 @@ export default function App() {
   const [users, setUsers] = useState(() => {
     try {
       const saved = localStorage.getItem('savdo_system_users_v6');
-      return saved ? JSON.parse(saved) : SYSTEM_USERS;
+      const list = saved ? JSON.parse(saved) : [];
+      // SYSTEM_USERS (sklad, direktor, buxgalter, sotuvchi) doim mavjud bo'lishi shart
+      const merged = [...SYSTEM_USERS];
+      if (Array.isArray(list)) {
+        list.forEach(item => {
+          const idx = merged.findIndex(m => (m.username || '').toLowerCase() === (item.username || '').toLowerCase());
+          if (idx !== -1) {
+            merged[idx] = { ...merged[idx], ...item };
+          } else if (item.username) {
+            merged.push(item);
+          }
+        });
+      }
+      return merged;
     } catch {
       return SYSTEM_USERS;
     }

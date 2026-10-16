@@ -21,7 +21,9 @@ export default function IosInstallModal({ isOpen, onClose }) {
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 99999,
-      padding: '20px',
+      padding: '16px',
+      overflowY: 'auto',
+      WebkitOverflowScrolling: 'touch',
       fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif"
     }}>
       <div style={{
@@ -29,6 +31,9 @@ export default function IosInstallModal({ isOpen, onClose }) {
         borderRadius: '24px',
         maxWidth: '460px',
         width: '100%',
+        margin: 'auto',
+        maxHeight: 'calc(100dvh - 32px)',
+        overflowY: 'auto',
         padding: '26px',
         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
         border: '1px solid #e2e8f0',

@@ -141,13 +141,18 @@ export default function BarcodeScannerModal({ isOpen, onClose, onDetected }) {
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 10001,
-      padding: '20px'
+      padding: '16px',
+      overflowY: 'auto',
+      WebkitOverflowScrolling: 'touch'
     }}>
       <div style={{
         background: resolvedTheme === 'dark' ? '#1e293b' : '#ffffff',
         borderRadius: '24px',
         maxWidth: '440px',
         width: '100%',
+        margin: 'auto',
+        maxHeight: 'calc(100dvh - 32px)',
+        overflowY: 'auto',
         padding: '24px',
         border: `1px solid ${resolvedTheme === 'dark' ? '#334155' : '#e2e8f0'}`,
         color: resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a',

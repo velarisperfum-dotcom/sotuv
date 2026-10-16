@@ -240,14 +240,14 @@ export default function SellerMobileView({
             </div>
           </div>
 
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
             <ThemeToggleButton />
             <LanguageToggle compact={true} />
             <button 
               onClick={() => onOpenInstallModal ? onOpenInstallModal() : setShowPwaModal(true)}
-              style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', color: '#ffffff', borderRadius: '10px', padding: '6px 10px', fontSize: '12px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '6px', cursor: 'pointer' }}
+              style={{ background: 'rgba(255,255,255,0.15)', border: '1px solid rgba(255,255,255,0.25)', color: '#ffffff', borderRadius: '10px', padding: '6px 8px', fontSize: '11px', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '4px', cursor: 'pointer', whiteSpace: 'nowrap' }}
             >
-              <Smartphone size={14} /> {t('mobileApp')}
+              <Smartphone size={13} /> {t('mobileApp')}
             </button>
           </div>
         </div>
@@ -377,7 +377,7 @@ export default function SellerMobileView({
           </div>
 
           {/* Product Cards List */}
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
             {filteredProducts.length === 0 ? (
               <div style={{ textAlign: 'center', padding: '40px 20px', background: '#ffffff', borderRadius: '16px', border: '1px dashed #cbd5e1' }}>
                 <Box size={40} style={{ color: '#94a3b8', margin: '0 auto 10px' }} />
@@ -394,59 +394,59 @@ export default function SellerMobileView({
                     key={p.id}
                     style={{
                       background: '#ffffff',
-                      borderRadius: '16px',
-                      padding: '12px',
+                      borderRadius: '14px',
+                      padding: '10px',
                       border: '1px solid #e2e8f0',
                       display: 'flex',
-                      gap: '12px',
+                      gap: '10px',
                       alignItems: 'center',
                       opacity: isOutOfStock ? 0.6 : 1,
-                      boxShadow: '0 1px 3px rgba(0,0,0,0.03)'
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.03)'
                     }}
                   >
                     {/* Product Image */}
-                    <div style={{ width: '65px', height: '65px', borderRadius: '12px', background: '#f1f5f9', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <div style={{ width: '52px', height: '52px', borderRadius: '10px', background: '#f1f5f9', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       {p.image ? (
                         <img src={p.image} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                       ) : (
-                        <Box size={24} style={{ color: '#94a3b8' }} />
+                        <Box size={22} style={{ color: '#94a3b8' }} />
                       )}
                     </div>
 
                     {/* Product Info */}
                     <div style={{ flex: 1, minWidth: 0 }}>
-                      <div style={{ fontSize: '11px', color: '#64748b', fontWeight: 600 }}>{p.category || 'Umumiy'}</div>
-                      <div style={{ fontSize: '14px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                      <div style={{ fontSize: '10px', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.4px' }}>{p.category || 'Umumiy'}</div>
+                      <div style={{ fontSize: '13px', fontWeight: 700, color: '#0f172a', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                         {p.name}
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginTop: '4px' }}>
-                        <span style={{ fontSize: '14px', fontWeight: 800, color: '#4f46e5' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginTop: '3px', flexWrap: 'wrap' }}>
+                        <span style={{ fontSize: '13px', fontWeight: 800, color: '#4f46e5' }}>
                           {formatMoney(p.price)}
                         </span>
-                        <span style={{ fontSize: '11px', background: isOutOfStock ? '#fee2e2' : '#f1f5f9', color: isOutOfStock ? '#ef4444' : '#475569', padding: '2px 6px', borderRadius: '6px', fontWeight: 600 }}>
+                        <span style={{ fontSize: '10px', background: isOutOfStock ? '#fee2e2' : '#f1f5f9', color: isOutOfStock ? '#ef4444' : '#475569', padding: '2px 5px', borderRadius: '6px', fontWeight: 600 }}>
                           Skladda: <strong>{p.stock || 0} {p.unit || 'dona'}</strong>
                         </span>
                       </div>
                     </div>
 
                     {/* Add to Cart Actions */}
-                    <div>
+                    <div style={{ flexShrink: 0 }}>
                       {inCart ? (
-                        <div style={{ display: 'flex', alignItems: 'center', background: '#ede9fe', borderRadius: '12px', padding: '3px' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', background: '#ede9fe', borderRadius: '10px', padding: '2px' }}>
                           <button
                             onClick={() => updateQuantity(p.id, -1)}
-                            style={{ width: '28px', height: '28px', borderRadius: '8px', border: 'none', background: '#ffffff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                            style={{ width: '26px', height: '26px', borderRadius: '7px', border: 'none', background: '#ffffff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                           >
-                            <Minus size={14} />
+                            <Minus size={13} />
                           </button>
-                          <span style={{ width: '26px', textAlign: 'center', fontSize: '13px', fontWeight: 800, color: '#4f46e5' }}>
+                          <span style={{ width: '22px', textAlign: 'center', fontSize: '12px', fontWeight: 800, color: '#4f46e5' }}>
                             {inCart.quantity}
                           </span>
                           <button
                             onClick={() => updateQuantity(p.id, 1)}
-                            style={{ width: '28px', height: '28px', borderRadius: '8px', border: 'none', background: '#ffffff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
+                            style={{ width: '26px', height: '26px', borderRadius: '7px', border: 'none', background: '#ffffff', color: '#4f46e5', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}
                           >
-                            <Plus size={14} />
+                            <Plus size={13} />
                           </button>
                         </div>
                       ) : (
@@ -457,17 +457,18 @@ export default function SellerMobileView({
                             background: isOutOfStock ? '#cbd5e1' : '#4f46e5',
                             color: '#ffffff',
                             border: 'none',
-                            borderRadius: '12px',
-                            padding: '8px 14px',
-                            fontSize: '12px',
+                            borderRadius: '10px',
+                            padding: '7px 11px',
+                            fontSize: '11px',
                             fontWeight: 700,
                             display: 'flex',
                             alignItems: 'center',
                             gap: '4px',
-                            cursor: isOutOfStock ? 'not-allowed' : 'pointer'
+                            cursor: isOutOfStock ? 'not-allowed' : 'pointer',
+                            whiteSpace: 'nowrap'
                           }}
                         >
-                          <Plus size={15} /> Qo'shish
+                          <Plus size={14} /> Qo'shish
                         </button>
                       )}
                     </div>
@@ -822,8 +823,8 @@ export default function SellerMobileView({
 
       {/* MODAL: PWA / APK O'RNATISH QO'LLANMASI */}
       {showPwaModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
-          <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '420px', width: '100%', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '420px', width: '100%', margin: 'auto', maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Smartphone size={22} style={{ color: '#4f46e5' }} />
@@ -865,8 +866,8 @@ export default function SellerMobileView({
 
       {/* MODAL: SUCCESS ORDER POPUP */}
       {successOrder && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '20px' }}>
-          <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '380px', width: '100%', padding: '24px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
+          <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '380px', width: '100%', margin: 'auto', maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto', padding: '24px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
             <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
               <CheckCircle2 size={36} style={{ color: '#16a34a' }} />
             </div>

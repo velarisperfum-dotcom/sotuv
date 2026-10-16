@@ -39,7 +39,9 @@ export default function ThemeControlModal({ isOpen, onClose }) {
       alignItems: 'center',
       justifyContent: 'center',
       zIndex: 10000,
-      padding: '20px'
+      padding: '16px',
+      overflowY: 'auto',
+      WebkitOverflowScrolling: 'touch'
     }}>
       <div style={{
         background: resolvedTheme === 'dark' ? '#1e293b' : '#ffffff',
@@ -47,10 +49,11 @@ export default function ThemeControlModal({ isOpen, onClose }) {
         borderRadius: '24px',
         maxWidth: '480px',
         width: '100%',
+        margin: 'auto',
         padding: '26px',
         boxShadow: '0 20px 40px -15px rgba(0,0,0,0.3)',
         border: `1px solid ${resolvedTheme === 'dark' ? '#334155' : '#e2e8f0'}`,
-        maxHeight: '90vh',
+        maxHeight: 'calc(100dvh - 32px)',
         overflowY: 'auto'
       }}>
         {/* Header */}

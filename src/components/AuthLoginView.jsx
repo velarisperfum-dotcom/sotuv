@@ -1,12 +1,11 @@
-import React, { useState } from 'react';
 import { 
   Lock, User, ArrowRight, ShieldCheck, Building2, 
   Smartphone, Eye, EyeOff, AlertCircle, HelpCircle,
   X, MessageSquare, Phone, Server, CheckCircle2
 } from 'lucide-react';
 import LanguageToggle from './LanguageToggle';
-import ThemeToggleButton from './ThemeToggleButton';
 import { useLang } from '../context/LanguageContext';
+import { SYSTEM_USERS } from '../data/initialData';
 
 export default function AuthLoginView({ users = [], onLoginSuccess, onOpenPwaModal }) {
   const { t } = useLang();
@@ -21,11 +20,29 @@ export default function AuthLoginView({ users = [], onLoginSuccess, onOpenPwaMod
     e.preventDefault();
     setErrorMsg('');
 
-    const trimmedUser = username.trim().toLowerCase();
-    const found = users.find(u => 
-      (u.username && u.username.toLowerCase() === trimmedUser) && 
-      String(u.password) === String(password)
-    );
+    const rawUser = username.trim().toLowerCase();
+    const rawPass = String(password).trim();
+
+    // Map common role aliases for extreme ease of use
+    const normalizeUser = (name) => {
+      const u = (name || '').toLowerCase().trim();
+      if (u === 'skladchi' || u === 'ombor' || u === 'omborchi') return 'sklad';
+      if (u === 'director') return 'direktor';
+      if (u === 'bux' || u === 'accountant') return 'buxgalter';
+      if (u === 'seller' || u === 'agent') return 'sotuvchi';
+      return u;
+    };
+
+    const targetUser = normalizeUser(rawUser);
+
+    // Combine prop users and initial fallback users
+    const userPool = [...(Array.isArray(users) ? users : []), ...SYSTEM_USERS];
+
+    const found = userPool.find(u => {
+      const normalizedCurrent = normalizeUser(u.username);
+      const passMatches = String(u.password).trim() === rawPass || String(u.password) === String(password);
+      return (normalizedCurrent === targetUser || (u.username && u.username.toLowerCase().trim() === rawUser)) && passMatches;
+    });
 
     setIsSubmitting(true);
 
@@ -59,9 +76,8 @@ export default function AuthLoginView({ users = [], onLoginSuccess, onOpenPwaMod
         padding: '36px 32px',
         position: 'relative'
       }}>
-        {/* Controls in top right of login card (Theme & Language) */}
-        <div style={{ position: 'absolute', top: '18px', right: '18px', display: 'flex', alignItems: 'center', gap: '8px' }}>
-          <ThemeToggleButton />
+        {/* Language Switcher in top right of login card (no theme toggle here as requested) */}
+        <div style={{ position: 'absolute', top: '18px', right: '18px' }}>
           <LanguageToggle compact={true} />
         </div>
 
@@ -325,13 +341,21 @@ export default function AuthLoginView({ users = [], onLoginSuccess, onOpenPwaMod
                 {t('forgotPasswordDirectorHint')}
               </p>
 
-              <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #93c5fd', display: 'flex', flexDirection: 'column', gap: '6px', fontSize: '12px' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1e3a8a' }}>
-                  <MessageSquare size={14} /> Telegram: <strong>@antigravity_support</strong>
-                </div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#1e3a8a' }}>
-                  <Phone size={14} /> Telefon: <strong>+998 90 999 00 11</strong>
-                </div>
+              <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: '1px dashed #93c5fd', display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '13px' }}>
+                <a 
+                  href="https://t.me/LOGO_55" 
+                  target="_blank" 
+                  rel="noreferrer"
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1d4ed8', textDecoration: 'none', fontWeight: 700 }}
+                >
+                  <MessageSquare size={16} /> Telegram: <span style={{ textDecoration: 'underline' }}>@LOGO_55</span>
+                </a>
+                <a 
+                  href="tel:+998937188885"
+                  style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#1d4ed8', textDecoration: 'none', fontWeight: 700 }}
+                >
+                  <Phone size={16} /> Telefon: <span style={{ textDecoration: 'underline' }}>+998 93 718 88 85</span>
+                </a>
               </div>
             </div>
 

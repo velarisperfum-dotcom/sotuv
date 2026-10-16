@@ -1,40 +1,38 @@
 import React, { useState } from 'react';
-import { Sun, Moon, Sparkles } from 'lucide-react';
+import { Sun } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { useLang } from '../context/LanguageContext';
 import ThemeControlModal from './ThemeControlModal';
 
 export default function ThemeToggleButton() {
-  const { themeMode, resolvedTheme } = useTheme();
+  const { resolvedTheme } = useTheme();
   const { lang } = useLang();
   const [showModal, setShowModal] = useState(false);
 
   return (
     <>
       <button
+        type="button"
         onClick={() => setShowModal(true)}
         style={{
-          background: resolvedTheme === 'dark' ? '#1e293b' : '#ffffff',
-          border: `1px solid ${resolvedTheme === 'dark' ? '#334155' : '#cbd5e1'}`,
+          width: '36px',
+          height: '36px',
           borderRadius: '10px',
-          padding: '7px 11px',
+          background: '#0f172a',
+          border: '1px solid #334155',
           cursor: 'pointer',
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
-          color: resolvedTheme === 'dark' ? '#f8fafc' : '#334155',
-          fontSize: '12px',
-          fontWeight: 700,
-          transition: 'all 0.15s ease'
+          justifyContent: 'center',
+          color: '#ffffff',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.12)',
+          transition: 'all 0.15s ease',
+          padding: 0,
+          flexShrink: 0
         }}
         title={lang === 'ru' ? 'Настройки темы и яркости' : 'Yorug\'lik va mavzu sozlamalari'}
       >
-        {themeMode === 'light' && <Sun size={15} color="#eab308" />}
-        {themeMode === 'dark' && <Moon size={15} color="#60a5fa" />}
-        {themeMode === 'auto' && <Sparkles size={15} color="#d97706" />}
-        <span style={{ fontSize: '11px', fontWeight: 800 }}>
-          {themeMode === 'auto' ? (lang === 'ru' ? 'Авто' : 'Avto') : (themeMode === 'light' ? (lang === 'ru' ? 'Свет' : 'Yorug\'') : (lang === 'ru' ? 'Тьма' : 'Tun'))}
-        </span>
+        <Sun size={19} color="#ffffff" strokeWidth={2.2} />
       </button>
 
       <ThemeControlModal
