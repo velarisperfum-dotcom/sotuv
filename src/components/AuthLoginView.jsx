@@ -1,3 +1,4 @@
+import React, { useState } from 'react';
 import { 
   Lock, User, ArrowRight, ShieldCheck, Building2, 
   Smartphone, Eye, EyeOff, AlertCircle, HelpCircle,
