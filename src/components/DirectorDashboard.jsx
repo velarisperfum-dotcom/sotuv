@@ -1011,30 +1011,8 @@ export default function DirectorDashboard({
 
       {/* MODAL: YANGI XODIM QO'SHISH / TAHRIRLASH */}
       {showStaffModal && (
-        <div style={{ 
-          position: 'fixed', 
-          inset: 0, 
-          background: 'rgba(15,23,42,0.65)', 
-          backdropFilter: 'blur(4px)', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          zIndex: 9999, 
-          padding: '16px',
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch'
-        }}>
-          <div style={{ 
-            background: '#ffffff', 
-            borderRadius: '20px', 
-            maxWidth: '460px', 
-            width: '100%', 
-            padding: '22px', 
-            boxShadow: '0 20px 35px -10px rgba(0,0,0,0.25)',
-            margin: 'auto',
-            maxHeight: 'calc(100dvh - 32px)',
-            overflowY: 'auto'
-          }}>
+        <div className="app-modal-overlay">
+          <div className="app-modal-box">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <UserPlus size={18} style={{ color: '#2563eb' }} />
@@ -1161,30 +1139,8 @@ export default function DirectorDashboard({
 
       {/* MODAL: DIREKTORDAN SKLADGA KIRIM PARTIYASI YUBORISH (PEREXOD) */}
       {showTransferModal && (
-        <div style={{ 
-          position: 'fixed', 
-          inset: 0, 
-          background: 'rgba(15,23,42,0.65)', 
-          backdropFilter: 'blur(4px)', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          zIndex: 9999, 
-          padding: '16px',
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch'
-        }}>
-          <div style={{ 
-            background: '#ffffff', 
-            borderRadius: '20px', 
-            maxWidth: '480px', 
-            width: '100%', 
-            padding: '22px', 
-            boxShadow: '0 20px 35px -10px rgba(0,0,0,0.25)',
-            margin: 'auto',
-            maxHeight: 'calc(100dvh - 32px)',
-            overflowY: 'auto'
-          }}>
+        <div className="app-modal-overlay">
+          <div className="app-modal-box">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Truck size={18} style={{ color: '#2563eb' }} />

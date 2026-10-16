@@ -132,32 +132,17 @@ export default function BarcodeScannerModal({ isOpen, onClose, onDetected }) {
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      background: 'rgba(0,0,0,0.75)',
-      backdropFilter: 'blur(5px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 10001,
-      padding: '16px',
-      overflowY: 'auto',
-      WebkitOverflowScrolling: 'touch'
-    }}>
-      <div style={{
-        background: resolvedTheme === 'dark' ? '#1e293b' : '#ffffff',
-        borderRadius: '24px',
-        maxWidth: '440px',
-        width: '100%',
-        margin: 'auto',
-        maxHeight: 'calc(100dvh - 32px)',
-        overflowY: 'auto',
-        padding: '24px',
-        border: `1px solid ${resolvedTheme === 'dark' ? '#334155' : '#e2e8f0'}`,
-        color: resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a',
-        boxShadow: '0 25px 50px -12px rgba(0,0,0,0.4)'
-      }}>
+    <div className="app-modal-overlay" style={{ zIndex: 10001 }}>
+      <div 
+        className="app-modal-box"
+        style={{
+          background: resolvedTheme === 'dark' ? '#1e293b' : '#ffffff',
+          border: `1px solid ${resolvedTheme === 'dark' ? '#334155' : '#e2e8f0'}`,
+          color: resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a',
+          maxWidth: '440px',
+          padding: '24px'
+        }}
+      >
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

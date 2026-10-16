@@ -1135,31 +1135,57 @@ body {
   color: #fff;
 }
 
-/* Modal Overlay */
-.modal-backdrop {
-  position: fixed;
-  inset: 0;
-  background: rgba(0, 0, 0, 0.75);
-  backdrop-filter: blur(8px);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  z-index: 10000;
-  padding: 16px;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
+/* Modal Overlay - Center-Locked on Screen */
+.modal-backdrop,
+.app-modal-overlay {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100vw !important;
+  height: 100dvh !important;
+  height: 100vh; /* fallback */
+  background: rgba(15, 23, 42, 0.72) !important;
+  backdrop-filter: blur(6px) !important;
+  -webkit-backdrop-filter: blur(6px) !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  z-index: 10000 !important;
+  padding: 16px !important;
+  box-sizing: border-box !important;
+  overflow: hidden !important; /* Prevents background/overlay displacement */
+  margin: 0 !important;
 }
 
-.modal-content {
-  background: var(--bg-card);
-  border: 1px solid var(--border-light);
-  border-radius: var(--radius-xl);
-  width: 100%;
-  max-width: 580px;
-  margin: auto;
-  max-height: calc(100dvh - 32px);
-  overflow-y: auto;
-  box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+.modal-content,
+.app-modal-box {
+  background: var(--bg-card, #ffffff) !important;
+  border: 1px solid var(--border-light, #e2e8f0) !important;
+  border-radius: var(--radius-xl, 20px) !important;
+  width: 100% !important;
+  max-width: 480px !important;
+  margin: 0 !important; /* CRITICAL: Must be 0 to keep flexbox center strictly true */
+  max-height: calc(100dvh - 32px) !important;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch !important;
+  box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35) !important;
+  animation: appModalCenterIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) !important;
+  transform-origin: center center !important;
+  box-sizing: border-box !important;
+}
+
+@keyframes appModalCenterIn {
+  0% {
+    opacity: 0;
+    transform: scale(0.94);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .modal-header {
@@ -4361,3 +4387,83 @@ textarea.form-input:focus {
   padding-top: 8px;
   border-top: 1px solid var(--border-light, #f1f5f9);
 }
+
+/* ==========================================================================
+   Language Switcher Component (Compact Mobile Flag & Desktop Dual Pill)
+   ========================================================================== */
+.language-toggle-wrapper {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.lang-toggle-desktop-group {
+  display: inline-flex;
+  align-items: center;
+  background: var(--bg-card-inner, #f1f5f9);
+  padding: 2px;
+  border-radius: 10px;
+  border: 1px solid var(--border-light, #e2e8f0);
+  user-select: none;
+}
+
+.lang-pill-btn {
+  background: transparent;
+  color: var(--text-secondary, #64748b);
+  border: none;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-size: 11px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.lang-pill-btn.active {
+  background: var(--bg-card, #ffffff);
+  color: var(--text-primary, #0f172a);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.08);
+}
+
+/* Mobile Single Flag Button */
+.lang-toggle-mobile-btn {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  background: var(--bg-card, #ffffff);
+  border: 1px solid var(--border-light, #cbd5e1);
+  border-radius: 10px;
+  cursor: pointer;
+  padding: 0;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  transition: transform 0.12s ease, background-color 0.15s ease;
+  flex-shrink: 0;
+}
+
+.lang-toggle-mobile-btn:active {
+  transform: scale(0.9);
+}
+
+.lang-flag-emoji {
+  font-size: 18px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+@media (max-width: 768px) {
+  .lang-toggle-desktop-group {
+    display: none !important;
+  }
+  .lang-toggle-mobile-btn {
+    display: flex !important;
+  }
+}
+

@@ -806,29 +806,8 @@ export default function AccountingView({
 
       {/* MODAL: RAD ETISH */}
       {rejectingOrder && (
-        <div style={{ 
-          position: 'fixed', 
-          inset: 0, 
-          background: 'rgba(0,0,0,0.65)', 
-          backdropFilter: 'blur(4px)', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          zIndex: 9999, 
-          padding: '16px',
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch'
-        }}>
-          <div style={{ 
-            background: '#ffffff', 
-            borderRadius: '24px', 
-            maxWidth: '420px', 
-            width: '100%', 
-            padding: '24px',
-            margin: 'auto',
-            maxHeight: 'calc(100dvh - 32px)',
-            overflowY: 'auto'
-          }}>
+        <div className="app-modal-overlay">
+          <div className="app-modal-box">
             <h3 style={{ margin: '0 0 10px', fontSize: '17px', color: '#0f172a' }}>
               {lang === 'ru' ? 'Отклонить заявку' : 'Zayavkani Rad Etish'}
             </h3>
@@ -868,29 +847,8 @@ export default function AccountingView({
 
       {/* MODAL: QARZ SO'NDIRISH */}
       {showPayDebtModal && (
-        <div style={{ 
-          position: 'fixed', 
-          inset: 0, 
-          background: 'rgba(0,0,0,0.65)', 
-          backdropFilter: 'blur(4px)', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          zIndex: 9999, 
-          padding: '16px',
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch'
-        }}>
-          <div style={{ 
-            background: '#ffffff', 
-            borderRadius: '24px', 
-            maxWidth: '400px', 
-            width: '100%', 
-            padding: '24px',
-            margin: 'auto',
-            maxHeight: 'calc(100dvh - 32px)',
-            overflowY: 'auto'
-          }}>
+        <div className="app-modal-overlay">
+          <div className="app-modal-box">
             <h3 style={{ margin: '0 0 12px', fontSize: '17px', color: '#0f172a' }}>
               {lang === 'ru' ? 'Принять оплату долга' : 'Qarzni Qabul Qilish'}
             </h3>
@@ -949,29 +907,8 @@ export default function AccountingView({
 
       {/* MODAL: OYLIK TO'LASH */}
       {showSalaryModal && (
-        <div style={{ 
-          position: 'fixed', 
-          inset: 0, 
-          background: 'rgba(0,0,0,0.65)', 
-          backdropFilter: 'blur(4px)', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          zIndex: 9999, 
-          padding: '16px',
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch'
-        }}>
-          <div style={{ 
-            background: '#ffffff', 
-            borderRadius: '24px', 
-            maxWidth: '400px', 
-            width: '100%', 
-            padding: '24px',
-            margin: 'auto',
-            maxHeight: 'calc(100dvh - 32px)',
-            overflowY: 'auto'
-          }}>
+        <div className="app-modal-overlay">
+          <div className="app-modal-box">
             <h3 style={{ margin: '0 0 12px', fontSize: '17px', color: '#0f172a' }}>
               {lang === 'ru' ? 'Выплата заработной платы' : 'Oylik Maosh To\'lash'}
             </h3>
@@ -1030,29 +967,8 @@ export default function AccountingView({
 
       {/* MODAL: YANGI CHIQIM */}
       {showExpenseModal && (
-        <div style={{ 
-          position: 'fixed', 
-          inset: 0, 
-          background: 'rgba(0,0,0,0.65)', 
-          backdropFilter: 'blur(4px)', 
-          display: 'flex', 
-          alignItems: 'center', 
-          justifyContent: 'center', 
-          zIndex: 9999, 
-          padding: '16px',
-          overflowY: 'auto',
-          WebkitOverflowScrolling: 'touch'
-        }}>
-          <div style={{ 
-            background: '#ffffff', 
-            borderRadius: '24px', 
-            maxWidth: '400px', 
-            width: '100%', 
-            padding: '24px',
-            margin: 'auto',
-            maxHeight: 'calc(100dvh - 32px)',
-            overflowY: 'auto'
-          }}>
+        <div className="app-modal-overlay">
+          <div className="app-modal-box">
             <h3 style={{ margin: '0 0 12px', fontSize: '17px', color: '#0f172a' }}>
               {lang === 'ru' ? 'Внести расход' : 'Yangi Chiqim Kiritish'}
             </h3>

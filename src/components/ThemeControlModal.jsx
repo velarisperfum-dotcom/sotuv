@@ -30,32 +30,17 @@ export default function ThemeControlModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      background: 'rgba(0, 0, 0, 0.65)',
-      backdropFilter: 'blur(6px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 10000,
-      padding: '16px',
-      overflowY: 'auto',
-      WebkitOverflowScrolling: 'touch'
-    }}>
-      <div style={{
-        background: resolvedTheme === 'dark' ? '#1e293b' : '#ffffff',
-        color: resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a',
-        borderRadius: '24px',
-        maxWidth: '480px',
-        width: '100%',
-        margin: 'auto',
-        padding: '26px',
-        boxShadow: '0 20px 40px -15px rgba(0,0,0,0.3)',
-        border: `1px solid ${resolvedTheme === 'dark' ? '#334155' : '#e2e8f0'}`,
-        maxHeight: 'calc(100dvh - 32px)',
-        overflowY: 'auto'
-      }}>
+    <div className="app-modal-overlay" style={{ zIndex: 10000 }}>
+      <div 
+        className="app-modal-box"
+        style={{
+          background: resolvedTheme === 'dark' ? '#1e293b' : '#ffffff',
+          color: resolvedTheme === 'dark' ? '#f8fafc' : '#0f172a',
+          maxWidth: '480px',
+          padding: '24px',
+          border: `1px solid ${resolvedTheme === 'dark' ? '#334155' : '#e2e8f0'}`
+        }}
+      >
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

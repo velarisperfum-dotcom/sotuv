@@ -846,8 +846,8 @@ export default function SellerMobileView({
 
       {/* MODAL: PWA / APK O'RNATISH QO'LLANMASI */}
       {showPwaModal && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '420px', width: '100%', margin: 'auto', maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto', padding: '24px', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
+        <div className="app-modal-overlay">
+          <div className="app-modal-box">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Smartphone size={22} style={{ color: '#4f46e5' }} />
@@ -889,8 +889,8 @@ export default function SellerMobileView({
 
       {/* MODAL: SUCCESS ORDER POPUP */}
       {successOrder && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '16px', overflowY: 'auto', WebkitOverflowScrolling: 'touch' }}>
-          <div style={{ background: '#ffffff', borderRadius: '24px', maxWidth: '380px', width: '100%', margin: 'auto', maxHeight: 'calc(100dvh - 32px)', overflowY: 'auto', padding: '24px', textAlign: 'center', boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.2)' }}>
+        <div className="app-modal-overlay">
+          <div className="app-modal-box" style={{ textAlign: 'center' }}>
             <div style={{ width: '60px', height: '60px', borderRadius: '50%', background: '#dcfce7', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 14px' }}>
               <CheckCircle2 size={36} style={{ color: '#16a34a' }} />
             </div>

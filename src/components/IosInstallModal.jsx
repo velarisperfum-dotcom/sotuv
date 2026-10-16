@@ -12,33 +12,8 @@ export default function IosInstallModal({ isOpen, onClose }) {
   if (!isOpen) return null;
 
   return (
-    <div style={{
-      position: 'fixed',
-      inset: 0,
-      background: 'rgba(15, 23, 42, 0.65)',
-      backdropFilter: 'blur(4px)',
-      display: 'flex',
-      alignItems: 'center',
-      justifyContent: 'center',
-      zIndex: 99999,
-      padding: '16px',
-      overflowY: 'auto',
-      WebkitOverflowScrolling: 'touch',
-      fontFamily: "'Plus Jakarta Sans', -apple-system, sans-serif"
-    }}>
-      <div style={{
-        background: '#ffffff',
-        borderRadius: '24px',
-        maxWidth: '460px',
-        width: '100%',
-        margin: 'auto',
-        maxHeight: 'calc(100dvh - 32px)',
-        overflowY: 'auto',
-        padding: '26px',
-        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-        border: '1px solid #e2e8f0',
-        animation: 'fadeIn 0.2s ease-out'
-      }}>
+    <div className="app-modal-overlay" style={{ zIndex: 99999 }}>
+      <div className="app-modal-box" style={{ padding: '24px', maxWidth: '460px' }}>
         {/* Header */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '18px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>

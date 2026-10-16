@@ -1,67 +1,48 @@
 import React from 'react';
 import { useLang } from '../context/LanguageContext';
-import { Globe } from 'lucide-react';
 
 export default function LanguageToggle({ compact = false }) {
   const { lang, setLang } = useLang();
 
+  const toggleLanguage = () => {
+    setLang(lang === 'uz' ? 'ru' : 'uz');
+  };
+
   return (
-    <div style={{
-      display: 'inline-flex',
-      alignItems: 'center',
-      background: '#f1f5f9',
-      padding: '2px',
-      borderRadius: '10px',
-      border: '1px solid #e2e8f0',
-      userSelect: 'none'
-    }}>
+    <div className="language-toggle-wrapper">
+      {/* Mobile Single Flag Button (Super compact, saves header space on phones) */}
       <button
         type="button"
-        onClick={() => setLang('uz')}
-        style={{
-          background: lang === 'uz' ? '#ffffff' : 'transparent',
-          color: lang === 'uz' ? '#0f172a' : '#64748b',
-          border: 'none',
-          borderRadius: '8px',
-          padding: compact ? '4px 8px' : '5px 10px',
-          fontSize: '12px',
-          fontWeight: 700,
-          cursor: 'pointer',
-          boxShadow: lang === 'uz' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-          transition: 'all 0.15s ease',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px'
-        }}
-        title="O'zbek tili"
+        onClick={toggleLanguage}
+        className="lang-toggle-mobile-btn"
+        title={lang === 'uz' ? "Русский язык (нажмите для переключения)" : "O'zbek tili (o'tish uchun bosing)"}
+        aria-label="Tilni o'zgartirish / Сменить язык"
       >
-        <span>🇺🇿</span>
-        <span>O'ZB</span>
+        <span className="lang-flag-emoji">{lang === 'uz' ? '🇷🇺' : '🇺🇿'}</span>
       </button>
 
-      <button
-        type="button"
-        onClick={() => setLang('ru')}
-        style={{
-          background: lang === 'ru' ? '#ffffff' : 'transparent',
-          color: lang === 'ru' ? '#0f172a' : '#64748b',
-          border: 'none',
-          borderRadius: '8px',
-          padding: compact ? '4px 8px' : '5px 10px',
-          fontSize: '12px',
-          fontWeight: 700,
-          cursor: 'pointer',
-          boxShadow: lang === 'ru' ? '0 1px 3px rgba(0,0,0,0.08)' : 'none',
-          transition: 'all 0.15s ease',
-          display: 'flex',
-          alignItems: 'center',
-          gap: '4px'
-        }}
-        title="Русский язык"
-      >
-        <span>🇷🇺</span>
-        <span>РУС</span>
-      </button>
+      {/* Desktop Dual Switcher */}
+      <div className="lang-toggle-desktop-group">
+        <button
+          type="button"
+          onClick={() => setLang('uz')}
+          className={`lang-pill-btn ${lang === 'uz' ? 'active' : ''}`}
+          title="O'zbek tili"
+        >
+          <span>🇺🇿</span>
+          <span>O'ZB</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => setLang('ru')}
+          className={`lang-pill-btn ${lang === 'ru' ? 'active' : ''}`}
+          title="Русский язык"
+        >
+          <span>🇷🇺</span>
+          <span>РУС</span>
+        </button>
+      </div>
     </div>
   );
 }
