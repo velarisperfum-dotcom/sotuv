@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import { PAYMENT_METHODS } from '../data/initialData';
 import { useLang } from '../context/LanguageContext';
+import SalaryHierarchyPayrollView from './SalaryHierarchyPayrollView';
 
 export default function AccountingView({ 
   balances = { cash: 0, card: 0, bank: 0 }, 
@@ -20,6 +21,8 @@ export default function AccountingView({
   onPayDebt, 
   onAddDebt, 
   onPaySalary, 
+  onApproveSalary,
+  onApproveAllSalaries,
   onAddExpense 
 }) {
   const { t, lang } = useLang();
@@ -624,144 +627,18 @@ export default function AccountingView({
         </div>
       )}
 
-      {/* TAB 3: OYLIK MAOSHLAR VA OYLIKDAN CHEGIRISH */}
+      {/* TAB 3: OYLIK MAOSHLAR VA IERARXIYA (II-BO'LIM) */}
       {activeTab === 'salaries' && (
-        <div style={{ background: '#ffffff', borderRadius: '20px', padding: '20px', border: '1px solid #e2e8f0' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: '16px', color: '#0f172a' }}>{t('tabSalaries')}</h3>
-              <p style={{ margin: '2px 0 0', fontSize: '12px', color: '#64748b' }}>
-                {lang === 'ru' ? 'Выплата заработной платы и учет удержаний из продаж' : 'Oylik to\'lash va savdodan "Oyligidan oldi" bo\'lgan summalarni nazorat qilish'}
-              </p>
-            </div>
-          </div>
-
-          {/* Desktop Table View */}
-          <div className="desktop-table-view">
-            <div style={{ overflowX: 'auto' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '13px' }}>
-                <thead>
-                  <tr style={{ background: '#f8fafc', borderBottom: '2px solid #e2e8f0', color: '#475569' }}>
-                    <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Сотрудник' : 'Xodim'}</th>
-                    <th style={{ padding: '12px 14px' }}>{t('colRole')}</th>
-                    <th style={{ padding: '12px 14px' }}>{t('colSalary')}</th>
-                    <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Выплачено' : "To'langan Summa"}</th>
-                    <th style={{ padding: '12px 14px' }}>{lang === 'ru' ? 'Остаток к выплате' : "Qoldiq To'lov"}</th>
-                    <th style={{ padding: '12px 14px' }}>{t('status')}</th>
-                    <th style={{ padding: '12px 14px', textAlign: 'right' }}>{t('actions')}</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {safeStaff.map(st => {
-                    const remaining = Math.max(0, (st.baseSalary || 0) - (st.paidThisMonth || 0));
-                    return (
-                      <tr key={st.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
-                        <td style={{ padding: '12px 14px', fontWeight: 700, color: '#0f172a' }}>{st.name}</td>
-                        <td style={{ padding: '12px 14px', color: '#64748b' }}>{st.role}</td>
-                        <td style={{ padding: '12px 14px', color: '#64748b' }}>{formatMoney(st.baseSalary)}</td>
-                        <td style={{ padding: '12px 14px', color: '#10b981', fontWeight: 700 }}>{formatMoney(st.paidThisMonth)}</td>
-                        <td style={{ padding: '12px 14px', color: remaining > 0 ? '#b45309' : '#64748b', fontWeight: 700 }}>
-                          {formatMoney(remaining)}
-                        </td>
-                        <td style={{ padding: '12px 14px' }}>
-                          <span style={{ background: remaining === 0 ? '#dcfce7' : '#fef3c7', color: remaining === 0 ? '#15803d' : '#b45309', padding: '3px 8px', borderRadius: '6px', fontSize: '11px', fontWeight: 700 }}>
-                            {remaining === 0 ? (lang === 'ru' ? 'Выплачено полностью' : "To'liq to'langan") : (lang === 'ru' ? 'К выплате' : "To'lanishi kerak")}
-                          </span>
-                        </td>
-                        <td style={{ padding: '12px 14px', textAlign: 'right' }}>
-                          {remaining > 0 && (
-                            <button
-                              onClick={() => {
-                                setSelectedStaff(st);
-                                setSalaryAmount(remaining);
-                                setShowSalaryModal(true);
-                              }}
-                              style={{ background: '#4f46e5', color: '#ffffff', border: 'none', borderRadius: '8px', padding: '6px 12px', fontSize: '12px', fontWeight: 700, cursor: 'pointer' }}
-                            >
-                              {t('paySalaryBtn')}
-                            </button>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-
-          {/* Mobile Card View */}
-          <div className="mobile-card-view">
-            {safeStaff.map(st => {
-              const remaining = Math.max(0, (st.baseSalary || 0) - (st.paidThisMonth || 0));
-              return (
-                <div key={st.id} className="mobile-record-card">
-                  <div className="mobile-record-header">
-                    <div>
-                      <div style={{ fontWeight: 800, color: '#0f172a', fontSize: '14px' }}>{st.name}</div>
-                      <div style={{ fontSize: '11px', color: '#64748b', marginTop: '2px' }}>{st.role}</div>
-                    </div>
-                    <span style={{
-                      background: remaining === 0 ? '#dcfce7' : '#fef3c7',
-                      color: remaining === 0 ? '#15803d' : '#b45309',
-                      padding: '3px 8px',
-                      borderRadius: '6px',
-                      fontSize: '11px',
-                      fontWeight: 700
-                    }}>
-                      {remaining === 0 ? (lang === 'ru' ? 'Выплачено' : "To'langan") : (lang === 'ru' ? 'К выплате' : "To'lanishi kerak")}
-                    </span>
-                  </div>
-
-                  <div className="mobile-record-grid">
-                    <div>
-                      <span className="mobile-record-label">{t('colSalary')}: </span>
-                      <span className="mobile-record-val">{formatMoney(st.baseSalary)}</span>
-                    </div>
-                    <div>
-                      <span className="mobile-record-label">{lang === 'ru' ? 'Выплачено:' : "To'landi:"} </span>
-                      <span style={{ fontWeight: 800, color: '#10b981' }}>{formatMoney(st.paidThisMonth)}</span>
-                    </div>
-                    <div>
-                      <span className="mobile-record-label">{lang === 'ru' ? 'Остаток:' : 'Qoldiq:'} </span>
-                      <span style={{ fontWeight: 800, color: remaining > 0 ? '#b45309' : '#64748b' }}>{formatMoney(remaining)}</span>
-                    </div>
-                  </div>
-
-                  {remaining > 0 && (
-                    <div className="mobile-record-actions">
-                      <button
-                        onClick={() => {
-                          setSelectedStaff(st);
-                          setSalaryAmount(remaining);
-                          setShowSalaryModal(true);
-                        }}
-                        style={{
-                          background: '#4f46e5',
-                          color: '#ffffff',
-                          border: 'none',
-                          borderRadius: '10px',
-                          padding: '10px 16px',
-                          fontSize: '13px',
-                          fontWeight: 700,
-                          cursor: 'pointer',
-                          width: '100%',
-                          boxShadow: '0 2px 6px rgba(79, 70, 229, 0.25)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                          gap: '6px'
-                        }}
-                      >
-                        {t('paySalaryBtn')}
-                      </button>
-                    </div>
-                  )}
-                </div>
-              );
-            })}
-          </div>
-        </div>
+        <SalaryHierarchyPayrollView 
+          staff={safeStaff}
+          balances={safeBalances}
+          sales={sales}
+          orders={safeOrders}
+          currentRole="accountant"
+          onPaySalary={onPaySalary}
+          onApproveSalary={onApproveSalary}
+          onApproveAllSalaries={onApproveAllSalaries}
+        />
       )}
 
       {/* TAB 4: CHIQIMLAR VA XARAJATLAR */}

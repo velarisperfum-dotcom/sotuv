@@ -5,10 +5,11 @@ import {
   Clock, Eye, EyeOff, UserCheck, BarChart3, Layers, Plus, 
   Send, CheckCircle2, AlertTriangle, Truck, Check, X,
   Users, UserPlus, Edit2, Trash2, Shield, Phone, Key,
-  Copy, ShieldCheck, Lock
+  Copy, ShieldCheck, Lock, Network
 } from 'lucide-react';
-import { MEASURE_UNITS } from '../data/initialData';
+import { MEASURE_UNITS, HIERARCHY_ROLES } from '../data/initialData';
 import { useLang } from '../context/LanguageContext';
+import SalaryHierarchyPayrollView from './SalaryHierarchyPayrollView';
 
 export default function DirectorDashboard({ 
   sales = [], 
@@ -23,10 +24,13 @@ export default function DirectorDashboard({
   onAddStaff,
   onUpdateStaff,
   onDeleteStaff,
+  onPaySalary,
+  onApproveSalary,
+  onApproveAllSalaries,
   onViewReceipt
 }) {
   const { t, lang } = useLang();
-  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'transfers' | 'staff'
+  const [activeTab, setActiveTab] = useState('overview'); // 'overview' | 'transfers' | 'staff' | 'salaries_hierarchy'
 
   // Transfer modal
   const [showTransferModal, setShowTransferModal] = useState(false);
@@ -43,7 +47,10 @@ export default function DirectorDashboard({
   const [showStaffModal, setShowStaffModal] = useState(false);
   const [editingStaff, setEditingStaff] = useState(null);
   const [staffName, setStaffName] = useState('');
-  const [staffRole, setStaffRole] = useState('Sotuvchi');
+  const [staffRole, setStaffRole] = useState('Med. pres (Med. presta)');
+  const [staffHierarchyRole, setStaffHierarchyRole] = useState('med_rep');
+  const [staffManagerId, setStaffManagerId] = useState('');
+  const [staffBonusRate, setStaffBonusRate] = useState('2');
   const [staffPhone, setStaffPhone] = useState('+998 ');
   const [staffUsername, setStaffUsername] = useState('');
   const [staffPassword, setStaffPassword] = useState('1234');
@@ -235,6 +242,9 @@ export default function DirectorDashboard({
         ...editingStaff,
         name: staffName.trim(),
         role: staffRole,
+        hierarchyRole: staffHierarchyRole,
+        managerId: staffManagerId || null,
+        bonusRate: Number(staffBonusRate) || 2,
         phone: staffPhone.trim(),
         username: staffUsername.trim().toLowerCase(),
         password: staffPassword.trim() || '1234',
@@ -246,13 +256,18 @@ export default function DirectorDashboard({
         id: `emp-${Date.now()}`,
         name: staffName.trim(),
         role: staffRole,
+        hierarchyRole: staffHierarchyRole,
+        managerId: staffManagerId || null,
+        bonusRate: Number(staffBonusRate) || 2,
         phone: staffPhone.trim(),
         username: staffUsername.trim().toLowerCase(),
         password: staffPassword.trim() || '1234',
         baseSalary: Number(staffSalary) || 0,
         paidThisMonth: 0,
+        directorApproved: true,
         status: t('active'),
-        systemRole: mappedRole
+        systemRole: mappedRole,
+        paymentHistory: []
       });
     }
 
@@ -262,7 +277,10 @@ export default function DirectorDashboard({
 
   const resetStaffForm = () => {
     setStaffName('');
-    setStaffRole(lang === 'ru' ? 'Продавец' : 'Sotuvchi');
+    setStaffRole('Med. pres (Med. presta)');
+    setStaffHierarchyRole('med_rep');
+    setStaffManagerId('');
+    setStaffBonusRate('2');
     setStaffPhone('+998 ');
     setStaffUsername('');
     setStaffPassword('1234');
@@ -273,7 +291,10 @@ export default function DirectorDashboard({
   const openEditStaff = (st) => {
     setEditingStaff(st);
     setStaffName(st.name || '');
-    setStaffRole(st.role || (lang === 'ru' ? 'Продавец' : 'Sotuvchi'));
+    setStaffRole(st.role || 'Med. pres (Med. presta)');
+    setStaffHierarchyRole(st.hierarchyRole || 'med_rep');
+    setStaffManagerId(st.managerId || '');
+    setStaffBonusRate(st.bonusRate !== undefined ? String(st.bonusRate) : '2');
     setStaffPhone(st.phone || '+998 ');
     setStaffUsername(st.username || '');
     setStaffPassword(st.password || '1234');
@@ -401,6 +422,27 @@ export default function DirectorDashboard({
           }}
         >
           <Key size={16} /> {t('tabStaff')}
+        </button>
+
+        <button
+          onClick={() => setActiveTab('salaries_hierarchy')}
+          style={{
+            padding: '10px 16px',
+            border: 'none',
+            background: 'none',
+            borderBottom: activeTab === 'salaries_hierarchy' ? '2px solid #7c3aed' : '2px solid transparent',
+            color: activeTab === 'salaries_hierarchy' ? '#7c3aed' : '#64748b',
+            fontWeight: 800,
+            fontSize: '13px',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '6px',
+            flexShrink: 0,
+            whiteSpace: 'nowrap'
+          }}
+        >
+          <Network size={16} /> {t('tabSalaryHierarchy')}
         </button>
       </div>
 
@@ -1009,6 +1051,21 @@ export default function DirectorDashboard({
         </div>
       )}
 
+      {/* TAB 4: XODIMLAR OYLIKLARINI CHIQARISH VA IERARXIYA (II-BO'LIM) */}
+      {activeTab === 'salaries_hierarchy' && (
+        <SalaryHierarchyPayrollView 
+          staff={safeStaff}
+          balances={balances}
+          sales={safeSales}
+          orders={safeOrders}
+          currentRole="director"
+          onPaySalary={onPaySalary}
+          onApproveSalary={onApproveSalary}
+          onApproveAllSalaries={onApproveAllSalaries}
+          onOpenAddStaff={() => { resetStaffForm(); setShowStaffModal(true); }}
+        />
+      )}
+
       {/* MODAL: YANGI XODIM QO'SHISH / TAHRIRLASH */}
       {showStaffModal && (
         <div className="app-modal-overlay">
@@ -1041,31 +1098,62 @@ export default function DirectorDashboard({
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
                 <div>
                   <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
-                    {t('roleLabel')} *
+                    {t('roleLabel')} / Pog'onasi *
                   </label>
                   <select 
-                    value={staffRole}
-                    onChange={(e) => setStaffRole(e.target.value)}
-                    style={{ width: '100%', padding: '9px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#fff' }}
+                    value={staffHierarchyRole}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setStaffHierarchyRole(val);
+                      if (val === 'res_manager') setStaffRole('Res. Menejeri');
+                      else if (val === 'manager') setStaffRole('Menejer');
+                      else if (val === 'senior') setStaffRole('Starshi');
+                      else if (val === 'med_rep') setStaffRole('Med. pres (Med. presta)');
+                      else if (val === 'director') setStaffRole('Bosh Direktor');
+                      else if (val === 'accountant') setStaffRole('Bosh Buxgalter');
+                      else if (val === 'warehouse') setStaffRole('Sklad Mudiri');
+                    }}
+                    style={{ width: '100%', padding: '9px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#fff', fontWeight: 600 }}
                   >
-                    <option value="Sotuvchi">{t('staffRoleSeller')}</option>
-                    <option value="Buxgalter">{t('staffRoleAccountant')}</option>
-                    <option value="Skladchi">{t('staffRoleWarehouse')}</option>
-                    <option value="Direktor">{t('staffRoleDirector')}</option>
+                    <option value="res_manager">👑 Res. Menejeri (1-bosqich)</option>
+                    <option value="manager">🏢 Menejer (2-bosqich)</option>
+                    <option value="senior">⭐ Starshi (3-bosqich)</option>
+                    <option value="med_rep">💊 Med. pres / Med. presta (4-bosqich)</option>
+                    <option value="director">Direktor (Boshqaruv)</option>
+                    <option value="accountant">Buxgalter (Moliya)</option>
+                    <option value="warehouse">Skladchi (Ombor)</option>
                   </select>
                 </div>
 
                 <div>
                   <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
-                    {t('phoneLabel')}
+                    Bevosita Rahbari (Bo'ysunadi)
                   </label>
-                  <input 
-                    type="text" 
-                    value={staffPhone}
-                    onChange={(e) => setStaffPhone(e.target.value)}
-                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
-                  />
+                  <select 
+                    value={staffManagerId}
+                    onChange={(e) => setStaffManagerId(e.target.value)}
+                    style={{ width: '100%', padding: '9px 10px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', background: '#fff' }}
+                  >
+                    <option value="">— Rahbarni tanlang —</option>
+                    {safeStaff.filter(s => !editingStaff || s.id !== editingStaff.id).map(m => (
+                      <option key={m.id} value={m.id}>
+                        {m.name} ({m.role})
+                      </option>
+                    ))}
+                  </select>
                 </div>
+              </div>
+
+              <div>
+                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                  {t('phoneLabel')}
+                </label>
+                <input 
+                  type="text" 
+                  value={staffPhone}
+                  onChange={(e) => setStaffPhone(e.target.value)}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                />
               </div>
 
               {/* Login & Parol Belgilash */}
@@ -1104,17 +1192,34 @@ export default function DirectorDashboard({
                 </div>
               </div>
 
-              <div>
-                <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
-                  {t('baseSalaryLabel')}
-                </label>
-                <input 
-                  type="number" 
-                  placeholder={lang === 'ru' ? '4000000' : '4000000'}
-                  value={staffSalary}
-                  onChange={(e) => setStaffSalary(e.target.value)}
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
-                />
+              {/* Oklad va Bonus Foizi */}
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '10px' }}>
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    {t('baseSalaryLabel')} (so'm)
+                  </label>
+                  <input 
+                    type="number" 
+                    placeholder="4000000"
+                    value={staffSalary}
+                    onChange={(e) => setStaffSalary(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ fontSize: '12px', fontWeight: 700, color: '#334155', display: 'block', marginBottom: '4px' }}>
+                    Savdo Bonusi (%)
+                  </label>
+                  <input 
+                    type="number" 
+                    placeholder="2"
+                    step="0.5"
+                    value={staffBonusRate}
+                    onChange={(e) => setStaffBonusRate(e.target.value)}
+                    style={{ width: '100%', padding: '9px 12px', borderRadius: '8px', border: '1px solid #cbd5e1', fontSize: '13px', boxSizing: 'border-box' }}
+                  />
+                </div>
               </div>
 
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '8px', marginTop: '8px' }}>

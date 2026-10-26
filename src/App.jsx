@@ -91,11 +91,29 @@ export default function App() {
     }
   });
 
-  // 3. STAFF (Xodimlar ro'yxati va oyliklari)
+  // 3. STAFF (Xodimlar ro'yxati va oyliklari - Notebookdagi Res. Menejeri -> Menejer -> Starshi -> Med. pres ierarxiyasi bilan)
   const [staff, setStaff] = useState(() => {
     try {
       const saved = localStorage.getItem('savdo_staff_v6');
-      return saved ? JSON.parse(saved) : INITIAL_STAFF;
+      const list = saved ? JSON.parse(saved) : [];
+      if (!Array.isArray(list) || list.length === 0) return INITIAL_STAFF;
+      
+      // Merge so that the complete hierarchy from the notebook is always present
+      const merged = [...list];
+      INITIAL_STAFF.forEach(initMember => {
+        const existingIdx = merged.findIndex(m => m.id === initMember.id);
+        if (existingIdx === -1) {
+          merged.push(initMember);
+        } else {
+          merged[existingIdx] = {
+            ...initMember,
+            ...merged[existingIdx],
+            hierarchyRole: merged[existingIdx].hierarchyRole || initMember.hierarchyRole,
+            managerId: merged[existingIdx].managerId !== undefined ? merged[existingIdx].managerId : initMember.managerId
+          };
+        }
+      });
+      return merged;
     } catch {
       return INITIAL_STAFF;
     }
@@ -274,6 +292,36 @@ export default function App() {
     if (!window.confirm(`${st?.name || 'Xodim'}ni tizimdan o'chirishni tasdiqlaysizmi?`)) return;
     setStaff(prev => prev.filter(s => s.id !== staffId));
     setUsers(prev => prev.filter(u => u.id !== staffId));
+  };
+
+  // ==========================================
+  // OYLIKLARNI CHIQARISH VA TASDIQLASH (II-BO'LIM)
+  // ==========================================
+  const handlePaySalary = (staffId, amount, source, payoutRecord) => {
+    setStaff(prev => prev.map(s => {
+      if (s.id === staffId) {
+        const history = Array.isArray(s.paymentHistory) ? s.paymentHistory : [];
+        return {
+          ...s,
+          paidThisMonth: (s.paidThisMonth || 0) + Number(amount),
+          paymentHistory: payoutRecord ? [payoutRecord, ...history] : history
+        };
+      }
+      return s;
+    }));
+
+    if (source === 'Naqd') setBalances(b => ({ ...b, cash: Math.max(0, (b.cash || 0) - Number(amount)) }));
+    if (source === 'Karta') setBalances(b => ({ ...b, card: Math.max(0, (b.card || 0) - Number(amount)) }));
+    if (source === 'Bank perech') setBalances(b => ({ ...b, bank: Math.max(0, (b.bank || 0) - Number(amount)) }));
+  };
+
+  const handleApproveSalary = (staffId) => {
+    setStaff(prev => prev.map(s => s.id === staffId ? { ...s, directorApproved: !s.directorApproved } : s));
+  };
+
+  const handleApproveAllSalaries = () => {
+    setStaff(prev => prev.map(s => ({ ...s, directorApproved: true })));
+    alert("Barcha xodimlarning oylik vedomosti Bosh Direktor tomonidan tasdiqlandi!");
   };
 
   // ==========================================
@@ -505,6 +553,9 @@ export default function App() {
             onAddStaff={handleAddStaff}
             onUpdateStaff={handleUpdateStaff}
             onDeleteStaff={handleDeleteStaff}
+            onPaySalary={handlePaySalary}
+            onApproveSalary={handleApproveSalary}
+            onApproveAllSalaries={handleApproveAllSalaries}
             storeMode="clothing"
             onViewReceipt={(sale) => setActiveReceiptSale(sale)}
           />
@@ -528,12 +579,9 @@ export default function App() {
               if (method === 'Bank perech') setBalances(b => ({ ...b, bank: b.bank + amount }));
             }}
             onAddDebt={(d) => setDebts(prev => [d, ...prev])}
-            onPaySalary={(staffId, amount, source) => {
-              setStaff(prev => prev.map(s => s.id === staffId ? { ...s, paidThisMonth: (s.paidThisMonth || 0) + amount } : s));
-              if (source === 'Naqd') setBalances(b => ({ ...b, cash: Math.max(0, b.cash - amount) }));
-              if (source === 'Karta') setBalances(b => ({ ...b, card: Math.max(0, b.card - amount) }));
-              if (source === 'Bank perech') setBalances(b => ({ ...b, bank: Math.max(0, b.bank - amount) }));
-            }}
+            onPaySalary={handlePaySalary}
+            onApproveSalary={handleApproveSalary}
+            onApproveAllSalaries={handleApproveAllSalaries}
             onAddExpense={(exp) => {
               setExpenses(prev => [exp, ...prev]);
               if (exp.source === 'Naqd') setBalances(b => ({ ...b, cash: Math.max(0, b.cash - exp.amount) }));
